@@ -12,7 +12,7 @@
             "cwd": "${workspaceFolder}",
             "device": "STM32F769II",
             // "interface": "swd",
-            "executable": "./ftp_client_demo.elf",
+            "executable": "./http_client_demo.elf",
             "configFiles": [
                 "board/stm32f7discovery.cfg"
             ],

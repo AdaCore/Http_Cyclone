@@ -8,7 +8,7 @@ It is made to compile on STM32F769I-dicovery plateform.
 Compilation
 -----------
 
-Use `make` to compile the project, and `make flash` to install in
+Use `make` to compile the project, and `make flash` to install it
 on the STM32 card.
 
 You can see the debug messages by opening a terminal on the card
