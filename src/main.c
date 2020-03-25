@@ -257,8 +257,8 @@ error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
       return ERROR_FAILURE;
    }
 
-   // Timeout de 3 secondes
-   error = socketSetTimeout(socket, 3000);
+   // Timeout de 30 secondes
+   error = socketSetTimeout(socket, 30000);
    if (error) {
       TRACE_INFO("ERROR: socketSetTimeout.\r\n");
       goto closesocket;
@@ -297,9 +297,13 @@ error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
    }
    TRACE_INFO("\n");
 
-closesocket:
    // Fermeture de la socket
-   socketShutdown(socket, SOCKET_SD_BOTH);
+   error = socketShutdown(socket, SOCKET_SD_BOTH);
+   if (error) {
+      TRACE_INFO("ERROR: socketShutdown.\n");
+   }
+
+closesocket:
    socketClose(socket);
    return error;
 }
