@@ -236,8 +236,72 @@ void MPU_Config(void)
 }
 
 
-error_t HttpClientTest() {
-   
+error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
+   error_t error;          //Code d'erreur
+   char_t buffer[128];     //Buffer de transmission
+   size_t length;          //Longeur du buffer
+   IpAddr serverIpAddr;    //Adresse IP du serveur HTTP
+   Socket *socket;         //Socket pour la communication client-serveur
+
+   // Récupération du nom de l'hôte
+   error = getHostByName(NULL, serverName, &serverIpAddr, 0);
+   if (error) {
+      TRACE_INFO("ERROR: getHostByName.\r\n");
+      return error;
+   }
+
+   // Ouverture de la socket
+   socket = socketOpen(SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
+   if (!socket) {
+      TRACE_INFO("Error: socketOpen.\r\n");
+      return ERROR_FAILURE;
+   }
+
+   // Timeout de 3 secondes
+   error = socketSetTimeout(socket, 3000);
+   if (error) {
+      TRACE_INFO("ERROR: socketSetTimeout.\r\n");
+      goto closesocket;
+   }
+
+   error = socketConnect(socket, &serverIpAddr, 80);
+   if (error) {
+      TRACE_INFO("ERROR: socketConnect.\r\n");
+      goto closesocket;
+   }
+
+   // creation de la requête vers la page souhaitée
+   length = snprintf(buffer, 128, 
+      "GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", 
+      uri, serverName);
+
+   // envoi de la requête HTTP
+   error = socketSend(socket, buffer, length, NULL, 0);
+   if (error) {
+      TRACE_INFO("ERROR: socketSend.\r\n");
+      goto closesocket;
+   }
+
+   TRACE_INFO("Reception of the Data...\r\n");
+
+   while (1) 
+   {
+      // Reception du résultat de la requête
+      error = socketReceive(socket, buffer, 127, &length, 0);
+      if (error) {
+         break;
+      }
+      buffer[length] = '\0';
+
+      TRACE_INFO("%s", buffer);
+   }
+   TRACE_INFO("\n");
+
+closesocket:
+   // Fermeture de la socket
+   socketShutdown(socket, SOCKET_SD_BOTH);
+   socketClose(socket);
+   return error;
 }
 
 
@@ -292,8 +356,7 @@ void userTask(void *param)
       //User button pressed?
       if(BSP_PB_GetState(BUTTON_WAKEUP))
       {
-         //FTP client test routine
-         ftpClientTest();
+         HttpClientTest("httpbin.org", "/anything");
 
          //Wait for the user button to be released
          while(BSP_PB_GetState(BUTTON_WAKEUP));
