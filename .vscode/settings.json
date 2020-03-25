@@ -1,0 +1,27 @@
+{
+    "files.associations": {
+        "freertos.h": "c",
+        "portable.h": "c",
+        "portmacro.h": "c"
+    },
+    "cortex-debug.JLinkGDBServerPath": "/home/cluzel/.JLink/JLinkGDBServer",
+    "C_Cpp.default.includePath": [
+        "${default}",
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/third_party/cmsis/include",
+        "${workspaceFolder}/src/third_party/st/devices/stm32f7xx",
+        "${workspaceFolder}/src/third_party/st/drivers/stm32f7xx_hal_driver/inc",
+        "${workspaceFolder}/src/third_party/st/boards/stm32f769i_discovery",
+        "${workspaceFolder}/src/third_party/freertos/include",
+        "${workspaceFolder}/src/third_party/freertos/portable/gcc/arm_cm7/r0p1",
+        "${workspaceFolder}/src/common",
+        "${workspaceFolder}/src/cyclone_tcp",
+    ],
+    "C_Cpp.default.defines": [
+        "${default}",
+        "STM32F769xx",
+        "USE_HAL_DRIVER",
+        "USE_STM32F769I_DISCO",
+        "__error_t_defined"
+    ]
+}

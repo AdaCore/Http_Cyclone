@@ -1,0 +1,35 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STM Debug",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "device": "STM32F769II",
+            // "interface": "swd",
+            "executable": "./ftp_client_demo.elf",
+            "configFiles": [
+                "board/stm32f7discovery.cfg"
+            ],
+            "swoConfig": {
+                "enabled": false,
+                "source": "probe",
+                "swoFrequency": 0,
+                "cpuFrequency": 0,
+                "decoders": [
+                    {
+                        "port": 0,
+                        "type": "console",
+                        "label": "SWO output",
+                        "encoding": "ascii"
+                    }
+                ]
+            }
+        }
+    ]
+}
