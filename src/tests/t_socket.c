@@ -13,11 +13,11 @@ error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
    Socket *socket;         //Socket pour la communication client-serveur
 
    // Récupération du nom de l'hôte
-   error = getHostByName(NULL, serverName, &serverIpAddr, 0);
-   if (error) {
-      printf("ERROR: getHostByName.\r\n");
-      return error;
-   }
+//    error = getHostByName(NULL, serverName, &serverIpAddr, 0);
+//    if (error) {
+//       printf("ERROR: getHostByName.\r\n");
+//       return error;
+//    }
 
    // Ouverture de la socket
    socket = socketOpen(SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
