@@ -15,27 +15,27 @@ error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
    // Récupération du nom de l'hôte
    error = getHostByName(NULL, serverName, &serverIpAddr, 0);
    if (error) {
-      TRACE_INFO("ERROR: getHostByName.\r\n");
+      printf("ERROR: getHostByName.\r\n");
       return error;
    }
 
    // Ouverture de la socket
    socket = socketOpen(SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
    if (!socket) {
-      TRACE_INFO("Error: socketOpen.\r\n");
+      printf("Error: socketOpen.\r\n");
       return ERROR_FAILURE;
    }
 
    // Timeout de 30 secondes
    error = socketSetTimeout(socket, 30000);
    if (error) {
-      TRACE_INFO("ERROR: socketSetTimeout.\r\n");
+      printf("ERROR: socketSetTimeout.\r\n");
       goto closesocket;
    }
 
    error = socketConnect(socket, &serverIpAddr, 80);
    if (error) {
-      TRACE_INFO("ERROR: socketConnect.\r\n");
+      printf("ERROR: socketConnect.\r\n");
       goto closesocket;
    }
 
@@ -47,11 +47,11 @@ error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
    // envoi de la requête HTTP
    error = socketSend(socket, buffer, length, NULL, 0);
    if (error) {
-      TRACE_INFO("ERROR: socketSend.\r\n");
+      printf("ERROR: socketSend.\r\n");
       goto closesocket;
    }
 
-   TRACE_INFO("Reception of the Data...\r\n");
+   printf("Reception of the Data...\r\n");
 
    while (1) 
    {
@@ -62,14 +62,14 @@ error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
       }
       buffer[length] = '\0';
 
-      TRACE_INFO("%s", buffer);
+      printf("%s", buffer);
    }
-   TRACE_INFO("\n");
+   printf("\n");
 
    // Fermeture de la socket
    error = socketShutdown(socket, SOCKET_SD_BOTH);
    if (error) {
-      TRACE_INFO("ERROR: socketShutdown.\n");
+      printf("ERROR: socketShutdown.\n");
    }
 
 closesocket:
