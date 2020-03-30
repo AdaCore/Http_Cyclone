@@ -251,7 +251,7 @@ error_t HttpClientTest(const char_t * serverName, const char_t * uri) {
    }
 
    // Ouverture de la socket
-   socket = socketOpen(SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
+   socket = ada_open_socket(SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
    if (!socket) {
       TRACE_INFO("Error: socketOpen.\r\n");
       return ERROR_FAILURE;

@@ -4,7 +4,7 @@ with Compiler_Port; use Compiler_Port;
 with Tcp; use Tcp;
 with Ip; use Ip;
 
-package Socket is
+package Ada_Socket is
 
    type Sock_Descriptor is new unsigned;
    type Sock_Type is new unsigned;
@@ -112,5 +112,4 @@ package Socket is
        External_Name => "socketOpen";
    
    
-   
-end Socket;
+end Ada_Socket;

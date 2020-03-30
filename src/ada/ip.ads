@@ -12,4 +12,4 @@ package Ip is
      with Convention => C;
 
 
-end Name;
+end Ip;

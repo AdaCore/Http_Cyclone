@@ -334,6 +334,10 @@ ASM_OBJECTS = $(patsubst %.S, %.o, $(ASM_SOURCES))
 
 C_OBJECTS = $(patsubst %.c, %.o, $(C_SOURCES))
 
+ADA_SOURCES = $(wildcard ./src/ada/*.adb)
+
+ADA_OBJECTS = $(patsubst %.adb, %.o, $(ADA_SOURCES))
+
 OBJ_DIR = obj
 
 LINKER_SCRIPT = src/stm32f769_flash.ld
@@ -343,6 +347,13 @@ CFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
 CFLAGS += $(DEFINES)
 CFLAGS += $(INCLUDES)
+
+ADAFLAGS += --RTS=/opt/GNAT/2019-arm-elf/arm-eabi/lib/gnat/ravenscar-sfp-stm32f429disco/
+ADAFLAGS += -fno-common -Wall -Os -g3
+ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
+ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
+
+ADA_COMPILER = arm-eabi-gcc
 
 CROSS_COMPILE ?= arm-none-eabi-
 CC = $(CROSS_COMPILE)gcc
@@ -359,8 +370,8 @@ install: build size program
 
 build: $(RESULT).elf $(RESULT).lst $(RESULT).bin $(RESULT).hex
 	
-$(RESULT).elf: $(ASM_OBJECTS) $(C_OBJECTS) $(HEADERS) $(LINKER_SCRIPT) $(THIS_MAKEFILE)
-	$(CC) -Wl,-M=$(RESULT).map -Wl,-T$(LINKER_SCRIPT) $(CFLAGS) $(addprefix $(OBJ_DIR)/, $(notdir $(ASM_OBJECTS))) $(addprefix $(OBJ_DIR)/, $(notdir $(C_OBJECTS))) -o $@
+$(RESULT).elf: $(ASM_OBJECTS) $(C_OBJECTS) $(ADA_OBJECTS) $(HEADERS) $(LINKER_SCRIPT) $(THIS_MAKEFILE)
+	$(CC) -Wl,-M=$(RESULT).map -Wl,-T$(LINKER_SCRIPT) $(CFLAGS) $(addprefix $(OBJ_DIR)/, $(notdir $(ASM_OBJECTS))) $(addprefix $(OBJ_DIR)/, $(notdir $(ADA_OBJECTS))) $(addprefix $(OBJ_DIR)/, $(notdir $(C_OBJECTS))) -o $@
 
 $(ASM_OBJECTS): | $(OBJ_DIR)
 
@@ -374,6 +385,9 @@ $(OBJ_DIR):
 
 %.o: %.S $(HEADERS) $(THIS_MAKEFILE)
 	$(CC) $(CFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
+
+%.o: %.adb $(THIS_MAKEFILE) $()
+	$(ADA_COMPILER) $(ADAFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
 
 %.lst: %.elf
 	$(OBJDUMP) -x -S $(RESULT).elf > $@
