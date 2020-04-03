@@ -1,12 +1,9 @@
-with Ada_Socket; use Ada_Socket; 
-
 package Ada_Main is
    
-    function Ada_Open_Socket (S_Type: Sock_Type; protocol: Sock_Protocol)
-    return Socket
+    procedure HTTP_Client_Test
       with
         Export => True,
         Convention => C,
-        External_Name => "ada_open_socket";
+        External_Name => "http_client_test";
 
 end Ada_Main;
