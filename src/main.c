@@ -81,6 +81,8 @@ SlaacSettings slaacSettings;
 SlaacContext slaacContext;
 FtpClientContext ftpClientContext;
 
+extern void http_client_test(void);
+
 
 /**
  * @brief Set cursor location
@@ -360,7 +362,7 @@ void userTask(void *param)
       //User button pressed?
       if(BSP_PB_GetState(BUTTON_WAKEUP))
       {
-         HttpClientTest("httpbin.org", "/anything");
+         http_client_test(); //"httpbin.org", "/anything");
 
          //Wait for the user button to be released
          while(BSP_PB_GetState(BUTTON_WAKEUP));

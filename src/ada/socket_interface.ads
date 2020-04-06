@@ -153,9 +153,7 @@ is
     function Socket_Receive (
         Sock: Socket_Struct;
         Buf : out char_array)
-    return Integer
-    with 
-        Pre => Buf'Length > 0;
+    return Integer;
 
     procedure Socket_Shutdown (
         Sock: Socket_Struct);
