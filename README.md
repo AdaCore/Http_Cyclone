@@ -5,6 +5,12 @@ This HTTP Client is based on Oryx-Embedded Cyclone TCP library
 (https://oryx-embedded.com).
 It is made to compile on STM32F769I-dicovery plateform.
 
+Use project
+-----------
+
+Use `git clone --recursive <git_repo>` to collect all the sources
+needed.
+
 Compilation
 -----------
 
