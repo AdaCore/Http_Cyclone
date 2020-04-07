@@ -1,5 +1,4 @@
 with Interfaces.C; use Interfaces.C;
-with Net; use Net;
 -- with Compiler_Port; use Compiler_Port;
 with Tcp; use Tcp;
 with Error_H; use Error_H;
@@ -26,7 +25,7 @@ package Socket_Binding is
 
    type OsEvent is
       record
-         handle: access TcpQueueItem;
+         handle: System.Address;
       end record
      with Convention => C;
    
@@ -35,7 +34,7 @@ package Socket_Binding is
          S_Descriptor: Sock_Descriptor;
          S_Type: Sock_Type;
          S_Protocol: Sock_Protocol;
-         S_NetInterface: access Net_Interface;
+         S_NetInterface: System.Address;
          S_localIpAddr: IpAddr;
          S_Local_Port: Sock_Port;
          S_remoteIpAddr: IpAddr;
@@ -47,7 +46,7 @@ package Socket_Binding is
          S_event: OsEvent;
          S_Event_Mask: unsigned;
          S_Event_Flags: unsigned;
-         userEvent: access OsEvent;
+         userEvent: System.Address;
          
          -- TCP specific variables
          State: Tcp_State;
@@ -91,7 +90,7 @@ package Socket_Binding is
          rxBuffer: Tcp_Rx_Buffer;
          rxBufferSize: unsigned_long;
          
-         retransmitQueue: access TcpQueueItem;
+         retransmitQueue: System.Address;
          retransmitTimer: Tcp_Timer;
          retransmitCount: unsigned;
          

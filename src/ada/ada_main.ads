@@ -1,4 +1,6 @@
-package Ada_Main is
+package Ada_Main 
+with SPARK_Mode
+is
    
     procedure HTTP_Client_Test
       with

@@ -130,16 +130,25 @@ is
 
     procedure Get_Host_By_Name (
         Server_Name    : char_array; 
-        Server_Ip_Addr : out IpAddr);
+        Server_Ip_Addr : out IpAddr)
+    with 
+        Post => Server_Ip_Addr.length > 0;
 
     procedure Socket_Open (
         Sock: in out Socket_Struct;
         S_Type:     Socket_Type; 
-        S_Protocol: Socket_Protocol);
+        S_Protocol: Socket_Protocol)
+    with
+        Post => Sock.S_Descriptor > 0
+            and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
+            and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol);
 
     procedure Socket_Set_Timeout (
         sock:    Socket_Struct; 
-        timeout: Systime);
+        timeout: Systime)
+    with
+        Pre => Sock.S_Descriptor > 0,
+        Post => Sock.S_Timeout = timeout;
     
     procedure Socket_Connect (
         Sock :           Socket_Struct;
@@ -150,10 +159,10 @@ is
         Sock: Socket_Struct;
         Data : char_array);
 
-    function Socket_Receive (
+    procedure Socket_Receive (
         Sock: Socket_Struct;
-        Buf : out char_array)
-    return Integer;
+        Buf : out char_array;
+        End_Received : out Boolean);
 
     procedure Socket_Shutdown (
         Sock: Socket_Struct);

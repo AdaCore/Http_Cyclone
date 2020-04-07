@@ -1,16 +1,19 @@
 with System;
+with Error_H; use Error_H;
 
-package body Socket_interface is
-
+package body Socket_interface 
+with SPARK_Mode
+is
 
     procedure Get_Host_By_Name (
         Server_Name    : char_array; 
         Server_Ip_Addr : out IpAddr)
     is
-        Ret : unsigned;
         Null_pointer : System.Address;
     begin
-        Ret := getHostByName(Null_pointer, (Server_Name), Server_Ip_Addr, 0);
+        if getHostByName(Null_pointer, (Server_Name), Server_Ip_Addr, 0) /= 0 then
+            raise Socket_error;
+        end if;
     end;
 
 
@@ -20,7 +23,7 @@ package body Socket_interface is
         S_Protocol: Socket_Protocol)
     is 
     begin
-        Sock := socketOpen(1, 6);
+        Sock := socketOpen(Socket_Type'Enum_Rep(S_Type), Socket_Protocol'Enum_Rep(S_Protocol));
     end Socket_Open;
     
 
@@ -28,9 +31,10 @@ package body Socket_interface is
         sock : Socket_Struct;
         timeout : Systime)
     is 
-        Ret : unsigned;
     begin
-        Ret := socketSetTimeout(Sock, timeout);
+        if socketSetTimeout(Sock, timeout) /= 0 then
+            raise Socket_error;
+        end if;
     end Socket_Set_Timeout;
 
     procedure Socket_Connect (
@@ -38,36 +42,44 @@ package body Socket_interface is
         Remote_Ip_Addr : IpAddr;
         Remote_Port   :  Sock_Port)
     is 
-        Ret : unsigned;
     begin
-        Ret := socketConnect (Sock, Remote_Ip_Addr, Remote_Port);
+        if socketConnect (Sock, Remote_Ip_Addr, Remote_Port) /= 0 then
+            raise Socket_error;
+        end if;
     end Socket_Connect;
 
     procedure Socket_Send (
         Sock: Socket_Struct;
         Data: char_array)
     is
-        Ret, Written : unsigned;
+        Written : unsigned;
     begin
-        Ret := socketSend(Sock, Data, Data'Length, Written, 0);
+        if socketSend(Sock, Data, Data'Length, Written, 0) /= 0 then
+            raise Socket_error;
+        end if;
     end Socket_Send;
 
-    function Socket_Receive(
+    procedure Socket_Receive(
         Sock: Socket_Struct;
-        Buf: out char_array)
-    return Integer
+        Buf: out char_array;
+        End_Received : out Boolean)
     is
-        Ret, Received : unsigned;
+        Received, Ret : unsigned;
     begin
-        return Integer(socketReceive(Sock, Buf, Buf'Length - 1, Received, 0));
+        Ret := socketReceive(Sock, Buf, Buf'Length - 1, Received, 0);
+        End_Received := Ret = ERROR_END_OF_STREAM;
+        if Ret /= 0 and then Ret /= ERROR_END_OF_STREAM then
+            raise Socket_error;
+        end if;
     end Socket_Receive;
 
     procedure Socket_Shutdown (
         Sock: Socket_Struct)
     is
-        Ret : unsigned;
     begin
-        Ret := socketShutdown(Sock, 2);
+        if socketShutdown(Sock, 2) /= 0 then
+            raise Socket_error;
+        end if;
     end Socket_Shutdown;
 
     procedure Socket_Close (Sock : Socket_Struct)
