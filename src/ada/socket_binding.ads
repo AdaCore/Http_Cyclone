@@ -118,7 +118,7 @@ package Socket_Binding is
    -- 
 
    function getHostByName(Net_Interface : System.Address; Server_Name : char_array; Serveur_Ip_Addr: out IpAddr; Flags : unsigned)
-   return Error_T
+   return unsigned
      with
       Import => True,
       Convention => C,
@@ -130,35 +130,35 @@ package Socket_Binding is
        Convention => C,
        External_Name => "socketOpen";
 
-   function socketSetTimeout (sock: Socket_Struct; timeout: Systime) return Error_T
+   function socketSetTimeout (sock: Socket_Struct; timeout: Systime) return unsigned
     with
       Import => True,
       Convention => C,
       External_Name => "socketSetTimeout";
    
    function socketConnect (sock: Socket_Struct; remoteIpAddr: IpAddr; remotePort: Sock_Port)
-   return Error_T
+   return unsigned
    with
       Import => True,
       Convention => C,
       External_Name => "socketConnect";
 
    function socketSend (sock: Socket_Struct; data: char_array; length: unsigned; written: out unsigned; flags: unsigned)
-   return Error_T
+   return unsigned
    with
       Import => True,
       Convention => C,
       External_Name => "socketSend";
 
    function socketReceive(sock: Socket_Struct; data: out char_array; size: unsigned; received: out unsigned; flags: unsigned)
-   return Error_T
+   return unsigned
    with
       Import => True,
       Convention => C,
       External_Name => "socketReceive";
 
    function socketShutdown (sock: Socket_Struct; how: unsigned)
-   return Error_T
+   return unsigned
    with
       Import => True,
       Convention => C,

@@ -1,6 +1,9 @@
+pragma Restrictions(No_Tasking);
+
 with Interfaces.C; use Interfaces.C;
 with Socket_Binding; use Socket_Binding;
 with Ip; use Ip;
+with Error_H; use Error_H;
 
 package Socket_Interface
 with Spark_Mode
@@ -130,7 +133,8 @@ is
 
     procedure Get_Host_By_Name (
         Server_Name    : char_array; 
-        Server_Ip_Addr : out IpAddr)
+        Server_Ip_Addr : out IpAddr;
+        Error : out Error_T)
     with 
         Post => Server_Ip_Addr.length > 0;
 
@@ -145,7 +149,8 @@ is
 
     procedure Socket_Set_Timeout (
         sock:    Socket_Struct; 
-        timeout: Systime)
+        timeout: Systime;
+        Error : out Error_T)
     with
         Pre => Sock.S_Descriptor > 0,
         Post => Sock.S_Timeout = timeout;
@@ -153,19 +158,22 @@ is
     procedure Socket_Connect (
         Sock :           Socket_Struct;
         Remote_Ip_Addr : IpAddr;
-        Remote_Port :    Sock_Port);
+        Remote_Port :    Sock_Port;
+        Error : out Error_T);
 
     procedure Socket_Send (
         Sock: Socket_Struct;
-        Data : char_array);
+        Data : char_array;
+        Error : out Error_T);
 
     procedure Socket_Receive (
         Sock: Socket_Struct;
         Buf : out char_array;
-        End_Received : out Boolean);
+        Error : out Error_T);
 
     procedure Socket_Shutdown (
-        Sock: Socket_Struct);
+        Sock: Socket_Struct;
+        Error : out Error_T);
 
     procedure Socket_Close (
         Sock: Socket_Struct);
