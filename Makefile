@@ -357,6 +357,8 @@ ADAFLAGS += -gnatA -gnatwa -gnatw_A -gnatQ -gnatw.X
 
 ADA_COMPILER = arm-eabi-gcc
 
+ADA_PROVER := gnatprove
+
 CROSS_COMPILE ?= arm-none-eabi-
 CC = $(CROSS_COMPILE)gcc
 LD = $(CROSS_COMPILE)ld
@@ -366,10 +368,13 @@ SIZE = $(CROSS_COMPILE)size
 
 THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 
+.PHONY: all
 all: build size
 
+.PHONY: install
 install: build size program
 
+.PHONY: build
 build: $(RESULT).elf $(RESULT).lst $(RESULT).bin $(RESULT).hex
 	
 $(RESULT).elf: $(ASM_OBJECTS) $(C_OBJECTS) $(ADA_OBJECTS) $(HEADERS) $(LINKER_SCRIPT) $(THIS_MAKEFILE)
@@ -400,12 +405,15 @@ $(OBJ_DIR):
 %.hex: %.elf
 	$(OBJCOPY) -O ihex $< $@
 
+.PHONY: size
 size: $(RESULT).elf
 	$(SIZE) $(RESULT).elf
 
+.PHONY: flash
 flash:
 	openocd -f board/stm32f7discovery.cfg -c "init; reset halt; flash write_image erase $(RESULT).bin 0x08000000; reset run; shutdown"
 
+.PHONY: clean
 clean:
 	rm -f $(RESULT).elf
 	rm -f $(RESULT).bin
@@ -413,3 +421,7 @@ clean:
 	rm -f $(RESULT).hex
 	rm -f $(RESULT).lst
 	rm -f $(OBJ_DIR)/*.o
+
+.PHONY: prove
+prove: prove.gpr $(wildcard ./src/ada/*.adb) $(wildcard ./src/ada/*.ads)
+	$(ADA_PROVER) -P $< -j0

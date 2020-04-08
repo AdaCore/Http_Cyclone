@@ -19,3 +19,8 @@ on the STM32 card.
 
 You can see the debug messages by opening a terminal on the card
 with `minicom -D /dev/ttyACM0`.
+
+Proof
+-----
+
+To prove the correctness of the SPARK code, use `make prove`.
