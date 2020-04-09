@@ -16,7 +16,7 @@ is
 
 
     procedure Socket_Open (
-        Sock: in out Socket_Struct;
+        Sock:   out Socket_Struct;
         S_Type:     Socket_Type; 
         S_Protocol: Socket_Protocol)
     is 
@@ -26,18 +26,18 @@ is
     
 
     procedure Socket_Set_Timeout (
-        sock : Socket_Struct;
-        timeout : Systime;
-        Error : out Error_T)
+        Sock :    in out Socket_Struct;
+        Timeout:  Systime;
+        Error :   out Error_T)
     is
     begin
-        Error := Error_T'Enum_Val(socketSetTimeout(Sock, timeout));
+        Error := Error_T'Enum_Val(socketSetTimeout(Sock, Timeout));
     end Socket_Set_Timeout;
 
     procedure Socket_Connect (
-        Sock:            Socket_Struct;
-        Remote_Ip_Addr : IpAddr;
-        Remote_Port   :  Sock_Port;
+        Sock: in out Socket_Struct;
+        Remote_Ip_Addr : in IpAddr;
+        Remote_Port : in Sock_Port;
         Error : out Error_T)
     is 
     begin
@@ -45,8 +45,8 @@ is
     end Socket_Connect;
 
     procedure Socket_Send (
-        Sock: Socket_Struct;
-        Data: char_array;
+        Sock: in Socket_Struct;
+        Data: in char_array;
         Error : out Error_T)
     is
         Written : unsigned;

@@ -135,47 +135,72 @@ is
         Server_Name    : char_array; 
         Server_Ip_Addr : out IpAddr;
         Error : out Error_T)
-    with 
-        Post => Server_Ip_Addr.length > 0;
+    with
+        Depends => (Server_Ip_Addr => Server_Name,
+                    Error => Server_Name),
+        Post => (Server_Ip_Addr.length > 0);
 
     procedure Socket_Open (
-        Sock: in out Socket_Struct;
+        Sock:   out Socket_Struct;
         S_Type:     Socket_Type; 
         S_Protocol: Socket_Protocol)
     with
+        Depends => (Sock => (S_Type, S_Protocol)),
         Post => Sock.S_Descriptor > 0
             and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
-            and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol);
+            and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
+            and then Sock.S_remoteIpAddr.length = 0;
 
     procedure Socket_Set_Timeout (
-        sock:    Socket_Struct; 
-        timeout: Systime;
-        Error : out Error_T)
+        Sock:    in out Socket_Struct; 
+        Timeout: Systime;
+        Error :  out Error_T)
     with
+        Depends => (Sock => (Timeout, Sock),
+                    Error => Timeout),
         Pre => Sock.S_Descriptor > 0,
-        Post => Sock.S_Timeout = timeout;
+        Post => Sock.all = Sock.all'Old'Update(S_Timeout => timeout);
     
     procedure Socket_Connect (
-        Sock :           Socket_Struct;
-        Remote_Ip_Addr : IpAddr;
-        Remote_Port :    Sock_Port;
-        Error : out Error_T);
+        Sock : in out Socket_Struct;
+        Remote_Ip_Addr : in  IpAddr;
+        Remote_Port : in Sock_Port;
+        Error : out Error_T)
+    with
+        Depends => (Sock => (Sock, Remote_Ip_Addr, Remote_Port),
+                    Error => (Remote_Ip_Addr, Remote_Port)),
+        Pre => Sock.S_Descriptor > 0
+                and then Remote_Ip_Addr.length > 0,
+        Post => Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr);
 
     procedure Socket_Send (
-        Sock: Socket_Struct;
-        Data : char_array;
-        Error : out Error_T);
+        Sock: in Socket_Struct;
+        Data : in char_array;
+        Error : out Error_T)
+    with
+        Depends => (Error => (Sock, Data)), 
+        Pre => Sock.S_remoteIpAddr.length > 0,
+        Post => Sock.all = Sock.all'Old;
 
     procedure Socket_Receive (
-        Sock: Socket_Struct;
+        Sock: in Socket_Struct;
         Buf : out char_array;
-        Error : out Error_T);
+        Error : out Error_T)
+    with
+        Depends => (Buf => Sock, 
+                    Error => Sock),
+        Pre => Sock.S_remoteIpAddr.length > 0,
+        Post => Sock.all = Sock.all'Old;
 
     procedure Socket_Shutdown (
         Sock: Socket_Struct;
-        Error : out Error_T);
+        Error : out Error_T)
+    with
+        Depends => (Error => Sock),
+        Pre => Sock.S_remoteIpAddr.length > 0;
 
-    procedure Socket_Close (
-        Sock: Socket_Struct);
+    procedure Socket_Close (Sock: Socket_Struct)
+    with
+        Post => Sock = null;
 
 end Socket_Interface;
