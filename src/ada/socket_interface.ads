@@ -138,7 +138,9 @@ is
     with
         Depends => (Server_Ip_Addr => Server_Name,
                     Error => Server_Name),
-        Post => (Server_Ip_Addr.length > 0);
+        Post => 
+            (if Error = NO_ERROR then 
+                Server_Ip_Addr.length > 0);
 
     procedure Socket_Open (
         Sock:   out Socket_Struct;
@@ -146,7 +148,8 @@ is
         S_Protocol: Socket_Protocol)
     with
         Depends => (Sock => (S_Type, S_Protocol)),
-        Post => Sock.S_Descriptor > 0
+        Post => Sock /= null
+            and then Sock.S_Descriptor > 0
             and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
             and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
             and then Sock.S_remoteIpAddr.length = 0;
@@ -159,7 +162,9 @@ is
         Depends => (Sock => (Timeout, Sock),
                     Error => Timeout),
         Pre => Sock.S_Descriptor > 0,
-        Post => Sock.all = Sock.all'Old'Update(S_Timeout => timeout);
+        Contract_Cases => (Error = NO_ERROR => 
+                                Sock.all = Sock.all'Old'Update(S_Timeout => timeout),
+                           others => Sock.S_Descriptor = 0);
     
     procedure Socket_Connect (
         Sock : in out Socket_Struct;
@@ -171,7 +176,10 @@ is
                     Error => (Remote_Ip_Addr, Remote_Port)),
         Pre => Sock.S_Descriptor > 0
                 and then Remote_Ip_Addr.length > 0,
-        Post => Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr);
+        Contract_Cases => (
+            Error = NO_ERROR => Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr),
+            others => True
+        );
 
     procedure Socket_Send (
         Sock: in Socket_Struct;
@@ -180,7 +188,10 @@ is
     with
         Depends => (Error => (Sock, Data)), 
         Pre => Sock.S_remoteIpAddr.length > 0,
-        Post => Sock.all = Sock.all'Old;
+        Contract_Cases => (
+            Error = NO_ERROR => Sock.all = Sock.all'Old,
+            others => True
+        );
 
     procedure Socket_Receive (
         Sock: in Socket_Struct;
@@ -190,14 +201,22 @@ is
         Depends => (Buf => Sock, 
                     Error => Sock),
         Pre => Sock.S_remoteIpAddr.length > 0,
-        Post => Sock.all = Sock.all'Old;
+        Contract_Cases => (
+            Error = NO_ERROR => Sock.all = Sock.all'Old and then Buf'Length > 0,
+            Error = ERROR_END_OF_STREAM => Sock.all = Sock.all'Old and then Buf'Length = 0,
+            others => Buf'Length = 0
+        );
 
     procedure Socket_Shutdown (
         Sock: Socket_Struct;
         Error : out Error_T)
     with
         Depends => (Error => Sock),
-        Pre => Sock.S_remoteIpAddr.length > 0;
+        Pre => Sock.S_remoteIpAddr.length > 0,
+        Contract_Cases => (
+            Error = NO_ERROR => Sock.all = Sock.all'Old,
+            others => True
+        );
 
     procedure Socket_Close (Sock: Socket_Struct)
     with
