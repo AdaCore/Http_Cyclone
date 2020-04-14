@@ -9,9 +9,8 @@ is
         Server_Ip_Addr : out IpAddr;
         Error : out Error_T)
     is
-        Null_pointer : System.Address;
     begin
-        Error := Error_T'Enum_Val(getHostByName(Null_pointer, (Server_Name), Server_Ip_Addr, 0));
+        Error := Error_T'Enum_Val(getHostByName(System.Null_Address, (Server_Name), Server_Ip_Addr, 0));
     end;
 
 
@@ -73,7 +72,7 @@ is
         Error := Error_T'Enum_Val(socketShutdown(Sock, 2));
     end Socket_Shutdown;
 
-    procedure Socket_Close (Sock : Socket_Struct)
+    procedure Socket_Close (Sock : in out Socket_Struct)
     is
     begin
         socketClose (Sock);

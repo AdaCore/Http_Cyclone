@@ -13,7 +13,6 @@ is
         ServerAddr : IpAddr;
         Request : constant char_array := "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
         Buf : char_array (1 .. 128);
-        Ret : Integer;
         Error : Error_T;
     begin
         Get_Host_By_Name("httpbin.org", ServerAddr, Error);

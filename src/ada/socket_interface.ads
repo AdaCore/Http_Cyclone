@@ -9,95 +9,11 @@ package Socket_Interface
 with Spark_Mode
 is
 
+    pragma Unevaluated_Use_Of_Old (Allow);
+
     Socket_error : exception;
 
     type Port is range 0 .. 2 ** 16;
-
---    type Socket is 
---       record
---          S_Descriptor: Sock_Descriptor;
---          S_Type: Sock_Type;
---          S_Protocol: Sock_Protocol;
---          S_NetInterface: access Net_Interface;
---          S_localIpAddr: IpAddr;
---          S_Local_Port: Sock_Port;
---          S_remoteIpAddr: IpAddr;
---          S_Remote_Port: Sock_Port;
---          S_Timeout: Compiler_Port.Systime;
---          S_TTL: unsigned_char;
---          S_Multicast_TTL: unsigned_char;
---          S_errnoCode: int;
---          S_event: OsEvent;
---          S_Event_Mask: unsigned;
---          S_Event_Flags: unsigned;
---          userEvent: access OsEvent;
-         
---          -- TCP specific variables
---          State: Tcp_State;
---          owned_Flag: Bool;
---          closed_Flag: Bool;
---          reset_Flag: Bool;
-         
---          smss: unsigned_short;
---          rmss: unsigned_short;
---          iss: unsigned_long;
---          irs: unsigned_long;
-         
---          sndUna: unsigned_long;
---          sndNxt: unsigned_long;
---          sndUser: unsigned_short;
---          sndWnd: unsigned_short;
---          maxSndWnd: unsigned_short;
---          sndWl1: unsigned_long;
---          sndWl2: unsigned_long;
-         
---          rcvNxt: unsigned_long;
---          rcvUser: unsigned_short;
---          rcvWnd: unsigned_short;
-         
---          rttBusy: Bool;
---          rttSeqNum: unsigned_long;
---          rettStartTime: Systime;
---          srtt: Systime;
---          rttvar: Systime;
---          rto: Systime;
-         
---          congestState: TCP_Congest_State;
---          cwnd: unsigned_short;
---          ssthresh: unsigned_short;
---          dupAckCount: unsigned;
---          n: unsigned;
---          recover: unsigned_long;
-         
---          txBuffer: Tcp_Tx_Buffer;
---          txBufferSize: unsigned_long;
---          rxBuffer: Tcp_Rx_Buffer;
---          rxBufferSize: unsigned_long;
-         
---          retransmitQueue: access TcpQueueItem;
---          retransmitTimer: Tcp_Timer;
---          retransmitCount: unsigned;
-         
---          -- TODO: Not good type. Just used to denote a pointer
---          synQueue: access TcpQueueItem;
---          synQueueSize: unsigned;
-         
---          wndProbeCount: unsigned;
---          wndProbeInterval: Systime;
-         
---          persistTimer: Tcp_Timer;
---          overrideTimer: Tcp_Timer;
---          finWait2Timer: Tcp_Timer;
---          timeWaitTimer: Tcp_Timer;
-         
---          sackPermitted: Bool;
---          sackBlock: SackBlockArray;
---          sackBlockCount: unsigned;
-         
---          -- TODO: should be socketQueueItem here
---          receiveQueue: access TcpQueueItem;
-         
---       end record;
 
     type Socket_Type is (
         SOCKET_TYPE_UNUSED,
@@ -161,10 +77,11 @@ is
     with
         Depends => (Sock => (Timeout, Sock),
                     Error => Timeout),
-        Pre => Sock.S_Descriptor > 0,
+        Pre => Sock /= null and then Sock.S_Descriptor > 0,
         Contract_Cases => (Error = NO_ERROR => 
+                                Sock /= null and then
                                 Sock.all = Sock.all'Old'Update(S_Timeout => timeout),
-                           others => Sock.S_Descriptor = 0);
+                           others => True);
     
     procedure Socket_Connect (
         Sock : in out Socket_Struct;
@@ -174,10 +91,13 @@ is
     with
         Depends => (Sock => (Sock, Remote_Ip_Addr, Remote_Port),
                     Error => (Remote_Ip_Addr, Remote_Port)),
-        Pre => Sock.S_Descriptor > 0
+        Pre => Sock /= null
+                and then Sock.S_Descriptor > 0
                 and then Remote_Ip_Addr.length > 0,
         Contract_Cases => (
-            Error = NO_ERROR => Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr),
+            Error = NO_ERROR =>
+                Sock /= null and then 
+                Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr),
             others => True
         );
 
@@ -187,9 +107,10 @@ is
         Error : out Error_T)
     with
         Depends => (Error => (Sock, Data)), 
-        Pre => Sock.S_remoteIpAddr.length > 0,
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
-            Error = NO_ERROR => Sock.all = Sock.all'Old,
+            Error = NO_ERROR => 
+                Sock.all = Sock.all'Old,
             others => True
         );
 
@@ -200,7 +121,7 @@ is
     with
         Depends => (Buf => Sock, 
                     Error => Sock),
-        Pre => Sock.S_remoteIpAddr.length > 0,
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR => Sock.all = Sock.all'Old and then Buf'Length > 0,
             Error = ERROR_END_OF_STREAM => Sock.all = Sock.all'Old and then Buf'Length = 0,
@@ -212,14 +133,15 @@ is
         Error : out Error_T)
     with
         Depends => (Error => Sock),
-        Pre => Sock.S_remoteIpAddr.length > 0,
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR => Sock.all = Sock.all'Old,
             others => True
         );
 
-    procedure Socket_Close (Sock: Socket_Struct)
+    procedure Socket_Close (Sock: in out Socket_Struct)
     with
+        Pre => Sock /= null,
         Post => Sock = null;
 
 end Socket_Interface;
