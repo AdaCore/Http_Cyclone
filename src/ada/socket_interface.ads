@@ -14,6 +14,7 @@ is
     Socket_error : exception;
 
     type Port is range 0 .. 2 ** 16;
+    type Buffer_Size is new Positive;
 
     type Socket_Type is (
         SOCKET_TYPE_UNUSED,
@@ -47,13 +48,36 @@ is
         SOCKET_IP_PROTO_ICMPV6 => 58
     );
 
+    type Host_Resolver is (
+        HOST_NAME_RESOLVER_ANY,
+        HOST_NAME_RESOLVER_DNS,
+        HOST_NAME_RESOLVER_MDNS,
+        HOST_NAME_RESOLVER_NBNS,
+        HOST_NAME_RESOLVER_LLMNR,
+        HOST_TYPE_IPV4,
+        HOST_TYPE_IPV6
+    );
+
+    for Host_Resolver use (
+        HOST_NAME_RESOLVER_ANY   => 0,
+        HOST_NAME_RESOLVER_DNS   => 1,
+        HOST_NAME_RESOLVER_MDNS  => 2,
+        HOST_NAME_RESOLVER_NBNS  => 4,
+        HOST_NAME_RESOLVER_LLMNR => 8,
+        HOST_TYPE_IPV4           => 16,
+        HOST_TYPE_IPV6           => 32
+    );
+
+    type Host_Resolver_Flags is array(Positive range <>) of Host_Resolver;
+
     procedure Get_Host_By_Name (
         Server_Name    : char_array; 
         Server_Ip_Addr : out IpAddr;
+        Flags : Host_Resolver_Flags;
         Error : out Error_T)
     with
-        Depends => (Server_Ip_Addr => Server_Name,
-                    Error => Server_Name),
+        Depends => (Server_Ip_Addr => (Server_Name, Flags),
+                    Error => (Server_Name, Flags)),
         Post => 
             (if Error = NO_ERROR then 
                 Server_Ip_Addr.length > 0);
@@ -65,7 +89,7 @@ is
     with
         Depends => (Sock => (S_Type, S_Protocol)),
         Post => Sock /= null
-            and then Sock.S_Descriptor > 0
+            and then Sock.S_Descriptor >= 0
             and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
             and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
             and then Sock.S_remoteIpAddr.length = 0;
@@ -77,7 +101,7 @@ is
     with
         Depends => (Sock => (Timeout, Sock),
                     Error => Timeout),
-        Pre => Sock /= null and then Sock.S_Descriptor > 0,
+        Pre => Sock /= null,
         Contract_Cases => (Error = NO_ERROR => 
                                 Sock /= null and then
                                 Sock.all = Sock.all'Old'Update(S_Timeout => timeout),
@@ -92,7 +116,6 @@ is
         Depends => (Sock => (Sock, Remote_Ip_Addr, Remote_Port),
                     Error => (Remote_Ip_Addr, Remote_Port)),
         Pre => Sock /= null
-                and then Sock.S_Descriptor > 0
                 and then Remote_Ip_Addr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR =>
@@ -129,7 +152,7 @@ is
         );
 
     procedure Socket_Shutdown (
-        Sock: Socket_Struct;
+        Sock  :     Socket_Struct;
         Error : out Error_T)
     with
         Depends => (Error => Sock),
@@ -143,5 +166,43 @@ is
     with
         Pre => Sock /= null,
         Post => Sock = null;
+
+    procedure Socket_Set_Tx_Buffer_Size (
+        Sock : in out Socket_Struct;
+        Size :        Buffer_Size;
+        Error:    out Error_T)
+    with
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length = 0,
+        Contract_Cases => (
+            Error = NO_ERROR => 
+                Sock.all = Sock.all'Old'Update(txBufferSize => unsigned_long(Size)),
+            others => Sock.all = Sock'Old.all
+        );
+
+    procedure Socket_Set_Rx_Buffer_Size (
+        Sock : in out Socket_Struct;
+        Size :        Buffer_Size;
+        Error:    out Error_T)
+    with
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length = 0,
+        Contract_Cases => (
+            Error = NO_ERROR => 
+                Sock.all = Sock.all'Old'Update(rxBufferSize => unsigned_long(Size)),
+            others => Sock.all = Sock'Old.all
+        );
+
+    procedure Socket_Bind (
+        Sock          : in out Socket_Struct;
+        Local_Ip_Addr :        IpAddr;
+        Local_Port    :        Sock_Port;
+        Error         :    out Error_T
+    )
+    with
+        Pre => Sock /= null
+               and then Sock.S_remoteIpAddr.length = 0
+               and then Sock.S_localIpAddr.length = 0,
+        Contract_Cases => (
+            Error = NO_ERROR => Sock.all = Sock'Old.all'Update(S_localeIpAddr => )
+        )
 
 end Socket_Interface;

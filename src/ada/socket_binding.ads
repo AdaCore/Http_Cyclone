@@ -170,6 +170,40 @@ package Socket_Binding is
       Convention => C,
       External_Name => "socketClose";
 
+   function socketSetTxBufferSize (sock: Socket_Struct; size: unsigned_long)
+   return unsigned
+   with
+      Import => True,
+      Convention => C,
+      External_Name => "socketSetTxBufferSize";
+
+   function socketSetRxBufferSize (sock: Socket_Struct; size: unsigned_long)
+   return unsigned
+   with
+      Import => True,
+      Convention => C,
+      External_Name => "socketSetRxBufferSize";
+
+   function socketBind (sock: Socket_Struct; localIpAddr: System.Address; localPort: Sock_Port)
+   return unsigned
+   with
+      Import => True,
+      Convention => C,
+      External_Name => "socketBind";
+
+   function socketListen (sock: Socket_Struct; backlog: unsigned)
+   return unsigned
+   with
+      Import => True,
+      Convention => C,
+      External_Name => "socketListen";
+
+   function socketAccept (sock: Socket_Struct; clientIpAddr: out System.Address; clientPort: out System.Address)
+   return Socket_Struct
+   with
+      Import => True,
+      Convention => C,
+      External_Name => "socketAccept";
 
    
 end Socket_Binding;

@@ -7,10 +7,15 @@ is
     procedure Get_Host_By_Name (
         Server_Name    : char_array; 
         Server_Ip_Addr : out IpAddr;
+        Flags : Host_Resolver_Flags;
         Error : out Error_T)
     is
+        F : Natural := 0;
     begin
-        Error := Error_T'Enum_Val(getHostByName(System.Null_Address, (Server_Name), Server_Ip_Addr, 0));
+        for I in Flags'Range loop
+            F := F + Host_Resolver'Enum_Rep(Flags(I));
+        end loop;
+        Error := Error_T'Enum_Val(getHostByName(System.Null_Address, (Server_Name), Server_Ip_Addr, unsigned(F)));
     end;
 
 
@@ -77,6 +82,24 @@ is
     begin
         socketClose (Sock);
     end Socket_Close;
+
+    procedure Socket_Set_Tx_Buffer_Size (
+        Sock : in out Socket_Struct;
+        Size :        Buffer_Size;
+        Error:    out Error_T)
+    is
+    begin
+        Error := Error_T'Enum_Val(socketSetTxBufferSize(Sock, unsigned_long(Size)));
+    end Socket_Set_Tx_Buffer_Size;
+
+    procedure Socket_Set_Rx_Buffer_Size (
+        Sock : in out Socket_Struct;
+        Size :        Buffer_Size;
+        Error:    out Error_T)
+    is
+    begin
+        Error := Error_T'Enum_Val(socketSetRxBufferSize(Sock, unsigned_long(Size)));
+    end Socket_Set_Rx_Buffer_Size;
 
 
 end Socket_interface;

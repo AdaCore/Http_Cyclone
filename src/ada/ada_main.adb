@@ -14,8 +14,10 @@ is
         Request : constant char_array := "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
         Buf : char_array (1 .. 128);
         Error : Error_T;
+        Host_Flags : Host_Resolver_Flags(1 .. 1);
     begin
-        Get_Host_By_Name("httpbin.org", ServerAddr, Error);
+        Host_Flags(1) := HOST_NAME_RESOLVER_ANY;
+        Get_Host_By_Name("httpbin.org", ServerAddr, Host_Flags, Error);
         if Error /= NO_ERROR then
             return;
         end if;
