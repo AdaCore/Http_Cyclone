@@ -23,14 +23,12 @@ package Socket_Binding is
    subtype Index is unsigned range 0 .. MAX_BYTES;
    type Block8 is array (Index range <>) of uint8;
 
-   type OsEvent is
-      record
+   type OsEvent is record
          handle: System.Address;
       end record
      with Convention => C;
    
-   type Socket is 
-      record
+   type Socket is record
          S_Descriptor: Sock_Descriptor;
          S_Type: Sock_Type;
          S_Protocol: Sock_Protocol;
@@ -124,8 +122,8 @@ package Socket_Binding is
       Convention => C,
       External_Name => "getHostByName";
 
-   function socketOpen (S_Type: Sock_Type; protocol: Sock_Protocol) return Socket_Struct
-     with
+   function socketOpen (S_Type: Sock_Type; protocol: Sock_Protocol) return Socket_Struct 
+   with
        Import => True,
        Convention => C,
        External_Name => "socketOpen";
@@ -198,7 +196,7 @@ package Socket_Binding is
       Convention => C,
       External_Name => "socketListen";
 
-   function socketAccept (sock: Socket_Struct; clientIpAddr: out System.Address; clientPort: out System.Address)
+   function socketAccept (sock: Socket_Struct; clientIpAddr: out IpAddr; clientPort: out Sock_Port)
    return Socket_Struct
    with
       Import => True,

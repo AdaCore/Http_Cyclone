@@ -172,11 +172,15 @@ is
         Size :        Buffer_Size;
         Error:    out Error_T)
     with
-        Pre => Sock /= null and then Sock.S_remoteIpAddr.length = 0,
+        Depends => (
+            Sock => (Size, Sock),
+            Error => (Size, Sock)
+        ),
+        Pre => (Sock /= null and then Sock.S_remoteIpAddr.length = 0),
         Contract_Cases => (
             Error = NO_ERROR => 
                 Sock.all = Sock.all'Old'Update(txBufferSize => unsigned_long(Size)),
-            others => Sock.all = Sock'Old.all
+            others => Sock.all = Sock.all'Old
         );
 
     procedure Socket_Set_Rx_Buffer_Size (
@@ -184,25 +188,55 @@ is
         Size :        Buffer_Size;
         Error:    out Error_T)
     with
+        Depends => (
+            Sock => (Size, Sock),
+            Error => (Size, Sock)
+        ),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length = 0,
         Contract_Cases => (
             Error = NO_ERROR => 
                 Sock.all = Sock.all'Old'Update(rxBufferSize => unsigned_long(Size)),
-            others => Sock.all = Sock'Old.all
+            others => Sock.all = Sock.all'Old
         );
 
     procedure Socket_Bind (
         Sock          : in out Socket_Struct;
         Local_Ip_Addr :        IpAddr;
         Local_Port    :        Sock_Port;
-        Error         :    out Error_T
-    )
+        Error         :    out Error_T)
     with
+        Depends => (
+            Sock => (Sock, Local_Ip_Addr, Local_Port),
+            Error => (Sock, Local_Ip_Addr, Local_Port)
+        ),
         Pre => Sock /= null
                and then Sock.S_remoteIpAddr.length = 0
-               and then Sock.S_localIpAddr.length = 0,
-        Contract_Cases => (
-            Error = NO_ERROR => Sock.all = Sock'Old.all'Update(S_localeIpAddr => )
-        )
+               and then Sock.S_localIpAddr.length = 0;
+
+    procedure Socket_Listen (
+        Sock   :     Socket_Struct;
+        Backlog:     Natural;
+        Error  : out Error_T)
+    with
+        Depends => (
+            Error => (Sock, Backlog)
+        ),
+        Pre => Sock /= null
+               and then Sock.S_localIpAddr.length > 0;
+    
+    procedure Socket_Accept (
+        Sock           :     Socket_Struct;
+        Client_Ip_Addr : out IpAddr;
+        Client_Port    : out Sock_Port;
+        Client_Socket  : out Socket_Struct)
+    with
+        Depends => (
+            Client_Ip_Addr => Sock,
+            Client_Port => Sock,
+            Client_Socket => Sock
+        ),
+        Pre => Sock /= null and then
+               Sock.S_localIpAddr.length > 0;
+        
 
 end Socket_Interface;

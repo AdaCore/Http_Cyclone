@@ -101,5 +101,34 @@ is
         Error := Error_T'Enum_Val(socketSetRxBufferSize(Sock, unsigned_long(Size)));
     end Socket_Set_Rx_Buffer_Size;
 
+    procedure Socket_Bind (
+        Sock          : in out Socket_Struct;
+        Local_Ip_Addr :        IpAddr;
+        Local_Port    :        Sock_Port;
+        Error         :    out Error_T) 
+    is 
+    begin
+        Error := Error_T'Enum_Val(socketBind(Sock, Local_Ip_Addr'Address, Local_Port));
+    end Socket_Bind;
+
+    procedure Socket_Listen (
+        Sock   :     Socket_Struct;
+        Backlog:     Natural;
+        Error  : out Error_T)
+    is
+    begin
+        Error := Error_T'Enum_Val(socketListen(Sock, unsigned(Backlog)));
+    end Socket_Listen;
+
+    procedure Socket_Accept (
+        Sock           :     Socket_Struct;
+        Client_Ip_Addr : out IpAddr;
+        Client_Port    : out Sock_Port;
+        Client_Socket  : out Socket_Struct)
+    is
+    begin
+        Client_Socket := socketAccept(Sock, Client_Ip_Addr, Client_Port0);
+    end Socket_Accept;
+
 
 end Socket_interface;
