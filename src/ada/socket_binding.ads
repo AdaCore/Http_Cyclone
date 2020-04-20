@@ -133,6 +133,18 @@ package Socket_Binding is
       Import => True,
       Convention => C,
       External_Name => "socketSetTimeout";
+
+   function socketSetTtl(sock: Socket_Struct; ttl: unsigned_char) return unsigned
+    with
+      Import => True,
+      Convention => C,
+      External_Name => "socketSetTtl";
+
+   function socketSetMulticastTtl(sock: Socket_Struct; ttl: unsigned_char) return unsigned
+    with
+      Import => True,
+      Convention => C,
+      External_Name => "socketSetMulticastTtl";
    
    function socketConnect (sock: Socket_Struct; remoteIpAddr: IpAddr; remotePort: Sock_Port)
    return unsigned

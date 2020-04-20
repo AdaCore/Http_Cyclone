@@ -5,16 +5,17 @@ with Socket_Binding; use Socket_Binding;
 with Ip; use Ip;
 with Error_H; use Error_H;
 
-package Socket_Interface
-with Spark_Mode
+package Socket_Interface 
+    with SPARK_MODE
 is
 
     pragma Unevaluated_Use_Of_Old (Allow);
 
     Socket_error : exception;
 
-    type Port is range 0 .. 2 ** 16;
+    type Port is range 0 .. (2 ** 16 - 1);
     type Buffer_Size is new Positive;
+    type Ttl_Type is mod 2 ** 8;
 
     type Socket_Type is (
         SOCKET_TYPE_UNUSED,
@@ -68,6 +69,18 @@ is
         HOST_TYPE_IPV6           => 32
     );
 
+    type Socket_Shutdown_Flags is (
+        SOCKET_SD_RECEIVE,
+        SOCKET_SD_SEND,
+        SOCKET_SD_BOTH
+    );
+
+    for Socket_Shutdown_Flags use (
+        SOCKET_SD_RECEIVE => 0,
+        SOCKET_SD_SEND    => 1,
+        SOCKET_SD_BOTH    => 2
+    );
+
     type Host_Resolver_Flags is array(Positive range <>) of Host_Resolver;
 
     procedure Get_Host_By_Name (
@@ -78,9 +91,10 @@ is
     with
         Depends => (Server_Ip_Addr => (Server_Name, Flags),
                     Error => (Server_Name, Flags)),
-        Post => 
-            (if Error = NO_ERROR then 
-                Server_Ip_Addr.length > 0);
+        Post => (
+            if Error = NO_ERROR then 
+                Server_Ip_Addr.length > 0
+        );
 
     procedure Socket_Open (
         Sock:   out Socket_Struct;
@@ -88,24 +102,42 @@ is
         S_Protocol: Socket_Protocol)
     with
         Depends => (Sock => (S_Type, S_Protocol)),
-        Post => Sock /= null
-            and then Sock.S_Descriptor >= 0
-            and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
-            and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
-            and then Sock.S_remoteIpAddr.length = 0;
+        Contract_Cases => (
+            Sock /= null => (
+                Sock.S_Descriptor >= 0
+                and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
+                and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
+                and then Sock.S_remoteIpAddr.length = 0),
+            others => True);
 
     procedure Socket_Set_Timeout (
         Sock:    in out Socket_Struct; 
-        Timeout: Systime;
-        Error :  out Error_T)
+        Timeout: Systime)
     with
-        Depends => (Sock => (Timeout, Sock),
-                    Error => Timeout),
+        Depends => (Sock => (Timeout, Sock)),
         Pre => Sock /= null,
-        Contract_Cases => (Error = NO_ERROR => 
-                                Sock /= null and then
-                                Sock.all = Sock.all'Old'Update(S_Timeout => timeout),
-                           others => True);
+        Post => Sock /= null and then
+                Sock.all = Sock.all'Old'Update(S_Timeout => timeout);
+
+    procedure Socket_Set_Ttl (
+        Sock : in out Socket_Struct;
+        Ttl  :        Ttl_Type
+    )
+    with
+        Depends => (Sock => (Ttl, Sock)),
+        Pre => Sock /= null,
+        Post => Sock /= null and then
+                Sock.all = Sock.all'Old'Update(S_TTL => unsigned_char(Ttl));
+
+    procedure Socket_Set_Multicast_Ttl (
+        Sock : in out Socket_Struct;
+        Ttl  :        Ttl_Type
+    )
+    with
+        Depends => (Sock => (Ttl, Sock)),
+        Pre => Sock /= null,
+        Post => Sock /= null and then
+                Sock.all = Sock.all'Old'Update(S_Multicast_TTL => unsigned_char(Ttl));
     
     procedure Socket_Connect (
         Sock : in out Socket_Struct;
@@ -153,10 +185,12 @@ is
 
     procedure Socket_Shutdown (
         Sock  :     Socket_Struct;
+        How   :     Socket_Shutdown_Flags;
         Error : out Error_T)
     with
-        Depends => (Error => Sock),
-        Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
+        Depends => (Error => (Sock, How)),
+        Pre => Sock /= null and then 
+               Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR => Sock.all = Sock.all'Old,
             others => True
@@ -169,49 +203,50 @@ is
 
     procedure Socket_Set_Tx_Buffer_Size (
         Sock : in out Socket_Struct;
-        Size :        Buffer_Size;
-        Error:    out Error_T)
+        Size :        Buffer_Size)
     with
         Depends => (
-            Sock => (Size, Sock),
-            Error => (Size, Sock)
+            Sock => (Size, Sock)
         ),
-        Pre => (Sock /= null and then Sock.S_remoteIpAddr.length = 0),
-        Contract_Cases => (
-            Error = NO_ERROR => 
-                Sock.all = Sock.all'Old'Update(txBufferSize => unsigned_long(Size)),
-            others => Sock.all = Sock.all'Old
-        );
+        Pre => Sock /= null 
+               and then Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM)
+               and then Sock.S_remoteIpAddr.length = 0 -- this condition is to represent that the connexion is closed
+               and then Size > 1 and then Size < 22880, -- TCP_MAX_TX_BUFFER_SIZE
+        Post => 
+            Sock.all = Sock.all'Old'Update(txBufferSize => unsigned_long(Size));
 
     procedure Socket_Set_Rx_Buffer_Size (
         Sock : in out Socket_Struct;
-        Size :        Buffer_Size;
-        Error:    out Error_T)
+        Size :        Buffer_Size)
     with
         Depends => (
-            Sock => (Size, Sock),
-            Error => (Size, Sock)
+            Sock => (Size, Sock)
         ),
-        Pre => Sock /= null and then Sock.S_remoteIpAddr.length = 0,
-        Contract_Cases => (
-            Error = NO_ERROR => 
-                Sock.all = Sock.all'Old'Update(rxBufferSize => unsigned_long(Size)),
-            others => Sock.all = Sock.all'Old
-        );
+        Pre => Sock /= null 
+               and then Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM)
+               and then Sock.S_remoteIpAddr.length = 0 -- this condition is to represent that the connexion is closed
+               and then Size > 1 and then Size < 22880, -- TCP_MAX_RX_BUFFER_SIZE
+        Post =>
+            Sock.all = Sock.all'Old'Update(rxBufferSize => unsigned_long(Size));
 
     procedure Socket_Bind (
         Sock          : in out Socket_Struct;
         Local_Ip_Addr :        IpAddr;
-        Local_Port    :        Sock_Port;
-        Error         :    out Error_T)
+        Local_Port    :        Sock_Port)
     with
         Depends => (
-            Sock => (Sock, Local_Ip_Addr, Local_Port),
-            Error => (Sock, Local_Ip_Addr, Local_Port)
+            Sock => (Sock, Local_Ip_Addr, Local_Port)
         ),
         Pre => Sock /= null
                and then Sock.S_remoteIpAddr.length = 0
-               and then Sock.S_localIpAddr.length = 0;
+               and then Sock.S_localIpAddr.length = 0
+               and then (Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM)
+                         or else Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM)),
+        Post =>
+            Sock.all = Sock.all'Old'Update(
+                    S_localIpAddr => Local_Ip_Addr,
+                    S_Local_Port => Local_Port
+                    );
 
     procedure Socket_Listen (
         Sock   :     Socket_Struct;
@@ -222,7 +257,10 @@ is
             Error => (Sock, Backlog)
         ),
         Pre => Sock /= null
-               and then Sock.S_localIpAddr.length > 0;
+               and then Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM)
+               and then Sock.S_localIpAddr.length > 0
+               and then Sock.S_remoteIpAddr.length = 0,
+        Post => Sock.all = Sock.all'Old;
     
     procedure Socket_Accept (
         Sock           :     Socket_Struct;
@@ -236,7 +274,20 @@ is
             Client_Socket => Sock
         ),
         Pre => Sock /= null and then
-               Sock.S_localIpAddr.length > 0;
+               Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) and then
+               Sock.S_localIpAddr.length > 0 and then
+               Sock.S_remoteIpAddr.length = 0,
+        Post => Sock.all = Sock.all'Old
+                and then Client_Ip_Addr.length > 0
+                and then Client_Port > 0
+                -- TODO: Maybe the socket can be null. Check
+                and then Client_Socket /= null
+                and then Client_Socket.S_Type = Sock.S_Type
+                and then Client_Socket.S_Protocol = Sock.S_Protocol
+                and then Client_Socket.S_Local_Port = Sock.S_Local_Port
+                and then Client_Socket.S_localIpAddr = Sock.S_localIpAddr
+                and then Client_Socket.S_remoteIpAddr = Client_Ip_Addr
+                and then Client_Socket.S_Remote_Port = Client_Port;
         
 
 end Socket_Interface;

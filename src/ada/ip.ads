@@ -10,5 +10,15 @@ package Ip is
       end record
      with Convention => C;
 
+   IP_ADDR_ANY : aliased constant IpAddr
+   with
+      Import => True,
+      Convention => C,
+      External_Name => "IP_ADDR_ANY";
+
+   IP_ADDR_UNSPECIFIED : aliased constant IpAddr
+      with Import => True, 
+         Convention => C, 
+         External_Name => "IP_ADDR_UNSPECIFIED";
 
 end Ip;

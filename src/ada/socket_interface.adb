@@ -1,6 +1,6 @@
 with System;
 
-package body Socket_interface 
+package body Socket_interface
 with SPARK_Mode => Off
 is
 
@@ -31,12 +31,32 @@ is
 
     procedure Socket_Set_Timeout (
         Sock :    in out Socket_Struct;
-        Timeout:  Systime;
-        Error :   out Error_T)
+        Timeout:  Systime)
     is
+        Ret : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketSetTimeout(Sock, Timeout));
+        Ret := socketSetTimeout(Sock, Timeout);
     end Socket_Set_Timeout;
+
+    procedure Socket_Set_Ttl (
+        Sock : in out Socket_Struct;
+        Ttl  :        Ttl_Type
+    )
+    is
+        Ret : unsigned;
+    begin
+        Ret := socketSetTtl(Sock, unsigned_char(Ttl));
+    end Socket_Set_Ttl;
+
+    procedure Socket_Set_Multicast_Ttl (
+        Sock : in out Socket_Struct;
+        Ttl  :        Ttl_Type
+    )
+    is
+        Ret : unsigned;
+    begin
+        Ret := socketSetMulticastTtl(Sock, unsigned_char(Ttl));
+    end Socket_Set_Multicast_Ttl;
 
     procedure Socket_Connect (
         Sock: in out Socket_Struct;
@@ -70,11 +90,12 @@ is
     end Socket_Receive;
 
     procedure Socket_Shutdown (
-        Sock: Socket_Struct;
+        Sock  :     Socket_Struct;
+        How   :     Socket_Shutdown_Flags;
         Error : out Error_T)
     is
     begin
-        Error := Error_T'Enum_Val(socketShutdown(Sock, 2));
+        Error := Error_T'Enum_Val(socketShutdown(Sock, Socket_Shutdown_Flags'Enum_Rep(How)));
     end Socket_Shutdown;
 
     procedure Socket_Close (Sock : in out Socket_Struct)
@@ -85,30 +106,30 @@ is
 
     procedure Socket_Set_Tx_Buffer_Size (
         Sock : in out Socket_Struct;
-        Size :        Buffer_Size;
-        Error:    out Error_T)
+        Size :        Buffer_Size)
     is
+        Ret : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketSetTxBufferSize(Sock, unsigned_long(Size)));
+        Ret := socketSetTxBufferSize(Sock, unsigned_long(Size));
     end Socket_Set_Tx_Buffer_Size;
 
     procedure Socket_Set_Rx_Buffer_Size (
         Sock : in out Socket_Struct;
-        Size :        Buffer_Size;
-        Error:    out Error_T)
+        Size :        Buffer_Size)
     is
+        Ret : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketSetRxBufferSize(Sock, unsigned_long(Size)));
+        Ret := socketSetRxBufferSize(Sock, unsigned_long(Size));
     end Socket_Set_Rx_Buffer_Size;
 
     procedure Socket_Bind (
         Sock          : in out Socket_Struct;
         Local_Ip_Addr :        IpAddr;
-        Local_Port    :        Sock_Port;
-        Error         :    out Error_T) 
-    is 
+        Local_Port    :        Sock_Port) 
+    is
+        Ret : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketBind(Sock, Local_Ip_Addr'Address, Local_Port));
+        Ret := socketBind(Sock, Local_Ip_Addr'Address, Local_Port);
     end Socket_Bind;
 
     procedure Socket_Listen (
@@ -127,7 +148,7 @@ is
         Client_Socket  : out Socket_Struct)
     is
     begin
-        Client_Socket := socketAccept(Sock, Client_Ip_Addr, Client_Port0);
+        Client_Socket := socketAccept(Sock, Client_Ip_Addr, Client_Port);
     end Socket_Accept;
 
 
