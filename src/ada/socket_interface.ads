@@ -102,13 +102,14 @@ is
         S_Protocol: Socket_Protocol)
     with
         Depends => (Sock => (S_Type, S_Protocol)),
-        Contract_Cases => (
-            Sock /= null => (
+        Post => 
+            (if Sock /= null then
                 Sock.S_Descriptor >= 0
                 and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
                 and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
-                and then Sock.S_remoteIpAddr.length = 0),
-            others => True);
+                and then Sock.S_remoteIpAddr.length = 0
+                and then Sock.S_localIpAddr.length = 0
+                and then Sock.S_remoteIpAddr.length = 0);
 
     procedure Socket_Set_Timeout (
         Sock:    in out Socket_Struct; 

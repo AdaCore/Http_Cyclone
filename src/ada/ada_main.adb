@@ -56,23 +56,23 @@ is
 
     procedure HTTP_Server_Test is
         Error : Error_T;
-        Sock_Server, Sock_Client : Socket_Struct;
+        Sock, Sock_Client : Socket_Struct;
         IPAddr_Client : IpAddr;
         Port_Client : Sock_Port;
     begin
-        Socket_Open(Sock_Server, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
-        if Sock_Server = null then
+        Socket_Open(Sock, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
+        if Sock = null then
             return;
         end if;
 
-        Socket_Bind(Sock_Server, IP_ADDR_ANY, 80);
+        Socket_Bind(Sock, IP_ADDR_ANY, 80);
 
-        Socket_Listen(Sock_Server, 0, Error);
+        Socket_Listen(Sock, 0, Error);
         if Error /= NO_ERROR then
             return;
         end if;
 
-        Socket_Accept(Sock_Server, IPAddr_Client, Port_Client, Sock_Client);
+        Socket_Accept(Sock, IPAddr_Client, Port_Client, Sock_Client);
 
 
     end HTTP_Server_Test;
