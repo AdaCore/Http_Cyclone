@@ -8,7 +8,6 @@ with Error_H; use Error_H;
 package Socket_Interface 
     with SPARK_MODE
 is
-
     pragma Unevaluated_Use_Of_Old (Allow);
 
     Socket_error : exception;
@@ -132,7 +131,7 @@ is
 
     procedure Socket_Set_Multicast_Ttl (
         Sock : in out Socket_Struct;
-        Ttl  :        Ttl_Type
+        Ttl  :        Ttl_Type;
     )
     with
         Depends => (Sock => (Ttl, Sock)),
@@ -243,11 +242,11 @@ is
                and then Sock.S_localIpAddr.length = 0
                and then (Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM)
                          or else Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM)),
-        Post =>
-            Sock.all = Sock.all'Old'Update(
+        Post => Sock /= null and then
+                Sock.all = Sock.all'Old'Update(
                     S_localIpAddr => Local_Ip_Addr,
                     S_Local_Port => Local_Port
-                    );
+                );
 
     procedure Socket_Listen (
         Sock   :     Socket_Struct;

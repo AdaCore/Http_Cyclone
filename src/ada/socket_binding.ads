@@ -45,7 +45,8 @@ package Socket_Binding is
          S_Event_Mask: unsigned;
          S_Event_Flags: unsigned;
          userEvent: System.Address;
-         
+
+#if TCP_SUPPORT = ENABLE then
          -- TCP specific variables
          State: Tcp_State;
          owned_Flag: Bool;
@@ -106,6 +107,7 @@ package Socket_Binding is
          sackPermitted: Bool;
          sackBlock: SackBlockArray;
          sackBlockCount: unsigned;
+#end if;
          
          receiveQueue: System.Address;
          
@@ -113,7 +115,6 @@ package Socket_Binding is
      with Convention => C;
 
    type Socket_Struct is access Socket;
-   -- 
 
    function getHostByName(Net_Interface : System.Address; Server_Name : char_array; Serveur_Ip_Addr: out IpAddr; Flags : unsigned)
    return unsigned

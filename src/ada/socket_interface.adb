@@ -16,7 +16,7 @@ is
             F := F + Host_Resolver'Enum_Rep(Flags(I));
         end loop;
         Error := Error_T'Enum_Val(getHostByName(System.Null_Address, (Server_Name), Server_Ip_Addr, unsigned(F)));
-    end;
+    end Get_Host_By_Name;
 
 
     procedure Socket_Open (

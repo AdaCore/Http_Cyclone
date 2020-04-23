@@ -10,13 +10,15 @@ package Ip is
       end record
      with Convention => C;
 
-   IP_ADDR_ANY : aliased constant IpAddr
+   subtype IpAddrAny is IpAddr with Predicate => IpAddrAny.length > 0;
+
+   IP_ADDR_ANY : aliased constant IpAddrAny
    with
       Import => True,
       Convention => C,
       External_Name => "IP_ADDR_ANY";
 
-   IP_ADDR_UNSPECIFIED : aliased constant IpAddr
+   IP_ADDR_UNSPECIFIED : aliased constant IpAddrAny
       with Import => True, 
          Convention => C, 
          External_Name => "IP_ADDR_UNSPECIFIED";

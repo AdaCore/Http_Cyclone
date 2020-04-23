@@ -4,10 +4,10 @@ with Ip; use Ip;
 with Interfaces.C; use Interfaces.C;
 with Error_H; use Error_H;
 
-package body Ada_Main 
+package body Ada_Main
 with SPARK_Mode
 is
-      
+
     procedure HTTP_Client_Test is
         Sock : Socket_Struct;
         ServerAddr : IpAddr;
@@ -33,7 +33,7 @@ is
             return;
         end if;
 
-        Socket_Send(Sock, Request, Error);
+        Socket_Send (Sock, Request, Error);
         if Error /= NO_ERROR then
             return;
         end if;
@@ -73,7 +73,6 @@ is
         end if;
 
         Socket_Accept(Sock, IPAddr_Client, Port_Client, Sock_Client);
-
 
     end HTTP_Server_Test;
 
