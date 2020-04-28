@@ -160,9 +160,11 @@ is
     procedure Socket_Send (
         Sock: in Socket;
         Data : in char_array;
+        Written : out Integer;
         Error : out Error_T)
     with
-        Depends => (Error => (Sock, Data)), 
+        Depends => (Error => (Sock, Data),
+                    Written => (Sock, Data)), 
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR => 

@@ -16,6 +16,7 @@ is
         Buf : char_array (1 .. 128);
         Error : Error_T;
         Host_Flags : Host_Resolver_Flags(1 .. 1);
+        Written : Integer;
     begin
         Host_Flags(1) := HOST_NAME_RESOLVER_ANY;
         Get_Host_By_Name("httpbin.org", ServerAddr, Host_Flags, Error);
@@ -34,7 +35,7 @@ is
             return;
         end if;
 
-        Socket_Send (Sock, Request, Error);
+        Socket_Send (Sock, Request, Written, Error);
         if Error /= NO_ERROR then
             return;
         end if;

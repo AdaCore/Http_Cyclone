@@ -40,12 +40,12 @@ package Socket_Binding is
    --    Convention => C,
    --    External_Name => "socketSetMulticastTtl";
    
-   function socketConnect (sock: Socket; remoteIpAddr: IpAddr; remotePort: Port)
-   return unsigned
-   with
-      Import => True,
-      Convention => C,
-      External_Name => "socketConnect";
+   -- function socketConnect (sock: Socket; remoteIpAddr: IpAddr; remotePort: Port)
+   -- return unsigned
+   -- with
+   --    Import => True,
+   --    Convention => C,
+   --    External_Name => "socketConnect";
 
    function socketSend (sock: Socket; data: char_array; length: unsigned; written: out unsigned; flags: unsigned)
    return unsigned
@@ -102,12 +102,12 @@ package Socket_Binding is
    --    Convention => C,
    --    External_Name => "socketListen";
 
-   function socketAccept (sock: Socket; clientIpAddr: out IpAddr; clientPort: out Port)
-   return Socket
-   with
-      Import => True,
-      Convention => C,
-      External_Name => "socketAccept";
+   -- function socketAccept (sock: Socket; clientIpAddr: out IpAddr; clientPort: out Port)
+   -- return Socket
+   -- with
+   --    Import => True,
+   --    Convention => C,
+   --    External_Name => "socketAccept";
 
    
 end Socket_Binding;

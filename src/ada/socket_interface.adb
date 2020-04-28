@@ -5,7 +5,7 @@ with Tcp_Binding, Udp_Binding; use Tcp_binding, Udp_Binding;
 with Tcp_Type; use Tcp_Type;
 
 package body Socket_interface
-with SPARK_Mode => On
+    with SPARK_Mode => On
 is
 
     procedure Get_Host_By_Name (
@@ -174,20 +174,68 @@ is
         Remote_Ip_Addr : in IpAddr;
         Remote_Port : in Port;
         Error : out Error_T)
-    is 
+    is
+        Ret : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketConnect (Sock, Remote_Ip_Addr, Remote_Port));
+        if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+            Os_Acquire_Mutex (Net_Mutex);
+            Ret := Tcp_Connect (Sock, Remote_Ip_Addr'Address, Remote_Port);
+            Os_Release_Mutex (Net_Mutex);
+            if Ret = 0 then
+                Error := NO_ERROR;
+            else
+                Error := ERROR_FAILURE;
+            end if;
+        elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM) then
+            Sock.S_remoteIpAddr := Remote_Ip_Addr;
+            Sock.S_Remote_Port := Remote_Port;
+            Error := NO_ERROR;
+        elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_RAW_IP) then
+            Sock.S_remoteIpAddr := Remote_Ip_Addr;
+            Error := NO_ERROR;
+        else
+            Error := ERROR_INVALID_SOCKET;
+        end if;
     end Socket_Connect;
 
+    procedure Socket_Send_To(
+        Sock : Socket;
+        Dest_Ip_Addr : IpAddr;
+        Dest_Port : Port;
+        Data: in char_array;
+        Written : out Integer;
+        Flags : unsigned;
+        Error : out Error_T)
+    is 
+        Ret : unsigned;
+    begin
+        Written := 0;
+        Os_Acquire_Mutex (Net_Mutex);
+        if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+            Ret := Tcp_Send (Sock, Data, Data'Length, unsigned(Written), Flags);
+            if Ret = 0 then
+                Error := NO_ERROR;
+            else
+                Error := ERROR_FAILURE;
+            end if;
+        else
+            Error := ERROR_INVALID_SOCKET;
+        end if;
+        Os_Release_Mutex (Net_Mutex);
+    end socket_Send_To;
+
+    
     procedure Socket_Send (
         Sock: in Socket;
         Data: in char_array;
+        Written : out Integer;
         Error : out Error_T)
     is
-        Written : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketSend(Sock, Data, Data'Length, Written, 0));
+        Socket_Send_To(Sock, Sock.S_remoteIpAddr, Sock.S_Remote_Port, Data,
+                        Written, 0, Error);
     end Socket_Send;
+
 
     procedure Socket_Receive(
         Sock: Socket;
@@ -279,7 +327,7 @@ is
         Client_Socket  : out Socket)
     is
     begin
-        Client_Socket := socketAccept(Sock, Client_Ip_Addr, Client_Port);
+        Client_Socket := Tcp_Accept (Sock, Client_Ip_Addr, Client_Port);
     end Socket_Accept;
 
 
