@@ -1,15 +1,16 @@
 with Socket_interface; use Socket_interface;
-with socket_binding; use socket_binding;
 with Ip; use Ip;
 with Interfaces.C; use Interfaces.C;
 with Error_H; use Error_H;
+with Common_Type; use Common_Type;
+with Socket_Type; use Socket_Type;
 
 package body Ada_Main
 with SPARK_Mode
 is
 
     procedure HTTP_Client_Test is
-        Sock : Socket_Struct;
+        Sock : Socket;
         ServerAddr : IpAddr;
         Request : constant char_array := "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
         Buf : char_array (1 .. 128);
@@ -56,9 +57,9 @@ is
 
     procedure HTTP_Server_Test is
         Error : Error_T;
-        Sock, Sock_Client : Socket_Struct;
+        Sock, Sock_Client : Socket;
         IPAddr_Client : IpAddr;
-        Port_Client : Sock_Port;
+        Port_Client : Port;
     begin
         Socket_Open(Sock, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
         if Sock = null then

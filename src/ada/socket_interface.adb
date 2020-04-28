@@ -1,7 +1,11 @@
 with System;
+with Os; use Os;
+with Net; use Net;
+with Tcp_Binding, Udp_Binding; use Tcp_binding, Udp_Binding;
+with Tcp_Type; use Tcp_Type;
 
 package body Socket_interface
-with SPARK_Mode => Off
+with SPARK_Mode => On
 is
 
     procedure Get_Host_By_Name (
@@ -20,48 +24,155 @@ is
 
 
     procedure Socket_Open (
-        Sock:   out Socket_Struct;
+        Sock:   out Socket;
         S_Type:     Socket_Type; 
         S_Protocol: Socket_Protocol)
-    is 
+    is
+        Error : Error_T;
+        P : Port;
+        Protocol : Socket_Protocol;
     begin
-        Sock := socketOpen(Socket_Type'Enum_Rep(S_Type), Socket_Protocol'Enum_Rep(S_Protocol));
+        -- Initialize socket handle
+        Sock := null;
+        Os_Acquire_Mutex (Net_Mutex);
+
+        case S_Type is
+            when SOCKET_TYPE_STREAM =>
+                -- Always use TCP as underlying transport protocol
+                Protocol := SOCKET_IP_PROTO_TCP;
+                -- Get an ephemeral port number
+                P := Tcp_Get_Dynamic_Port;
+                Error := NO_ERROR;
+            when SOCKET_TYPE_DGRAM =>
+                --Always use UDP as underlying transport protocol
+                Protocol := SOCKET_IP_PROTO_UDP;
+                -- Get an ephemeral port number
+                P := Udp_Get_Dynamic_Port;
+                Error := NO_ERROR;
+            when SOCKET_TYPE_RAW_IP | SOCKET_TYPE_RAW_ETH =>
+                P := 0;
+                Error := NO_ERROR;
+            when others =>
+                Error := ERROR_INVALID_PARAMETER;
+        end case;
+
+        if Error = NO_ERROR then
+            for I in Socket_Table'Range loop
+                if socket_Table(I).S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_UNUSED) then
+                    --@TODO change this
+                    Sock.all := Socket_Table(I);
+                end if;
+                exit when socket_Table(I).S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_UNUSED);
+            end loop;
+
+            if Sock = null then
+                Sock := Tcp_Kill_Oldest_Connection;
+            end if;
+
+            if Sock /= null then
+                -- Reset Socket
+                Sock.S_Type := Socket_Type'Enum_Rep(S_Type);
+                Sock.S_Protocol := Socket_Protocol'Enum_Rep(S_Protocol);
+                Sock.S_Local_Port := P;
+                Sock.S_Timeout := Systime'Last;
+                Sock.S_remoteIpAddr.length := 0;
+                Sock.S_localIpAddr.length := 0;
+                Sock.S_Remote_Port := 0;
+                Sock.S_Net_Interface := System.Null_Address;
+                Sock.S_TTL := 0;
+                Sock.S_Multicast_TTL := 0;
+                Sock.S_errnoCode := 0;
+                Sock.S_Event_Mask := 0;
+                Sock.S_Event_Flags := 0;
+                Sock.userEvent := System.Null_Address;
+                Sock.State := TCP_STATE_CLOSED;
+                Sock.owned_Flag := 0;
+                Sock.closed_Flag := 0;
+                Sock.reset_Flag := 0;
+                Sock.smss := 0;
+                Sock.rmss := 0;
+                Sock.iss := 0;
+                Sock.irs := 0;
+                Sock.sndUna := 0;
+                Sock.sndNxt := 0;
+                Sock.sndUser := 0;
+                Sock.sndWnd := 0;
+                Sock.maxSndWnd := 0;
+                Sock.sndWl1 := 0;
+                Sock.sndWl2 := 0;
+                Sock.rcvNxt := 0; 
+                Sock.rcvUser := 0;  
+                Sock.rcvWnd := 0;   
+                Sock.rttBusy := 0;
+                Sock.rttSeqNum := 0;
+                Sock.rettStartTime := 0;
+                Sock.srtt := 0;
+                Sock.rttvar := 0;
+                Sock.rto := 0;
+                Sock.congestState := TCP_CONGEST_STATE_IDLE;
+                Sock.cwnd := 0;
+                Sock.ssthresh := 0;
+                Sock.dupAckCount := 0;
+                Sock.n := 0;
+                Sock.recover := 0;
+                Sock.txBuffer.chunkCount := 0;
+                Sock.txBufferSize := 2860;
+                Sock.rxBuffer.chunkCount := 0;
+                Sock.rxBufferSize := 2860;
+                Sock.retransmitQueue := System.Null_Address;
+                Sock.retransmitCount := 0;
+                Sock.synQueue := System.Null_Address;
+                Sock.synQueueSize := 0;
+                Sock.wndProbeCount := 0;
+                Sock.wndProbeInterval := 0;
+                Sock.sackPermitted := 0;
+                Sock.sackBlockCount := 0;
+                Sock.receiveQueue := System.Null_Address;
+            end if;
+        end if;
+
+        Os_Release_Mutex (Net_Mutex);
+
+        -- socketOpen(Socket_Type'Enum_Rep(S_Type), Socket_Protocol'Enum_Rep(S_Protocol));
     end Socket_Open;
     
 
     procedure Socket_Set_Timeout (
-        Sock :    in out Socket_Struct;
+        Sock :    in out Socket;
         Timeout:  Systime)
     is
-        Ret : unsigned;
     begin
-        Ret := socketSetTimeout(Sock, Timeout);
+        Os_Acquire_Mutex (Net_Mutex);
+        Sock.S_Timeout := Timeout;
+        Os_Release_Mutex (Net_Mutex);
     end Socket_Set_Timeout;
 
     procedure Socket_Set_Ttl (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Ttl  :        Ttl_Type
     )
     is
-        Ret : unsigned;
     begin
-        Ret := socketSetTtl(Sock, unsigned_char(Ttl));
+        Os_Acquire_Mutex (Net_Mutex);
+        Sock.S_TTL := unsigned_char(Ttl);
+        Os_Release_Mutex (Net_Mutex);
     end Socket_Set_Ttl;
 
     procedure Socket_Set_Multicast_Ttl (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Ttl  :        Ttl_Type
     )
     is
-        Ret : unsigned;
     begin
-        Ret := socketSetMulticastTtl(Sock, unsigned_char(Ttl));
+        Os_Acquire_Mutex (Net_Mutex);
+        Sock.S_Multicast_TTL := unsigned_char(Ttl);
+        Os_Release_Mutex (Net_Mutex);
     end Socket_Set_Multicast_Ttl;
 
     procedure Socket_Connect (
-        Sock: in out Socket_Struct;
+        Sock: in out Socket;
         Remote_Ip_Addr : in IpAddr;
-        Remote_Port : in Sock_Port;
+        Remote_Port : in Port;
         Error : out Error_T)
     is 
     begin
@@ -69,7 +180,7 @@ is
     end Socket_Connect;
 
     procedure Socket_Send (
-        Sock: in Socket_Struct;
+        Sock: in Socket;
         Data: in char_array;
         Error : out Error_T)
     is
@@ -79,7 +190,7 @@ is
     end Socket_Send;
 
     procedure Socket_Receive(
-        Sock: Socket_Struct;
+        Sock: Socket;
         Buf: out char_array;
         Error : out Error_T)
     is
@@ -90,62 +201,82 @@ is
     end Socket_Receive;
 
     procedure Socket_Shutdown (
-        Sock  :     Socket_Struct;
+        Sock  :     Socket;
         How   :     Socket_Shutdown_Flags;
         Error : out Error_T)
     is
+        Ret : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketShutdown(Sock, Socket_Shutdown_Flags'Enum_Rep(How)));
+        if Sock = null then
+            Error := ERROR_INVALID_PARAMETER;
+            return;
+        end if;
+
+        Os_Acquire_Mutex (Net_Mutex);
+        Ret := Tcp_Shutdown (Sock, Socket_Shutdown_Flags'Enum_Rep(How));
+        Os_Release_Mutex (Net_Mutex);
+        
+        --@TODO to improve
+        if Ret = 0 then
+            Error := NO_ERROR;
+        else
+            Error := ERROR_FAILURE;
+        end if;
     end Socket_Shutdown;
 
-    procedure Socket_Close (Sock : in out Socket_Struct)
+    procedure Socket_Close (Sock : in out Socket)
     is
     begin
         socketClose (Sock);
     end Socket_Close;
 
     procedure Socket_Set_Tx_Buffer_Size (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Size :        Buffer_Size)
-    is
-        Ret : unsigned;
-    begin
-        Ret := socketSetTxBufferSize(Sock, unsigned_long(Size));
+    is begin
+        --@TODO check
+        Sock.txBufferSize := unsigned_long(Size);
     end Socket_Set_Tx_Buffer_Size;
 
     procedure Socket_Set_Rx_Buffer_Size (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Size :        Buffer_Size)
-    is
-        Ret : unsigned;
-    begin
-        Ret := socketSetRxBufferSize(Sock, unsigned_long(Size));
+    is begin
+        --@TODO check
+        Sock.rxBufferSize := unsigned_long(Size);
     end Socket_Set_Rx_Buffer_Size;
 
     procedure Socket_Bind (
-        Sock          : in out Socket_Struct;
+        Sock          : in out Socket;
         Local_Ip_Addr :        IpAddr;
-        Local_Port    :        Sock_Port) 
-    is
-        Ret : unsigned;
-    begin
-        Ret := socketBind(Sock, Local_Ip_Addr'Address, Local_Port);
+        Local_Port    :        Port) 
+    is begin
+        Sock.S_localIpAddr := Local_Ip_Addr;
+        Sock.S_Local_Port := Local_Port;
     end Socket_Bind;
 
     procedure Socket_Listen (
-        Sock   :     Socket_Struct;
+        Sock   :     Socket;
         Backlog:     Natural;
         Error  : out Error_T)
     is
+        Ret : unsigned;
     begin
-        Error := Error_T'Enum_Val(socketListen(Sock, unsigned(Backlog)));
+        Os_Acquire_Mutex (Net_Mutex);
+        Ret := Tcp_Listen (Sock, unsigned(Backlog));
+        Os_Release_Mutex (Net_Mutex);
+        if Ret /= 0 then
+            Error := ERROR_FAILURE;
+        else
+            Error := NO_ERROR;
+        end if;
     end Socket_Listen;
 
     procedure Socket_Accept (
-        Sock           :     Socket_Struct;
+        Sock           :     Socket;
         Client_Ip_Addr : out IpAddr;
-        Client_Port    : out Sock_Port;
-        Client_Socket  : out Socket_Struct)
+        Client_Port    : out Port;
+        Client_Socket  : out Socket)
     is
     begin
         Client_Socket := socketAccept(Sock, Client_Ip_Addr, Client_Port);

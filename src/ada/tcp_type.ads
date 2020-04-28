@@ -2,9 +2,9 @@ with Net_Mem; use Net_Mem;
 with Interfaces.C; use Interfaces.C;
 with Compiler_Port; use Compiler_Port;
 
-package Tcp is
+package Tcp_Type is
 
-   type Tcp_State is 
+    type Tcp_State is 
      (TCP_STATE_CLOSED,
       TCP_STATE_LISTEN,
       TCP_STATE_SYN_SENT,
@@ -27,41 +27,39 @@ package Tcp is
    -- the C code.
    type Chunk_Desc_Array is array(0 .. 14) of Chunk_Desc;
    
-   type Tcp_Tx_Buffer is
-      record
+   type Tcp_Tx_Buffer is record
          chunkCount: unsigned;
          maxChunkCound: unsigned;
          chunk: Chunk_Desc_Array;
       end record
      with Convention => C;
    
-   type Tcp_Rx_Buffer is
-      record
+   type Tcp_Rx_Buffer is record
          chunkCount: unsigned;
          maxChunkCound: unsigned;
          chunk: Chunk_Desc_Array;
       end record
      with Convention => C;
    
-   type Tcp_Timer is
-      record
+   type Tcp_Timer is record
          running: Bool;
          startTime: Systime;
          interval: Systime;
       end record
      with Convention => C;
    
-   type TcpQueueItem is
-      record
+   type TcpQueueItem is record
          length: unsigned;
       end record
      with Convention => C;
    
-   type Tcp_Sack_Block is
-      record
+   type Tcp_Sack_Block is record
          leftEdge: unsigned_long;
          rightEdge: unsigned_long;
       end record
      with Convention => C;
 
-end Tcp;
+    type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
+
+
+end Tcp_Type;

@@ -4,6 +4,8 @@ with Interfaces.C; use Interfaces.C;
 with Socket_Binding; use Socket_Binding;
 with Ip; use Ip;
 with Error_H; use Error_H;
+with Common_Type; use Common_Type;
+with Socket_Type; use Socket_Type;
 
 package Socket_Interface 
     with SPARK_MODE
@@ -12,7 +14,6 @@ is
 
     Socket_error : exception;
 
-    type Port is range 0 .. (2 ** 16 - 1);
     type Buffer_Size is new Positive;
     type Ttl_Type is mod 2 ** 8;
 
@@ -96,7 +97,7 @@ is
         );
 
     procedure Socket_Open (
-        Sock:   out Socket_Struct;
+        Sock:   out Socket;
         S_Type:     Socket_Type; 
         S_Protocol: Socket_Protocol)
     with
@@ -111,7 +112,7 @@ is
                 and then Sock.S_remoteIpAddr.length = 0);
 
     procedure Socket_Set_Timeout (
-        Sock:    in out Socket_Struct; 
+        Sock:    in out Socket; 
         Timeout: Systime)
     with
         Depends => (Sock => (Timeout, Sock)),
@@ -120,7 +121,7 @@ is
                 Sock.all = Sock.all'Old'Update(S_Timeout => timeout);
 
     procedure Socket_Set_Ttl (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Ttl  :        Ttl_Type
     )
     with
@@ -130,8 +131,8 @@ is
                 Sock.all = Sock.all'Old'Update(S_TTL => unsigned_char(Ttl));
 
     procedure Socket_Set_Multicast_Ttl (
-        Sock : in out Socket_Struct;
-        Ttl  :        Ttl_Type;
+        Sock : in out Socket;
+        Ttl  :        Ttl_Type
     )
     with
         Depends => (Sock => (Ttl, Sock)),
@@ -140,9 +141,9 @@ is
                 Sock.all = Sock.all'Old'Update(S_Multicast_TTL => unsigned_char(Ttl));
     
     procedure Socket_Connect (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Remote_Ip_Addr : in  IpAddr;
-        Remote_Port : in Sock_Port;
+        Remote_Port : in Port;
         Error : out Error_T)
     with
         Depends => (Sock => (Sock, Remote_Ip_Addr, Remote_Port),
@@ -157,7 +158,7 @@ is
         );
 
     procedure Socket_Send (
-        Sock: in Socket_Struct;
+        Sock: in Socket;
         Data : in char_array;
         Error : out Error_T)
     with
@@ -170,7 +171,7 @@ is
         );
 
     procedure Socket_Receive (
-        Sock: in Socket_Struct;
+        Sock: in Socket;
         Buf : out char_array;
         Error : out Error_T)
     with
@@ -184,7 +185,7 @@ is
         );
 
     procedure Socket_Shutdown (
-        Sock  :     Socket_Struct;
+        Sock  :     Socket;
         How   :     Socket_Shutdown_Flags;
         Error : out Error_T)
     with
@@ -196,13 +197,13 @@ is
             others => True
         );
 
-    procedure Socket_Close (Sock: in out Socket_Struct)
+    procedure Socket_Close (Sock: in out Socket)
     with
         Pre => Sock /= null,
         Post => Sock = null;
 
     procedure Socket_Set_Tx_Buffer_Size (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Size :        Buffer_Size)
     with
         Depends => (
@@ -216,7 +217,7 @@ is
             Sock.all = Sock.all'Old'Update(txBufferSize => unsigned_long(Size));
 
     procedure Socket_Set_Rx_Buffer_Size (
-        Sock : in out Socket_Struct;
+        Sock : in out Socket;
         Size :        Buffer_Size)
     with
         Depends => (
@@ -230,9 +231,9 @@ is
             Sock.all = Sock.all'Old'Update(rxBufferSize => unsigned_long(Size));
 
     procedure Socket_Bind (
-        Sock          : in out Socket_Struct;
+        Sock          : in out Socket;
         Local_Ip_Addr :        IpAddr;
-        Local_Port    :        Sock_Port)
+        Local_Port    :        Port)
     with
         Depends => (
             Sock => (Sock, Local_Ip_Addr, Local_Port)
@@ -249,7 +250,7 @@ is
                 );
 
     procedure Socket_Listen (
-        Sock   :     Socket_Struct;
+        Sock   :     Socket;
         Backlog:     Natural;
         Error  : out Error_T)
     with
@@ -263,10 +264,10 @@ is
         Post => Sock.all = Sock.all'Old;
     
     procedure Socket_Accept (
-        Sock           :     Socket_Struct;
+        Sock           :     Socket;
         Client_Ip_Addr : out IpAddr;
-        Client_Port    : out Sock_Port;
-        Client_Socket  : out Socket_Struct)
+        Client_Port    : out Port;
+        Client_Socket  : out Socket)
     with
         Depends => (
             Client_Ip_Addr => Sock,

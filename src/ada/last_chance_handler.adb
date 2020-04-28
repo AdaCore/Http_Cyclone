@@ -51,7 +51,8 @@ package body Last_Chance_Handler is
       end Busy_loop;
    begin
 
-
+      Busy_loop;
+      
       --  No-return procedure...
       loop
          null;
