@@ -167,7 +167,8 @@ C_SOURCES = \
 	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_wwdg.c \
 	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_ll_fmc.c \
 	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_ll_sdmmc.c \
-	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_ll_usb.c
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_ll_usb.c \
+	./src/ada/helper.c
 
 HEADERS = \
 	./src/os_port_config.h \

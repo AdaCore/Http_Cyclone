@@ -5,7 +5,7 @@ with Error_H; use Error_H;
 with System;
 with Ip; use Ip;
 with Common_type; use Common_type;
-with Socket_Type; use Socket_Type;
+with Socket_Types; use Socket_Types;
 
 package Socket_Binding is
 
@@ -47,19 +47,19 @@ package Socket_Binding is
    --    Convention => C,
    --    External_Name => "socketConnect";
 
-   function socketSend (sock: Socket; data: char_array; length: unsigned; written: out unsigned; flags: unsigned)
-   return unsigned
-   with
-      Import => True,
-      Convention => C,
-      External_Name => "socketSend";
+   -- function socketSend (sock: Socket; data: char_array; length: unsigned; written: out unsigned; flags: unsigned)
+   -- return unsigned
+   -- with
+   --    Import => True,
+   --    Convention => C,
+   --    External_Name => "socketSend";
 
-   function socketReceive(sock: Socket; data: out char_array; size: unsigned; received: out unsigned; flags: unsigned)
-   return unsigned
-   with
-      Import => True,
-      Convention => C,
-      External_Name => "socketReceive";
+   -- function socketReceive(sock: Socket; data: out char_array; size: unsigned; received: out unsigned; flags: unsigned)
+   -- return unsigned
+   -- with
+   --    Import => True,
+   --    Convention => C,
+   --    External_Name => "socketReceive";
 
    -- function socketShutdown (sock: Socket; how: unsigned)
    -- return unsigned

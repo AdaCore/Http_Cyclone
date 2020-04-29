@@ -1,4 +1,5 @@
 with System;
+with Common_Type; use Common_Type;
 
 package Os 
     with SPARK_Mode
@@ -16,5 +17,11 @@ is
     procedure Os_Acquire_Mutex (Mutex : Os_Mutex);
 
     procedure Os_Release_Mutex (Mutex : Os_Mutex);
+
+    function Os_Get_System_Time return Systime
+    with
+        Import => True,
+        Convention => C,
+        External_Name => "osGetSystemTime";
 
 end Os;

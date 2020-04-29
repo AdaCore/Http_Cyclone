@@ -4,7 +4,7 @@ with Common_Type; use Common_Type;
 with System;
 with Ip; use Ip;
 
-package Socket_Type is
+package Socket_Types is
 
     type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
 
@@ -95,6 +95,21 @@ package Socket_Type is
     end record 
         with Convention => C;
 
+    type Socket_Type is (
+        SOCKET_TYPE_UNUSED,
+        SOCKET_TYPE_STREAM,
+        SOCKET_TYPE_DGRAM,
+        SOCKET_TYPE_RAW_IP,
+        SOCKET_TYPE_RAW_ETH
+    );
+
+    for Socket_Type use (
+        SOCKET_TYPE_UNUSED  => 0,
+        SOCKET_TYPE_STREAM  => 1,
+        SOCKET_TYPE_DGRAM   => 2,
+        SOCKET_TYPE_RAW_IP  => 3,
+        SOCKET_TYPE_RAW_ETH => 4
+    );
 
     SOCKET_MAX_COUNT : constant Positive := 10;
     type Socket_Type_Index is range 0 .. (SOCKET_MAX_COUNT - 1);
@@ -108,4 +123,7 @@ package Socket_Type is
 
     type Socket is access Socket_Struct;
 
-end Socket_Type;
+    SOCKET_EPHEMERAL_PORT_MIN: constant Port := 49152;
+    SOCKET_EPHEMERAL_PORT_MAX: constant Port := 65535;
+
+end Socket_Types;

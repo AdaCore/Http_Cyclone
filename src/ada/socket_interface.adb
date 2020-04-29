@@ -1,8 +1,7 @@
 with System;
 with Os; use Os;
-with Net; use Net;
-with Tcp_Binding, Udp_Binding; use Tcp_binding, Udp_Binding;
 with Tcp_Type; use Tcp_Type;
+with Socket_Helper; use Socket_Helper;
 
 package body Socket_interface
     with SPARK_Mode => On
@@ -19,7 +18,7 @@ is
         for I in Flags'Range loop
             F := F + Host_Resolver'Enum_Rep(Flags(I));
         end loop;
-        Error := Error_T'Enum_Val(getHostByName(System.Null_Address, (Server_Name), Server_Ip_Addr, unsigned(F)));
+        Get_Host_By_Name_H(Server_Name, Server_Ip_Addr, unsigned(F), Error);
     end Get_Host_By_Name;
 
 
@@ -30,7 +29,7 @@ is
     is
         Error : Error_T;
         P : Port;
-        Protocol : Socket_Protocol;
+        Protocol : Socket_Protocol := S_Protocol;
     begin
         -- Initialize socket handle
         Sock := null;
@@ -41,7 +40,7 @@ is
                 -- Always use TCP as underlying transport protocol
                 Protocol := SOCKET_IP_PROTO_TCP;
                 -- Get an ephemeral port number
-                P := Tcp_Get_Dynamic_Port;
+                Tcp_Get_Dynamic_Port(P);
                 Error := NO_ERROR;
             when SOCKET_TYPE_DGRAM =>
                 --Always use UDP as underlying transport protocol
@@ -53,6 +52,7 @@ is
                 P := 0;
                 Error := NO_ERROR;
             when others =>
+                P := 0;
                 Error := ERROR_INVALID_PARAMETER;
         end case;
 
@@ -60,19 +60,19 @@ is
             for I in Socket_Table'Range loop
                 if socket_Table(I).S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_UNUSED) then
                     --@TODO change this
-                    Sock.all := Socket_Table(I);
+                    Get_Socket_From_Table(I, Sock);
                 end if;
                 exit when socket_Table(I).S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_UNUSED);
             end loop;
 
             if Sock = null then
-                Sock := Tcp_Kill_Oldest_Connection;
+                Tcp_Kill_Oldest_Connection(Sock);
             end if;
 
             if Sock /= null then
                 -- Reset Socket
                 Sock.S_Type := Socket_Type'Enum_Rep(S_Type);
-                Sock.S_Protocol := Socket_Protocol'Enum_Rep(S_Protocol);
+                Sock.S_Protocol := Socket_Protocol'Enum_Rep(Protocol);
                 Sock.S_Local_Port := P;
                 Sock.S_Timeout := Systime'Last;
                 Sock.S_remoteIpAddr.length := 0;
@@ -174,18 +174,11 @@ is
         Remote_Ip_Addr : in IpAddr;
         Remote_Port : in Port;
         Error : out Error_T)
-    is
-        Ret : unsigned;
-    begin
+    is begin
         if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
             Os_Acquire_Mutex (Net_Mutex);
-            Ret := Tcp_Connect (Sock, Remote_Ip_Addr'Address, Remote_Port);
+            Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
             Os_Release_Mutex (Net_Mutex);
-            if Ret = 0 then
-                Error := NO_ERROR;
-            else
-                Error := ERROR_FAILURE;
-            end if;
         elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM) then
             Sock.S_remoteIpAddr := Remote_Ip_Addr;
             Sock.S_Remote_Port := Remote_Port;
@@ -206,18 +199,12 @@ is
         Written : out Integer;
         Flags : unsigned;
         Error : out Error_T)
-    is 
-        Ret : unsigned;
-    begin
+    is begin
         Written := 0;
         Os_Acquire_Mutex (Net_Mutex);
+        --@TODO : finish
         if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
-            Ret := Tcp_Send (Sock, Data, Data'Length, unsigned(Written), Flags);
-            if Ret = 0 then
-                Error := NO_ERROR;
-            else
-                Error := ERROR_FAILURE;
-            end if;
+            Tcp_Send (Sock, Data, Written, Flags, Error);
         else
             Error := ERROR_INVALID_SOCKET;
         end if;
@@ -237,16 +224,44 @@ is
     end Socket_Send;
 
 
+    procedure Socket_Receive_Ex (
+        Sock : Socket;
+        Src_Ip_Addr : out IpAddr;
+        Src_Port : out Port;
+        Dest_Ip_Addr : out IpAddr;
+        Data : out char_array;
+        Received : out unsigned;
+        Flags : unsigned;
+        Error : out Error_T)
+    is begin
+        Os_Acquire_Mutex (Net_Mutex);
+        if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+            Tcp_Receive (Sock, Data, Received, Flags, Error);
+            Src_Ip_Addr := Sock.S_remoteIpAddr;
+            Src_Port := Sock.S_Remote_Port;
+            Dest_Ip_Addr := Sock.S_localIpAddr;
+        -- elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM) then
+        --     Error := udp_Receive_Datagram(Sock, Src_Ip_Addr, Src_Port, Dest_Ip_Addr, Data, Data'Length, Size, Received, Flags);
+        else
+            Error := ERROR_INVALID_SOCKET;
+            Received := 0;
+        end if;
+        Os_Release_Mutex (Net_Mutex);
+    end Socket_Receive_Ex;
+
+
     procedure Socket_Receive(
         Sock: Socket;
         Buf: out char_array;
         Error : out Error_T)
     is
-        Received, Ret : unsigned;
+        Src_Ip, Dest_Ip: IpAddr;
+        Src_Port : Port;
+        Received : unsigned;
     begin
-        Ret := socketReceive(Sock, Buf, Buf'Length - 1, Received, 0);
-        Error := Error_T'Enum_Val(Ret);
+        Socket_Receive_Ex(Sock, Src_Ip, Src_Port, Dest_Ip, Buf, Received, 0, Error);
     end Socket_Receive;
+
 
     procedure Socket_Shutdown (
         Sock  :     Socket;
@@ -311,13 +326,8 @@ is
         Ret : unsigned;
     begin
         Os_Acquire_Mutex (Net_Mutex);
-        Ret := Tcp_Listen (Sock, unsigned(Backlog));
+        Tcp_Listen (Sock, unsigned(Backlog), Error);
         Os_Release_Mutex (Net_Mutex);
-        if Ret /= 0 then
-            Error := ERROR_FAILURE;
-        else
-            Error := NO_ERROR;
-        end if;
     end Socket_Listen;
 
     procedure Socket_Accept (
@@ -327,7 +337,7 @@ is
         Client_Socket  : out Socket)
     is
     begin
-        Client_Socket := Tcp_Accept (Sock, Client_Ip_Addr, Client_Port);
+        Tcp_Accept (Sock, Client_Ip_Addr, Client_Port, Client_Socket);
     end Socket_Accept;
 
 

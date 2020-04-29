@@ -3,7 +3,7 @@ with Ip; use Ip;
 with Interfaces.C; use Interfaces.C;
 with Error_H; use Error_H;
 with Common_Type; use Common_Type;
-with Socket_Type; use Socket_Type;
+with Socket_Types; use Socket_Types;
 
 package body Ada_Main
 with SPARK_Mode

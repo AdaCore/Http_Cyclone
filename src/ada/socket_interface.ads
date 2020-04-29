@@ -5,7 +5,9 @@ with Socket_Binding; use Socket_Binding;
 with Ip; use Ip;
 with Error_H; use Error_H;
 with Common_Type; use Common_Type;
-with Socket_Type; use Socket_Type;
+with Socket_Types; use Socket_Types;
+with Net; use Net;
+with Tcp_Binding, Udp_Binding; use Tcp_binding, Udp_Binding;
 
 package Socket_Interface 
     with SPARK_MODE
@@ -16,22 +18,6 @@ is
 
     type Buffer_Size is new Positive;
     type Ttl_Type is mod 2 ** 8;
-
-    type Socket_Type is (
-        SOCKET_TYPE_UNUSED,
-        SOCKET_TYPE_STREAM,
-        SOCKET_TYPE_DGRAM,
-        SOCKET_TYPE_RAW_IP,
-        SOCKET_TYPE_RAW_ETH
-    );
-
-    for Socket_Type use (
-        SOCKET_TYPE_UNUSED  => 0,
-        SOCKET_TYPE_STREAM  => 1,
-        SOCKET_TYPE_DGRAM   => 2,
-        SOCKET_TYPE_RAW_IP  => 3,
-        SOCKET_TYPE_RAW_ETH => 4
-    );
 
     type Socket_Protocol is (
         SOCKET_IP_PROTO_ICMP,
@@ -101,7 +87,11 @@ is
         S_Type:     Socket_Type; 
         S_Protocol: Socket_Protocol)
     with
-        Depends => (Sock => (S_Type, S_Protocol)),
+        Global => (Input => (Net_Mutex, Socket_Table),
+                   In_Out => Tcp_Dynamic_Port),
+        Depends => (Sock => (S_Type, S_Protocol, Tcp_Dynamic_Port, Socket_Table),
+                    Tcp_Dynamic_Port => (S_Type, Tcp_Dynamic_Port),
+                    null => Net_Mutex),
         Post => 
             (if Sock /= null then
                 Sock.S_Descriptor >= 0
@@ -115,7 +105,9 @@ is
         Sock:    in out Socket; 
         Timeout: Systime)
     with
-        Depends => (Sock => (Timeout, Sock)),
+        Global => (Input => Net_Mutex),
+        Depends => (Sock => (Timeout, Sock),
+                    null => Net_Mutex),
         Pre => Sock /= null,
         Post => Sock /= null and then
                 Sock.all = Sock.all'Old'Update(S_Timeout => timeout);
@@ -125,7 +117,9 @@ is
         Ttl  :        Ttl_Type
     )
     with
-        Depends => (Sock => (Ttl, Sock)),
+        Global => (Input => Net_Mutex),
+        Depends => (Sock => (Ttl, Sock),
+                    null => Net_Mutex),
         Pre => Sock /= null,
         Post => Sock /= null and then
                 Sock.all = Sock.all'Old'Update(S_TTL => unsigned_char(Ttl));
@@ -135,7 +129,9 @@ is
         Ttl  :        Ttl_Type
     )
     with
-        Depends => (Sock => (Ttl, Sock)),
+        Global => (Input => Net_Mutex),
+        Depends => (Sock => (Ttl, Sock),
+                    null => Net_Mutex),
         Pre => Sock /= null,
         Post => Sock /= null and then
                 Sock.all = Sock.all'Old'Update(S_Multicast_TTL => unsigned_char(Ttl));
@@ -146,8 +142,10 @@ is
         Remote_Port : in Port;
         Error : out Error_T)
     with
+        Global => (Input => Net_Mutex),
         Depends => (Sock => (Sock, Remote_Ip_Addr, Remote_Port),
-                    Error => (Remote_Ip_Addr, Remote_Port)),
+                    Error => (Remote_Ip_Addr, Remote_Port),
+                    null => Net_Mutex),
         Pre => Sock /= null
                 and then Remote_Ip_Addr.length > 0,
         Contract_Cases => (
@@ -163,8 +161,10 @@ is
         Written : out Integer;
         Error : out Error_T)
     with
+        Global => (Input => Net_Mutex),
         Depends => (Error => (Sock, Data),
-                    Written => (Sock, Data)), 
+                    Written => (Sock, Data),
+                    null => Net_Mutex),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR => 
@@ -177,8 +177,10 @@ is
         Buf : out char_array;
         Error : out Error_T)
     with
+        Global => (Input => Net_Mutex),
         Depends => (Buf => Sock, 
-                    Error => Sock),
+                    Error => Sock,
+                    null => Net_Mutex),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR => Sock.all = Sock.all'Old and then Buf'Length > 0,
@@ -191,7 +193,9 @@ is
         How   :     Socket_Shutdown_Flags;
         Error : out Error_T)
     with
-        Depends => (Error => (Sock, How)),
+        Global => (Input => Net_Mutex),
+        Depends => (Error => (Sock, How),
+                    null => Net_Mutex),
         Pre => Sock /= null and then 
                Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (

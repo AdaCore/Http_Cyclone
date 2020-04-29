@@ -1,12 +1,16 @@
 with Error_H; use Error_H;
-with System;
 with Interfaces.C; use Interfaces.C;
 with Ip; use Ip;
 with Tcp_Type; use Tcp_Type;
 with Common_Type; use Common_Type;
-with Socket_Type; use Socket_Type;
+with Socket_Types; use Socket_Types;
 
-package Tcp_binding is
+package Tcp_binding 
+    with SPARK_Mode
+is
+
+    -- Ephemeral ports are used for dynamic port assignment
+    Tcp_Dynamic_Port : Port;
 
     function Tcp_Init return Error_T
     with
@@ -14,46 +18,82 @@ package Tcp_binding is
         Convention => C,
         External_Name => "tcpInit";
 
-    function Tcp_Get_Dynamic_Port return Port
+    procedure Tcp_Get_Dynamic_Port (
+               P : out Port
+    )
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpGetDynamicPort";
+        Global => (
+            Input => (SOCKET_EPHEMERAL_PORT_MIN, SOCKET_EPHEMERAL_PORT_MAX),
+            In_Out => Tcp_Dynamic_Port
+        ),
+        Depends => (
+            P => Tcp_Dynamic_Port,
+            Tcp_Dynamic_Port => Tcp_Dynamic_Port,
+            null => (SOCKET_EPHEMERAL_PORT_MIN, SOCKET_EPHEMERAL_PORT_MAX)
+        ),
+        Post => (
+            P <= SOCKET_EPHEMERAL_PORT_MAX and then
+            P >= SOCKET_EPHEMERAL_PORT_MIN and then
+            Tcp_Dynamic_Port <= SOCKET_EPHEMERAL_PORT_MAX and then
+            Tcp_Dynamic_Port >= SOCKET_EPHEMERAL_PORT_MIN
+        );
 
-    function Tcp_Connect (Sock : Socket; remoteIpAddr : System.Address; remotePort : Port)
-    return unsigned
+    procedure Tcp_Connect (
+        Sock : in out Socket;
+        Remote_Ip_Addr : IpAddr;
+        Remote_Port : Port;
+        Error : out Error_T)
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpConnect";
+        Depends => (
+            Sock =>+ (Remote_Ip_Addr, Remote_Port),
+            Error => (Sock, Remote_Port, Remote_Ip_Addr)
+        );
 
-    function Tcp_Listen (Sock : Socket; backlog : unsigned)
-    return unsigned
+    procedure Tcp_Listen (
+            Sock : Socket;
+            Backlog : unsigned;
+            Error : out Error_T)
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpListen";
+        Depends => (
+            Error => (Sock, Backlog)
+        );
 
-    function Tcp_Accept (Sock : Socket; Client_Ip_Addr : out IpAddr; unsigned : out Port)
-    return Socket
+    procedure Tcp_Accept (
+            Sock : Socket;
+            Client_Ip_Addr : out IpAddr;
+            Client_Port : out Port;
+            Client_Socket : out Socket)
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpAccept";
+        Depends => (
+            Client_Ip_Addr => Sock,
+            Client_Port => Sock,
+            Client_Socket => Sock
+        );
     
-    function Tcp_Send (Sock : Socket ; Data : char_array ; Length : unsigned; Written : out unsigned ; Flags : unsigned)
-    return unsigned
+    procedure Tcp_Send (
+            Sock : Socket;
+            Data : char_array;
+            Written : out Integer;
+            Flags : unsigned;
+            Error : out Error_T)
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpSend";
+        Depends => (
+            Written => (Sock, Data, Flags),
+            Error => (Sock, Data, Flags)
+        );
 
-    function Tcp_Receive (Sock : socket; Data : out char_array; Size : unsigned; Received : out unsigned ; Flags : unsigned)
-    return unsigned
+    procedure Tcp_Receive (
+            Sock : Socket;
+            Data : out char_array;
+            Received : out unsigned;
+            Flags : unsigned;
+            Error : out Error_T)
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpReceive";
+        Depends => (
+            Error => (Sock, Flags),
+            Data => (Sock, Flags),
+            Received => (Sock, Flags)
+        );
     
     function Tcp_Shutdown (Sock : Socket ; how : unsigned)
     return unsigned
@@ -75,12 +115,9 @@ package Tcp_binding is
         Import => True,
         Convention => C,
         External_Name => "tcpGetState";
-    
-    function Tcp_Kill_Oldest_Connection
-    return Socket
-    with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpKillOldestConnection";
+
+    procedure Tcp_Kill_Oldest_Connection (
+        Sock : out Socket
+    );
 
 end Tcp_binding;
