@@ -59,18 +59,23 @@ is
         if Error = NO_ERROR then
             for I in Socket_Table'Range loop
                 if socket_Table(I).S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_UNUSED) then
-                    --@TODO change this
+                    -- Save socket handle
                     Get_Socket_From_Table(I, Sock);
+                    -- We are done
+                    exit;
                 end if;
-                exit when socket_Table(I).S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_UNUSED);
             end loop;
 
             if Sock = null then
+                -- Kill the oldest connection in the TIME-WAIT state
+                -- whenever the socket table runs out of space
                 Tcp_Kill_Oldest_Connection(Sock);
             end if;
 
+            -- Check whether the current entry is free
             if Sock /= null then
                 -- Reset Socket
+                -- Maybe there is a simplest way to perform that in Ada
                 Sock.S_Type := Socket_Type'Enum_Rep(S_Type);
                 Sock.S_Protocol := Socket_Protocol'Enum_Rep(Protocol);
                 Sock.S_Local_Port := P;
@@ -132,10 +137,7 @@ is
         end if;
 
         Os_Release_Mutex (Net_Mutex);
-
-        -- socketOpen(Socket_Type'Enum_Rep(S_Type), Socket_Protocol'Enum_Rep(S_Protocol));
     end Socket_Open;
-    
 
     procedure Socket_Set_Timeout (
         Sock :    in out Socket;
@@ -175,14 +177,20 @@ is
         Remote_Port : in Port;
         Error : out Error_T)
     is begin
+        -- Connection oriented socket?
         if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
             Os_Acquire_Mutex (Net_Mutex);
+            -- Establish TCP connection
             Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
             Os_Release_Mutex (Net_Mutex);
+        
+        -- Connectionless socket?
         elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM) then
             Sock.S_remoteIpAddr := Remote_Ip_Addr;
             Sock.S_Remote_Port := Remote_Port;
             Error := NO_ERROR;
+        
+        -- Raw Socket?
         elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_RAW_IP) then
             Sock.S_remoteIpAddr := Remote_Ip_Addr;
             Error := NO_ERROR;
@@ -192,7 +200,7 @@ is
     end Socket_Connect;
 
     procedure Socket_Send_To(
-        Sock : Socket;
+        Sock : in out Socket;
         Dest_Ip_Addr : IpAddr;
         Dest_Port : Port;
         Data: in char_array;
@@ -213,7 +221,7 @@ is
 
     
     procedure Socket_Send (
-        Sock: in Socket;
+        Sock: in out Socket;
         Data: in char_array;
         Written : out Integer;
         Error : out Error_T)
@@ -225,7 +233,7 @@ is
 
 
     procedure Socket_Receive_Ex (
-        Sock : Socket;
+        Sock : in out Socket;
         Src_Ip_Addr : out IpAddr;
         Src_Port : out Port;
         Dest_Ip_Addr : out IpAddr;
@@ -234,6 +242,7 @@ is
         Flags : unsigned;
         Error : out Error_T)
     is begin
+
         Os_Acquire_Mutex (Net_Mutex);
         if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
             Tcp_Receive (Sock, Data, Received, Flags, Error);
@@ -243,6 +252,9 @@ is
         -- elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM) then
         --     Error := udp_Receive_Datagram(Sock, Src_Ip_Addr, Src_Port, Dest_Ip_Addr, Data, Data'Length, Size, Received, Flags);
         else
+            Src_Ip_Addr := Sock.S_remoteIpAddr;
+            Src_Port := Sock.S_Remote_Port;
+            Dest_Ip_Addr := Sock.S_localIpAddr;
             Error := ERROR_INVALID_SOCKET;
             Received := 0;
         end if;
@@ -251,7 +263,7 @@ is
 
 
     procedure Socket_Receive(
-        Sock: Socket;
+        Sock: in out Socket;
         Buf: out char_array;
         Error : out Error_T)
     is
@@ -264,27 +276,18 @@ is
 
 
     procedure Socket_Shutdown (
-        Sock  :     Socket;
-        How   :     Socket_Shutdown_Flags;
-        Error : out Error_T)
-    is
-        Ret : unsigned;
-    begin
+        Sock  : in out Socket;
+        How   :        Socket_Shutdown_Flags;
+        Error :    out Error_T)
+    is begin
         if Sock = null then
             Error := ERROR_INVALID_PARAMETER;
             return;
         end if;
 
         Os_Acquire_Mutex (Net_Mutex);
-        Ret := Tcp_Shutdown (Sock, Socket_Shutdown_Flags'Enum_Rep(How));
+        Tcp_Shutdown (Sock, Socket_Shutdown_Flags'Enum_Rep(How), Error);
         Os_Release_Mutex (Net_Mutex);
-        
-        --@TODO to improve
-        if Ret = 0 then
-            Error := NO_ERROR;
-        else
-            Error := ERROR_FAILURE;
-        end if;
     end Socket_Shutdown;
 
     procedure Socket_Close (Sock : in out Socket)
@@ -322,9 +325,7 @@ is
         Sock   :     Socket;
         Backlog:     Natural;
         Error  : out Error_T)
-    is
-        Ret : unsigned;
-    begin
+    is begin
         Os_Acquire_Mutex (Net_Mutex);
         Tcp_Listen (Sock, unsigned(Backlog), Error);
         Os_Release_Mutex (Net_Mutex);

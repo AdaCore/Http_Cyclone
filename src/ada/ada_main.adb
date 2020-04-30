@@ -42,7 +42,7 @@ is
 
         loop
             Socket_Receive (Sock, Buf, Error);
-            pragma Loop_Invariant (Sock.S_remoteIpAddr.length > 0);
+            pragma Loop_Invariant (Sock.S_remoteIpAddr.length > 0 and Sock /= null);
             exit when Error = ERROR_END_OF_STREAM;
             if Error /= NO_ERROR then
                 return;

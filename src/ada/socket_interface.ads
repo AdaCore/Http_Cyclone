@@ -96,7 +96,14 @@ is
             (if Sock /= null then
                 Sock.S_Descriptor >= 0
                 and then Sock.S_Type = Socket_Type'Enum_Rep(S_Type)
-                and then Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
+                and then (
+                    if S_Type = SOCKET_TYPE_STREAM then
+                        Sock.S_Protocol = Socket_Protocol'Enum_Rep(SOCKET_IP_PROTO_TCP)
+                    elsif S_Type = SOCKET_TYPE_DGRAM then
+                        Sock.S_Protocol = Socket_Protocol'Enum_Rep(SOCKET_IP_PROTO_UDP)
+                    else
+                        Sock.S_Protocol = Socket_Protocol'Enum_Rep(S_Protocol)
+                )
                 and then Sock.S_remoteIpAddr.length = 0
                 and then Sock.S_localIpAddr.length = 0
                 and then Sock.S_remoteIpAddr.length = 0);
@@ -144,57 +151,112 @@ is
     with
         Global => (Input => Net_Mutex),
         Depends => (Sock => (Sock, Remote_Ip_Addr, Remote_Port),
-                    Error => (Remote_Ip_Addr, Remote_Port),
+                    Error => (Sock, Remote_Ip_Addr, Remote_Port),
                     null => Net_Mutex),
         Pre => Sock /= null
                 and then Remote_Ip_Addr.length > 0,
         Contract_Cases => (
             Error = NO_ERROR =>
-                Sock /= null and then 
-                Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr),
+                Sock /= null and then
+                (if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+                    Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr)
+                elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_RAW_IP) then
+                    Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr, S_Remote_Port => Remote_Port)
+                else
+                    Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr)),
+            others => True
+        );
+    
+    procedure Socket_Send_To(
+        Sock : in out Socket;
+        Dest_Ip_Addr : IpAddr;
+        Dest_Port : Port;
+        Data: in char_array;
+        Written : out Integer;
+        Flags : unsigned;
+        Error : out Error_T)
+    with
+        Global => (Input => Net_Mutex),
+        Depends => (Error => (Sock, Data, Flags),
+                    Sock => (Sock, Flags),
+                    Written => (Sock, Data, Flags),
+                    null => (Net_Mutex, Dest_Port, Dest_Ip_Addr)),
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
+        Contract_Cases => (
+            Error = NO_ERROR =>
+                Sock /= null and then Sock.all = Sock.all'Old,
             others => True
         );
 
     procedure Socket_Send (
-        Sock: in Socket;
+        Sock: in out Socket;
         Data : in char_array;
         Written : out Integer;
         Error : out Error_T)
     with
         Global => (Input => Net_Mutex),
         Depends => (Error => (Sock, Data),
+                    Sock => Sock,
                     Written => (Sock, Data),
                     null => Net_Mutex),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
-            Error = NO_ERROR => 
-                Sock.all = Sock.all'Old,
+            Error = NO_ERROR =>
+                Sock /= null and then Sock.all = Sock.all'Old,
             others => True
+        );
+    
+    procedure Socket_Receive_Ex (
+        Sock : in out Socket;
+        Src_Ip_Addr : out IpAddr;
+        Src_Port : out Port;
+        Dest_Ip_Addr : out IpAddr;
+        Data : out char_array;
+        Received : out unsigned;
+        Flags : unsigned;
+        Error : out Error_T)
+    with
+        Global => (Input => Net_Mutex),
+        Depends => (Sock => (Sock, Flags),
+                    Data => (Sock, Flags),
+                    Received => (Sock, Flags),
+                    Src_Ip_Addr => (Sock, Flags),
+                    Src_Port => (Sock, Flags),
+                    Dest_Ip_Addr => (Sock, Flags),
+                    Error => (Sock, Flags),
+                    null => Net_Mutex),
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
+        Contract_Cases => (
+            Error = NO_ERROR => Sock /= null and then Sock.all = Sock.all'Old and then Data'Length > 0,
+            Error = ERROR_END_OF_STREAM => Sock /= null and then Sock.all = Sock.all'Old and then Data'Length = 0,
+            others => Sock.all = Sock.all'Old and then Data'Length = 0
         );
 
     procedure Socket_Receive (
-        Sock: in Socket;
+        Sock: in out Socket;
         Buf : out char_array;
         Error : out Error_T)
     with
         Global => (Input => Net_Mutex),
-        Depends => (Buf => Sock, 
+        Depends => (Sock => Sock,
+                    Buf => Sock,
                     Error => Sock,
                     null => Net_Mutex),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Contract_Cases => (
-            Error = NO_ERROR => Sock.all = Sock.all'Old and then Buf'Length > 0,
-            Error = ERROR_END_OF_STREAM => Sock.all = Sock.all'Old and then Buf'Length = 0,
-            others => Buf'Length = 0
+            Error = NO_ERROR => Sock /= null and then Sock.all = Sock.all'Old and then Buf'Length > 0,
+            Error = ERROR_END_OF_STREAM => Sock /= null and then Sock.all = Sock.all'Old and then Buf'Length = 0,
+            others => Sock /= null and then Sock.all = Sock.all'Old and then Buf'Length = 0
         );
 
     procedure Socket_Shutdown (
-        Sock  :     Socket;
-        How   :     Socket_Shutdown_Flags;
-        Error : out Error_T)
+        Sock  : in out Socket;
+        How   :        Socket_Shutdown_Flags;
+        Error :    out Error_T)
     with
         Global => (Input => Net_Mutex),
-        Depends => (Error => (Sock, How),
+        Depends => (Sock => (Sock, How),
+                    Error => (Sock, How),
                     null => Net_Mutex),
         Pre => Sock /= null and then 
                Sock.S_remoteIpAddr.length > 0,
@@ -260,8 +322,10 @@ is
         Backlog:     Natural;
         Error  : out Error_T)
     with
+        Global => Net_Mutex,
         Depends => (
-            Error => (Sock, Backlog)
+            Error => (Sock, Backlog),
+            null => Net_Mutex
         ),
         Pre => Sock /= null
                and then Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM)

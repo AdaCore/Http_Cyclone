@@ -71,19 +71,20 @@ is
         );
     
     procedure Tcp_Send (
-            Sock : Socket;
+            Sock : in out Socket;
             Data : char_array;
             Written : out Integer;
             Flags : unsigned;
             Error : out Error_T)
     with
         Depends => (
+            Sock => (Sock, Flags),
             Written => (Sock, Data, Flags),
             Error => (Sock, Data, Flags)
         );
 
     procedure Tcp_Receive (
-            Sock : Socket;
+            Sock : in out Socket;
             Data : out char_array;
             Received : out unsigned;
             Flags : unsigned;
@@ -91,16 +92,25 @@ is
     with
         Depends => (
             Error => (Sock, Flags),
+            Sock =>+ Flags,
             Data => (Sock, Flags),
             Received => (Sock, Flags)
+        ),
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length /= 0,
+        Contract_Cases => (
+            Error = NO_ERROR => Sock.all'Old = Sock.all and then Received > 0,
+            others => Sock.all = Sock.all'Old and then Received = 0 
         );
-    
-    function Tcp_Shutdown (Sock : Socket ; how : unsigned)
-    return unsigned
+
+    procedure Tcp_Shutdown (
+        Sock : in out Socket;
+        How : unsigned;
+        Error : out Error_T)
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpShutdown";
+        Depends => (
+            Sock =>+ How,
+            Error => (Sock, How)
+        );
     
     function Tcp_Abort (Sock : Socket)
     return unsigned

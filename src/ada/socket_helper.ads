@@ -18,6 +18,10 @@ is
         Server_Name    : char_array; 
         Server_Ip_Addr : out IpAddr;
         Flags : unsigned;
-        Error : out Error_T);
+        Error : out Error_T)
+    with
+        Post => (
+            if Error = NO_ERROR then
+                Server_Ip_Addr.length > 0);
 
 end Socket_Helper;

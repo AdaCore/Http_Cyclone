@@ -78,7 +78,7 @@ is
     end Tcp_Accept;
 
     procedure Tcp_Send (
-            Sock : Socket;
+            Sock : in out Socket;
             Data : char_array;
             Written : out Integer;
             Flags : unsigned;
@@ -95,7 +95,7 @@ is
     end Tcp_Send;
 
     procedure Tcp_Receive (
-            Sock : Socket;
+            Sock : in out Socket;
             Data : out char_array;
             Received : out unsigned;
             Flags : unsigned;
@@ -134,5 +134,20 @@ is
         --     end if;
         -- end loop;
     end Tcp_Kill_Oldest_Connection;
+
+    procedure Tcp_Shutdown (
+        Sock : in out Socket;
+        How : unsigned;
+        Error : out Error_T)
+    is
+        function tcpShutdown (Sock : Socket ; how : unsigned)
+        return unsigned
+        with
+            Import => True,
+            Convention => C,
+            External_Name => "tcpShutdown";
+    begin
+        Error := Error_T'Enum_Val(tcpShutdown(Sock, How));
+    end Tcp_Shutdown;
 
 end Tcp_Binding;
