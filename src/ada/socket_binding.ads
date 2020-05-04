@@ -7,14 +7,9 @@ with Ip; use Ip;
 with Common_type; use Common_type;
 with Socket_Types; use Socket_Types;
 
-package Socket_Binding is
-
-   function getHostByName(Net_Interface : System.Address; Server_Name : char_array; Serveur_Ip_Addr: out IpAddr; Flags : unsigned)
-   return unsigned
-     with
-      Import => True,
-      Convention => C,
-      External_Name => "getHostByName";
+package Socket_Binding 
+   with SPARK_Mode
+is
 
    -- function socketOpen (S_Type: Sock_Type; protocol: Sock_Protocol) return Socket 
    -- with
@@ -68,11 +63,12 @@ package Socket_Binding is
    --    Convention => C,
    --    External_Name => "socketShutdown";
 
-   procedure socketClose (sock: Socket)
+   procedure socketClose (sock: in out Socket)
    with
       Import => True,
       Convention => C,
-      External_Name => "socketClose";
+      External_Name => "socketClose",
+      Post => Sock = null;
 
    -- function socketSetTxBufferSize (sock: Socket; size: unsigned_long)
    -- return unsigned

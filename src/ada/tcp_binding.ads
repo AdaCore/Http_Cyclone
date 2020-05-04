@@ -47,28 +47,53 @@ is
         Depends => (
             Sock =>+ (Remote_Ip_Addr, Remote_Port),
             Error => (Sock, Remote_Port, Remote_Ip_Addr)
-        );
+        ),
+        Pre => Sock /= null,
+        Post => Sock /= null,
+        Contract_Cases => (
+            Error = NO_ERROR => 
+                Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr),
+            others => True);
 
     procedure Tcp_Listen (
-            Sock : Socket;
+            Sock : in out Socket;
             Backlog : unsigned;
             Error : out Error_T)
     with
         Depends => (
+            Sock =>+ Backlog,
             Error => (Sock, Backlog)
-        );
+        ),
+        Pre => Sock /= null,
+        Post => Sock /= null,
+        Contract_Cases =>
+            (others => Sock.all = Sock.all'Old);
 
     procedure Tcp_Accept (
-            Sock : Socket;
+            Sock : in out Socket;
             Client_Ip_Addr : out IpAddr;
             Client_Port : out Port;
             Client_Socket : out Socket)
     with
         Depends => (
+            Sock => Sock,
             Client_Ip_Addr => Sock,
             Client_Port => Sock,
             Client_Socket => Sock
-        );
+        ),
+        Pre => Sock /= null,
+        Post => (Sock /= null and then
+                Client_Ip_Addr.length > 0 and then
+                Client_Port > 0 and then
+                Client_Socket /= null and then
+                Client_Socket.S_remoteIpAddr = Client_Ip_Addr and then
+                Client_Socket.S_Remote_Port = Client_Port and then
+                Client_Socket.S_Protocol = Sock.S_Protocol and then
+                Client_Socket.S_Local_Port = Sock.S_Local_Port and then
+                Client_Socket.S_Type = Sock.S_Type and then
+                Client_Socket.S_localIpAddr = Sock.S_localIpAddr),
+        Contract_Cases =>
+            (others => Sock.all = Sock.all'Old);
     
     procedure Tcp_Send (
             Sock : in out Socket;
@@ -81,7 +106,11 @@ is
             Sock => (Sock, Flags),
             Written => (Sock, Data, Flags),
             Error => (Sock, Data, Flags)
-        );
+        ),
+        Pre => Sock /= null,
+        Post => Sock /= null,
+        Contract_Cases => 
+            (others => Sock.all = Sock.all'Old);
 
     procedure Tcp_Receive (
             Sock : in out Socket;
@@ -96,7 +125,9 @@ is
             Data => (Sock, Flags),
             Received => (Sock, Flags)
         ),
-        Pre => Sock /= null and then Sock.S_remoteIpAddr.length /= 0,
+        Pre => Sock /= null and then Sock.S_remoteIpAddr.length /= 0
+                and then Data'Length > 0,
+        Post => Sock /= null,
         Contract_Cases => (
             Error = NO_ERROR => Sock.all'Old = Sock.all and then Received > 0,
             others => Sock.all = Sock.all'Old and then Received = 0 
@@ -110,7 +141,11 @@ is
         Depends => (
             Sock =>+ How,
             Error => (Sock, How)
-        );
+        ),
+        Pre => Sock /= null,
+        Post => Sock /= null,
+        Contract_Cases => 
+            (others => Sock.all = Sock.all'Old);
     
     function Tcp_Abort (Sock : Socket)
     return unsigned

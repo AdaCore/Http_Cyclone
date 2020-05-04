@@ -47,11 +47,11 @@ is
     end Tcp_Connect;
 
     procedure Tcp_Listen (
-            Sock : Socket;
+            Sock : in out Socket;
             Backlog : unsigned;
             Error : out Error_T)
     is
-        function tcpListen (Sock : Socket; backlog : unsigned)
+        function tcpListen (Sock : in out Socket; backlog : unsigned)
         return unsigned
         with
             Import => True,
@@ -62,12 +62,12 @@ is
     end Tcp_Listen;
 
     procedure Tcp_Accept (
-            Sock : Socket;
+            Sock : in out Socket;
             Client_Ip_Addr : out IpAddr;
             Client_Port : out Port;
             Client_Socket : out Socket)
     is
-        function tcpAccept (Sock : Socket; Client_Ip_Addr : out IpAddr; P : out Port)
+        function tcpAccept (Sock : in out Socket; Client_Ip_Addr : out IpAddr; P : out Port)
         return Socket
         with
             Import => True,

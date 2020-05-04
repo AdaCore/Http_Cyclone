@@ -227,8 +227,14 @@ is
         Error : out Error_T)
     is
     begin
-        Socket_Send_To(Sock, Sock.S_remoteIpAddr, Sock.S_Remote_Port, Data,
-                        Written, 0, Error);
+        Written := 0;
+        Os_Acquire_Mutex (Net_Mutex);
+        if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+            Tcp_Send (Sock, Data, Written, 0, Error);
+        else
+            Error := ERROR_INVALID_SOCKET;
+        end if;
+        Os_Release_Mutex (Net_Mutex);
     end Socket_Send;
 
 
@@ -257,6 +263,7 @@ is
             Dest_Ip_Addr := Sock.S_localIpAddr;
             Error := ERROR_INVALID_SOCKET;
             Received := 0;
+            Data := "";
         end if;
         Os_Release_Mutex (Net_Mutex);
     end Socket_Receive_Ex;
@@ -264,14 +271,14 @@ is
 
     procedure Socket_Receive(
         Sock: in out Socket;
-        Buf: out char_array;
+        Data: out char_array;
+        Received : out unsigned;
         Error : out Error_T)
     is
         Src_Ip, Dest_Ip: IpAddr;
         Src_Port : Port;
-        Received : unsigned;
     begin
-        Socket_Receive_Ex(Sock, Src_Ip, Src_Port, Dest_Ip, Buf, Received, 0, Error);
+        Socket_Receive_Ex(Sock, Src_Ip, Src_Port, Dest_Ip, Data, Received, 0, Error);
     end Socket_Receive;
 
 
@@ -322,9 +329,9 @@ is
     end Socket_Bind;
 
     procedure Socket_Listen (
-        Sock   :     Socket;
-        Backlog:     Natural;
-        Error  : out Error_T)
+        Sock   : in out Socket;
+        Backlog:        Natural;
+        Error  :    out Error_T)
     is begin
         Os_Acquire_Mutex (Net_Mutex);
         Tcp_Listen (Sock, unsigned(Backlog), Error);
@@ -332,10 +339,10 @@ is
     end Socket_Listen;
 
     procedure Socket_Accept (
-        Sock           :     Socket;
-        Client_Ip_Addr : out IpAddr;
-        Client_Port    : out Port;
-        Client_Socket  : out Socket)
+        Sock           : in out Socket;
+        Client_Ip_Addr :    out IpAddr;
+        Client_Port    :    out Port;
+        Client_Socket  :    out Socket)
     is
     begin
         Tcp_Accept (Sock, Client_Ip_Addr, Client_Port, Client_Socket);

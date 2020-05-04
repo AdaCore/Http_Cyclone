@@ -17,6 +17,7 @@ is
         Error : Error_T;
         Host_Flags : Host_Resolver_Flags(1 .. 1);
         Written : Integer;
+        Received : unsigned; 
     begin
         Host_Flags(1) := HOST_NAME_RESOLVER_ANY;
         Get_Host_By_Name("httpbin.org", ServerAddr, Host_Flags, Error);
@@ -41,7 +42,7 @@ is
         end if;
 
         loop
-            Socket_Receive (Sock, Buf, Error);
+            Socket_Receive (Sock, Buf, Received, Error);
             pragma Loop_Invariant (Sock.S_remoteIpAddr.length > 0 and Sock /= null);
             exit when Error = ERROR_END_OF_STREAM;
             if Error /= NO_ERROR then
