@@ -182,6 +182,7 @@ is
             Os_Acquire_Mutex (Net_Mutex);
             -- Establish TCP connection
             Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
+            pragma Assert (if Error = NO_ERROR then Sock.S_remoteIpAddr = Remote_Ip_Addr);
             Os_Release_Mutex (Net_Mutex);
         
         -- Connectionless socket?
@@ -299,6 +300,15 @@ is
 
     procedure Socket_Close (Sock : in out Socket)
     is
+
+        procedure socketClose (sock: in out Socket)
+        with
+            Import => True,
+            Convention => C,
+            External_Name => "socketClose",
+            Depends => (Sock => Sock),
+            Post => Sock = null;
+
     begin
         socketClose (Sock);
     end Socket_Close;

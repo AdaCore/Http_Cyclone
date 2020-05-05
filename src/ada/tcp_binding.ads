@@ -8,6 +8,7 @@ with Socket_Types; use Socket_Types;
 package Tcp_binding 
     with SPARK_Mode
 is
+    pragma Unevaluated_Use_Of_Old (Allow);
 
     -- Ephemeral ports are used for dynamic port assignment
     Tcp_Dynamic_Port : Port;
@@ -49,11 +50,13 @@ is
             Error => (Sock, Remote_Port, Remote_Ip_Addr)
         ),
         Pre => Sock /= null,
-        Post => Sock /= null,
-        Contract_Cases => (
-            Error = NO_ERROR => 
-                Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr),
-            others => True);
+        Post => Sock /= null and then
+                (if Error = No_ERROR then
+                    Sock.all = Sock.all'Old'Update
+                        (S_remoteIpAddr => Remote_Ip_Addr,
+                         S_Remote_Port => Remote_Port)
+                else
+                    Sock.all = Sock.all'Old);
 
     procedure Tcp_Listen (
             Sock : in out Socket;
@@ -65,9 +68,8 @@ is
             Error => (Sock, Backlog)
         ),
         Pre => Sock /= null,
-        Post => Sock /= null,
-        Contract_Cases =>
-            (others => Sock.all = Sock.all'Old);
+        Post => Sock /= null and then
+                Sock.all = Sock.all'Old;
 
     procedure Tcp_Accept (
             Sock : in out Socket;
@@ -91,9 +93,8 @@ is
                 Client_Socket.S_Protocol = Sock.S_Protocol and then
                 Client_Socket.S_Local_Port = Sock.S_Local_Port and then
                 Client_Socket.S_Type = Sock.S_Type and then
-                Client_Socket.S_localIpAddr = Sock.S_localIpAddr),
-        Contract_Cases =>
-            (others => Sock.all = Sock.all'Old);
+                Client_Socket.S_localIpAddr = Sock.S_localIpAddr and then
+                Sock.all = Sock.all'Old);
     
     procedure Tcp_Send (
             Sock : in out Socket;
@@ -108,9 +109,8 @@ is
             Error => (Sock, Data, Flags)
         ),
         Pre => Sock /= null,
-        Post => Sock /= null,
-        Contract_Cases => 
-            (others => Sock.all = Sock.all'Old);
+        Post => Sock /= null and then
+                Sock.all = Sock.all'Old;
 
     procedure Tcp_Receive (
             Sock : in out Socket;
@@ -127,11 +127,12 @@ is
         ),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length /= 0
                 and then Data'Length > 0,
-        Post => Sock /= null,
-        Contract_Cases => (
-            Error = NO_ERROR => Sock.all'Old = Sock.all and then Received > 0,
-            others => Sock.all = Sock.all'Old and then Received = 0 
-        );
+        Post => Sock /= null and then
+                    Sock.all = Sock.all'Old and then
+                    (if Error = NO_ERROR then
+                        Received > 0
+                    elsif Error = ERROR_END_OF_STREAM then
+                        Received = 0);
 
     procedure Tcp_Shutdown (
         Sock : in out Socket;
@@ -143,9 +144,8 @@ is
             Error => (Sock, How)
         ),
         Pre => Sock /= null,
-        Post => Sock /= null,
-        Contract_Cases => 
-            (others => Sock.all = Sock.all'Old);
+        Post => Sock /= null and then
+                Sock.all = Sock.all'Old;
     
     function Tcp_Abort (Sock : Socket)
     return unsigned

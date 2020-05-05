@@ -1,5 +1,4 @@
 with System;
-with Socket_Binding; use Socket_Binding;
 
 package body Socket_Helper 
     with SPARK_Mode => Off

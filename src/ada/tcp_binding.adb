@@ -1,4 +1,5 @@
 with System;
+with Tcp_Misc_Binding; use Tcp_Misc_Binding;
 
 package body Tcp_Binding 
     with SPARK_Mode => Off
@@ -50,15 +51,26 @@ is
             Sock : in out Socket;
             Backlog : unsigned;
             Error : out Error_T)
-    is
-        function tcpListen (Sock : in out Socket; backlog : unsigned)
-        return unsigned
-        with
-            Import => True,
-            Convention => C,
-            External_Name => "tcpListen";
-    begin
-        Error := Error_T'Enum_Val(tcpListen (Sock, Backlog));
+    is begin
+        -- Socket already connected?
+        if Sock.State /= TCP_STATE_CLOSED then
+            Error := ERROR_ALREADY_CONNECTED;
+            return ;
+        end if;
+
+        -- Set the size of the SYN queue
+        -- Limit the number of pending connections
+        if Backlog > 0 then
+            Sock.synQueueSize := unsigned'Min(Backlog, TCP_MAX_SYN_QUEUE_SIZE);
+        else
+            Sock.synQueueSize := unsigned'Min(TCP_DEFAULT_SYN_QUEUE_SIZE, TCP_MAX_SYN_QUEUE_SIZE);
+        end if;
+
+        -- Place the socket in the listening state
+        Tcp_Change_State (Sock, TCP_STATE_LISTEN);
+
+        -- Sucessful processing
+        Error := NO_ERROR;
     end Tcp_Listen;
 
     procedure Tcp_Accept (

@@ -1,7 +1,6 @@
 pragma Restrictions(No_Tasking);
 
 with Interfaces.C; use Interfaces.C;
-with Socket_Binding; use Socket_Binding;
 with Ip; use Ip;
 with Error_H; use Error_H;
 with Common_Type; use Common_Type;
@@ -156,27 +155,25 @@ is
         Pre => Sock /= null
                 and then Remote_Ip_Addr.length > 0,
         Post => Sock /= null and then
-                (if Error = NO_ERROR then
-                    Sock /= null and then
                     (if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
-                        Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr)
+                        (if Error = NO_ERROR then
+                            Sock.all = Sock.all'Old'Update (
+                                S_remoteIpAddr => Remote_Ip_Addr,
+                                S_Remote_Port => Remote_Port)
+                        else
+                            Sock.all = Sock.all'Old)
                     elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM) then
-                        Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr, S_Remote_Port => Remote_Port)
+                        Error = NO_ERROR and then
+                        Sock.all = Sock.all'Old'Update(
+                            S_remoteIpAddr => Remote_Ip_Addr,
+                            S_Remote_Port => Remote_Port)
                     elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_RAW_IP) then
-                        Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr)
-                    else 
-                        Sock.all = Sock.all'Old));
-        -- Contract_Cases => (
-        --     Error = NO_ERROR =>
-        --         Sock /= null and then
-        --         (if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
-        --             Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr)
-        --         elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_RAW_IP) then
-        --             Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr, S_Remote_Port => Remote_Port)
-        --         else
-        --             Sock.all = Sock.all'Old'Update(S_remoteIpAddr => Remote_Ip_Addr)),
-        --     others => True
-        -- );
+                        Error = NO_ERROR and then 
+                        Sock.all = Sock.all'Old'Update(
+                            S_remoteIpAddr => Remote_Ip_Addr)
+                    else
+                        Sock.all = Sock.all'Old
+                    );
     
     procedure Socket_Send_To(
         Sock : in out Socket;
@@ -195,11 +192,6 @@ is
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0,
         Post => Sock /= null and then
                 (if Error = NO_ERROR then Sock.all = Sock.all'Old);
-        -- Contract_Cases => (
-        --     Error = NO_ERROR =>
-        --         Sock /= null and then Sock.all = Sock.all'Old,
-        --     others => True
-        -- );
 
     procedure Socket_Send (
         Sock: in out Socket;
@@ -241,18 +233,16 @@ is
                 and then Data'Length > 0,
         Post => Sock /= null and then
             (
-                if Error = NO_ERROR then 
-                    (Sock.all = Sock.all'Old and then Received > 0)
-                elsif Error = ERROR_END_OF_STREAM then
-                    (Sock.all = Sock.all'Old and then Received = 0)
-                else
-                    (Sock.all = Sock.all'Old and then Received = 0)
+                if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+                    (if Error = NO_ERROR then 
+                        (Sock.all = Sock.all'Old and then Received > 0)
+                    elsif Error = ERROR_END_OF_STREAM then
+                        (Sock.all = Sock.all'Old and then Received = 0))
+                elsif Sock.S_Type /= Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+                    Error = ERROR_INVALID_SOCKET and then
+                    Sock.all = Sock.all'Old and then
+                    Received = 0
             );
-        -- Contract_Cases => (
-        --     Error = NO_ERROR => Sock.all = Sock.all'Old and then Data'Length > 0,
-        --     Error = ERROR_END_OF_STREAM => Sock.all = Sock.all'Old and then Data'Length = 0,
-        --     others => Sock.all = Sock.all'Old and then Data'Length = 0
-        -- );
 
     procedure Socket_Receive (
         Sock: in out Socket;
@@ -268,19 +258,18 @@ is
                     null => Net_Mutex),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0
                 and then Data'Length > 0,
-        Post => Sock /= null and then (
-                if Error = NO_ERROR then
-                    (Sock.all = Sock.all'Old and then Received > 0)
-                elsif Error = ERROR_END_OF_STREAM then
-                    (Sock.all = Sock.all'Old and then Received = 0)
-                else
-                    (Sock.all = Sock.all'Old and then Received = 0)
-                );
-        -- Contract_Cases => (
-        --     Error = NO_ERROR => Sock.all = Sock.all'Old and then Buf'Length > 0,
-        --     Error = ERROR_END_OF_STREAM => Sock.all = Sock.all'Old and then Buf'Length = 0,
-        --     others => Sock.all = Sock.all'Old and then Buf'Length = 0
-        -- );
+        Post => Sock /= null and then 
+            (
+                if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+                    (if Error = NO_ERROR then 
+                        (Sock.all = Sock.all'Old and then Received > 0)
+                    elsif Error = ERROR_END_OF_STREAM then
+                        (Sock.all = Sock.all'Old and then Received = 0))
+                elsif Sock.S_Type /= Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+                    Error = ERROR_INVALID_SOCKET and then
+                    Sock.all = Sock.all'Old and then
+                    Received = 0
+            );
 
     procedure Socket_Shutdown (
         Sock  : in out Socket;
@@ -295,13 +284,10 @@ is
                Sock.S_remoteIpAddr.length > 0,
         Post => Sock /= null and then 
                 (if Error = NO_ERROR then Sock.all = Sock.all'Old);
-        -- Contract_Cases => (
-        --     Error = NO_ERROR => Sock.all = Sock.all'Old,
-        --     others => True
-        -- );
 
     procedure Socket_Close (Sock: in out Socket)
     with
+        Depends => (Sock => Sock),
         Pre => Sock /= null,
         Post => Sock = null;
 

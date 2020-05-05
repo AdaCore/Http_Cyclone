@@ -4,6 +4,9 @@ with Compiler_Port; use Compiler_Port;
 
 package Tcp_Type is
 
+    TCP_MAX_SYN_QUEUE_SIZE : constant unsigned := 16;
+    TCP_DEFAULT_SYN_QUEUE_SIZE : constant unsigned := 4;
+
     type Tcp_State is 
      (TCP_STATE_CLOSED,
       TCP_STATE_LISTEN,
