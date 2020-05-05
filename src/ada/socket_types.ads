@@ -111,6 +111,34 @@ package Socket_Types is
         SOCKET_TYPE_RAW_ETH => 4
     );
 
+    type Socket_Event is (
+        SOCKET_EVENT_TIMEOUT,
+        SOCKET_EVENT_CONNECTED,
+        SOCKET_EVENT_CLOSED,
+        SOCKET_EVENT_TX_READY,
+        SOCKET_EVENT_TX_DONE,
+        SOCKET_EVENT_TX_ACKED,
+        SOCKET_EVENT_TX_SHUTDOWN,
+        SOCKET_EVENT_RX_READY,
+        SOCKET_EVENT_RX_SHUTDOWN,
+        SOCKET_EVENT_LINK_UP,
+        SOCKET_EVENT_LINK_DOWN
+    );
+
+    for Socket_Event use (
+        SOCKET_EVENT_TIMEOUT     => 000,
+        SOCKET_EVENT_CONNECTED   => 001,
+        SOCKET_EVENT_CLOSED      => 002,
+        SOCKET_EVENT_TX_READY    => 004,
+        SOCKET_EVENT_TX_DONE     => 008,
+        SOCKET_EVENT_TX_ACKED    => 016,
+        SOCKET_EVENT_TX_SHUTDOWN => 032,
+        SOCKET_EVENT_RX_READY    => 064,
+        SOCKET_EVENT_RX_SHUTDOWN => 128,
+        SOCKET_EVENT_LINK_UP     => 256,
+        SOCKET_EVENT_LINK_DOWN   => 512
+    );
+
     SOCKET_MAX_COUNT : constant Positive := 10;
     type Socket_Type_Index is range 0 .. (SOCKET_MAX_COUNT - 1);
     type Socket_Table_T is array (Socket_Type_Index) of aliased Socket_Struct;

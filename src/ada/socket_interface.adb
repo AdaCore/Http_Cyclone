@@ -251,7 +251,7 @@ is
     is begin
 
         Os_Acquire_Mutex (Net_Mutex);
-        if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
+        if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
             Tcp_Receive (Sock, Data, Received, Flags, Error);
             Src_Ip_Addr := Sock.S_remoteIpAddr;
             Src_Port := Sock.S_Remote_Port;

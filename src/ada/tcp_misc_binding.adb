@@ -1,8 +1,6 @@
-with Interfaces.C; use Interfaces.C;
-with Tcp_Type; use Tcp_Type;
-with Socket_Types; use Socket_Types;
-
-package body Tcp_Misc_Binding is
+package body Tcp_Misc_Binding 
+    with SPARK_Mode => Off
+is
 
     procedure Tcp_Change_State(
         Sock      : in out Socket;
@@ -33,5 +31,23 @@ package body Tcp_Misc_Binding is
         -- Update TCP related events
         tcpUpdateEvents(Sock);
     end Tcp_Change_State;
+
+
+    procedure Tcp_Wait_For_Events (
+        Sock       : in out Socket;
+        Event_Mask : in     unsigned;
+        Timeout    : in     Systime;
+        Event      :    out unsigned
+    )
+    is
+        function tcpWaitForEvents (Sock : in out Socket; eventMask : unsigned; timeout : Systime)
+        return unsigned
+        with
+            Import => True,
+            Convention => C,
+            External_Name => "tcpWaitForEvents";
+    begin
+        Event := tcpWaitForEvents (Sock, Event_Mask, Timeout);
+    end Tcp_Wait_For_Events;
 
 end Tcp_Misc_Binding;

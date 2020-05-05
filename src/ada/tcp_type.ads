@@ -1,6 +1,6 @@
 with Net_Mem; use Net_Mem;
 with Interfaces.C; use Interfaces.C;
-with Compiler_Port; use Compiler_Port;
+with Common_Type; use Common_Type;
 
 package Tcp_Type is
 

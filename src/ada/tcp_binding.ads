@@ -1,17 +1,17 @@
 pragma Ada_2020;
+pragma Unevaluated_Use_Of_Old (Allow);
 
 with Common_Type;  use Common_Type;
 with Error_H;      use Error_H;
 with Interfaces.C; use Interfaces.C;
 with Ip;           use Ip;
+with Net;          use Net;
 with Socket_Types; use Socket_Types;
 with Tcp_Type;     use Tcp_Type;
 
 package Tcp_Binding 
   with SPARK_Mode
 is
-    pragma Unevaluated_Use_Of_Old (Allow);
-
     -- Ephemeral ports are used for dynamic port assignment
     Tcp_Dynamic_Port : Port;
 
@@ -152,14 +152,26 @@ is
         Convention => C,
         External_Name => "tcpAbort";
 
-    function Tcp_Get_State (Sock : Socket)
-    return Tcp_State
+    procedure Tcp_Get_State (
+        Sock : Socket;
+        State : out Tcp_State
+    )
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpGetState";
+        Global => (Input => Net_Mutex),
+        Depends => (State => Sock,
+                    null => (Net_Mutex)),
+        Pre => Sock /= null,
+        Post => Sock /= null and then
+                State = Sock.State and then
+                Sock.all = Sock.all'Old;
 
     procedure Tcp_Kill_Oldest_Connection 
-      (Sock : out Socket);
+      (Sock : out Socket)
+      with
+        Depends => (Sock => null),
+        Post => (
+            if Sock /= null then
+                Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep
+        );
 
 end Tcp_binding;
