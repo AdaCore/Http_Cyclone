@@ -25,12 +25,10 @@ is
       (P : out Port)
       with
         Global => 
-          (Input  => (SOCKET_EPHEMERAL_PORT_MIN, SOCKET_EPHEMERAL_PORT_MAX),
-           In_Out => Tcp_Dynamic_Port),
+          (In_Out => Tcp_Dynamic_Port),
         Depends => 
           (P                => Tcp_Dynamic_Port,
-           Tcp_Dynamic_Port => Tcp_Dynamic_Port,
-           null             => (SOCKET_EPHEMERAL_PORT_MIN, SOCKET_EPHEMERAL_PORT_MAX)),
+           Tcp_Dynamic_Port => Tcp_Dynamic_Port),
         Post => 
           P in SOCKET_EPHEMERAL_PORT_MIN .. SOCKET_EPHEMERAL_PORT_MAX and then
           Tcp_Dynamic_Port in SOCKET_EPHEMERAL_PORT_MIN .. SOCKET_EPHEMERAL_PORT_MAX;
@@ -146,8 +144,8 @@ is
           Sock.all = Sock.all'Old;
     
     procedure Tcp_Abort
-      (Sock : in out Socket;
-       Error : out Error_T)
+      (Sock  : in out Socket;
+       Error :    out Error_T)
       with
         Depends => (Sock => Sock,
                     Error => Sock),
@@ -170,7 +168,7 @@ is
         Global  => (Input => Net_Mutex),
         Depends => 
           (State => Sock,
-           null  => (Net_Mutex)),
+           null  => Net_Mutex),
         Pre  => Sock /= null,
         Post =>
           Sock /= null and then
