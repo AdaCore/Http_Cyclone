@@ -35,7 +35,10 @@ package body Last_Chance_Handler is
    -- Last_Chance_Handler --
    -------------------------
 
-   procedure Last_Chance_Handler (Msg : System.Address; Line : Integer) is
+   procedure Last_Chance_Handler
+     (Msg  : System.Address;
+      Line : Integer)
+   is
       pragma Unreferenced (Msg, Line);
       procedure Busy_loop;
 
@@ -52,7 +55,7 @@ package body Last_Chance_Handler is
    begin
 
       Busy_loop;
-      
+
       --  No-return procedure...
       loop
          null;

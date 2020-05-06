@@ -48,7 +48,7 @@ is
         Post => 
           Sock /= null and then
           (if Error = No_ERROR then
-             Sock.all = (Sock.all'Old with delta 
+             Sock.all = Sock.all'Old'Update( 
                S_RemoteIpAddr => Remote_Ip_Addr,
                S_Remote_Port  => Remote_Port)
            else
@@ -145,37 +145,36 @@ is
           Sock /= null and then
           Sock.all = Sock.all'Old;
     
-    procedure Tcp_Abort (
-        Sock : in out Socket;
-        Error : out Error_T
-    )
-    with
+    procedure Tcp_Abort
+      (Sock : in out Socket;
+       Error : out Error_T)
+      with
         Depends => (Sock => Sock,
                     Error => Sock),
         Pre => Sock /= null,
         Post => Sock /= null and then
                 Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
 
-    procedure Tcp_Get_State (
-        Sock : Socket;
-        State : out Tcp_State
-    )
-    with
-        Global => (Input => Net_Mutex),
-        Depends => (State => Sock,
-                    null => (Net_Mutex)),
-        Pre => Sock /= null,
-        Post => Sock /= null and then
-                State = Sock.State and then
-                Sock.all = Sock.all'Old;
-
     procedure Tcp_Kill_Oldest_Connection 
       (Sock : out Socket)
       with
         Depends => (Sock => null),
-        Post => (
-            if Sock /= null then
-                Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep
-        );
+        Post =>
+           (if Sock /= null then
+              Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep);
+
+   procedure Tcp_Get_State
+      (Sock  :     Socket;
+       State : out Tcp_State)
+      with
+        Global  => (Input => Net_Mutex),
+        Depends => 
+          (State => Sock,
+           null  => (Net_Mutex)),
+        Pre  => Sock /= null,
+        Post =>
+          Sock /= null and then
+          State = Sock.State and then
+          Sock.all = Sock.all'Old;
 
 end Tcp_binding;
