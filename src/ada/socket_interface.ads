@@ -230,7 +230,7 @@ is
                     Error => (Sock, Flags),
                     null => Net_Mutex),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0
-                and then Data'Length > 0,
+                and then Data'Last >= Data'First,
         Post => Sock /= null and then
             (
                 if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then
@@ -257,7 +257,7 @@ is
                     Received => Sock,
                     null => Net_Mutex),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length > 0
-                and then Data'Length > 0,
+                and then Data'Last >= Data'First,
         Post => Sock /= null and then 
             (
                 if Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM) then

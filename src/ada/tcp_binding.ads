@@ -126,7 +126,7 @@ is
             Received => (Sock, Flags)
         ),
         Pre => Sock /= null and then Sock.S_remoteIpAddr.length /= 0
-                and then Data'Length > 0,
+                and then Data'Last >= Data'First,
         Post => Sock /= null and then
                     Sock.all = Sock.all'Old and then
                     (if Error = NO_ERROR then
