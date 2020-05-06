@@ -11,7 +11,7 @@ package Ip is
      with
       Convention => C;
 
-   subtype IpAddrAny is IpAddr 
+   subtype IpAddrAny is IpAddr
      with
       Predicate => IpAddrAny.length > 0;
 

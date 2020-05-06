@@ -22,7 +22,7 @@ package Common_Type is
 
    type OsEvent is record
       handle : System.Address;
-   end record 
+   end record
     with
       Convention => C;
 

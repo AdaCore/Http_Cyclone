@@ -8,7 +8,7 @@ is
    -- This record type is consistant with the OsMutex type for freertos
    type Os_Mutex is record
       Handle : System.Address;
-   end record 
+   end record
      with
       Convention => C;
 
@@ -17,7 +17,7 @@ is
 
    procedure Os_Release_Mutex (Mutex : Os_Mutex);
 
-   function Os_Get_System_Time return Systime 
+   function Os_Get_System_Time return Systime
      with
       Import        => True,
       Convention    => C,

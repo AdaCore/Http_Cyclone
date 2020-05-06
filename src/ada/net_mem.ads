@@ -7,7 +7,7 @@ package Net_Mem is
       address : System.Address;
       length  : unsigned_short;
       size    : unsigned_short;
-   end record 
+   end record
      with
       Convention => C;
 

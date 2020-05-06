@@ -18,7 +18,7 @@ is
         Buf : char_array (1 .. 128) with Unreferenced;
         Error : Error_T;
         Written : Integer with Unreferenced;
-        Received : Unsigned with Unreferenced; 
+        Received : Unsigned with Unreferenced;
     begin
         Get_Host_By_Name("httpbin.org", ServerAddr, HOST_NAME_RESOLVER_ANY, Error);
         if Error /= NO_ERROR then

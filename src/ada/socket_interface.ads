@@ -70,10 +70,10 @@ is
       S_Type     :     Socket_Type;
       S_Protocol :     Socket_Protocol)
       with
-         Global => 
+         Global =>
            (Input  => (Net_Mutex, Socket_Table),
             In_Out => Tcp_Dynamic_Port),
-         Depends => 
+         Depends =>
            (Sock             => (S_Type, S_Protocol, Tcp_Dynamic_Port, Socket_Table),
             Tcp_Dynamic_Port => (S_Type, Tcp_Dynamic_Port),
             null             => Net_Mutex),
@@ -87,8 +87,8 @@ is
                  Sock.S_Protocol = SOCKET_IP_PROTO_UDP'Enum_Rep
                else
                  Sock.S_Protocol = Socket_Protocol'Enum_Rep (S_Protocol))
-              and then 
-              Sock.S_remoteIpAddr.length = 0 and then 
+              and then
+              Sock.S_remoteIpAddr.length = 0 and then
               Sock.S_localIpAddr.length = 0 and then
               Sock.S_remoteIpAddr.length = 0);
 
@@ -96,14 +96,14 @@ is
       (Sock    : in out Socket;
        Timeout :        Systime)
       with
-        Global => 
+        Global =>
           (Input => Net_Mutex),
-        Depends => 
+        Depends =>
           (Sock => (Timeout, Sock),
            null => Net_Mutex),
-        Pre => 
+        Pre =>
           Sock /= null,
-        Post => 
+        Post =>
           Sock /= null and then
           Sock.all = Sock.all'Old'Update (
              S_Timeout => timeout);
@@ -136,7 +136,7 @@ is
         Pre =>
           Sock /= null,
         Post =>
-          Sock /= null and then 
+          Sock /= null and then
           Sock.all = Sock.all'Old'Update (
               S_Multicast_TTL => unsigned_char (Ttl));
 
@@ -146,16 +146,16 @@ is
        Remote_Port    : in     Port;
        Error          :    out Error_T)
       with
-        Global => 
+        Global =>
           (Input => Net_Mutex),
-        Depends => 
+        Depends =>
           (Sock  => (Sock, Remote_Ip_Addr, Remote_Port),
            Error => (Sock, Remote_Ip_Addr, Remote_Port),
            null  => Net_Mutex),
-        Pre => 
+        Pre =>
           Sock /= null and then
           Remote_Ip_Addr.length > 0,
-        Post => 
+        Post =>
           Sock /= null and then
           (if Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_STREAM) then
              (if Error = NO_ERROR then
@@ -165,13 +165,13 @@ is
              else
                 Sock.all = Sock.all'Old)
           elsif Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_DGRAM) then
-             Error = NO_ERROR and then 
+             Error = NO_ERROR and then
              Sock.all = Sock.all'Old'Update
                    (S_remoteIpAddr => Remote_Ip_Addr,
                     S_Remote_Port  => Remote_Port)
           elsif Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_RAW_IP) then
              Error = NO_ERROR and then
-             Sock.all = Sock.all'Old'Update 
+             Sock.all = Sock.all'Old'Update
                 (S_remoteIpAddr => Remote_Ip_Addr)
           else
              Sock.all = Sock.all'Old);
@@ -192,10 +192,10 @@ is
            Sock    => (Sock, Flags),
            Written => (Sock, Data, Flags),
            null    => (Net_Mutex, Dest_Port, Dest_Ip_Addr)),
-        Pre  => 
+        Pre  =>
           Sock /= null and then
           Sock.S_remoteIpAddr.length > 0,
-        Post => 
+        Post =>
           Sock /= null and then
           (if Error = NO_ERROR then Sock.all = Sock.all'Old);
 
@@ -244,7 +244,7 @@ is
           Sock /= null and then
           Sock.S_remoteIpAddr.length > 0 and then
           Data'Last >= Data'First,
-        Post => 
+        Post =>
           Sock /= null and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
              (if Error = NO_ERROR then
@@ -276,7 +276,7 @@ is
           Sock /= null and then
           Sock.S_remoteIpAddr.length > 0 and then
           Data'Last >= Data'First,
-        Post => 
+        Post =>
           Sock /= null and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
              (if Error = NO_ERROR then
@@ -301,7 +301,7 @@ is
           (Sock  => (Sock, How),
            Error => (Sock, How),
            null  => Net_Mutex),
-        Pre => 
+        Pre =>
           Sock /= null and then
           Sock.S_remoteIpAddr.length > 0,
         Post =>
@@ -315,7 +315,7 @@ is
         Global  => (Input => Net_Mutex),
         Depends => (Sock => Sock, null => Net_Mutex),
         Pre     => Sock /= null,
-        Post    => Sock /= null and then 
+        Post    => Sock /= null and then
                    Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
 
    procedure Socket_Set_Tx_Buffer_Size
@@ -329,7 +329,7 @@ is
                    Size > 1 and then
                    Size < 22_880, -- TCP_MAX_TX_BUFFER_SIZE
        Post =>
-         Sock.all = Sock.all'Old'Update 
+         Sock.all = Sock.all'Old'Update
                (txBufferSize => unsigned_long (Size));
 
    procedure Socket_Set_Rx_Buffer_Size
@@ -337,7 +337,7 @@ is
        Size :        Buffer_Size)
       with
         Depends => (Sock => (Size, Sock)),
-        Pre => 
+        Pre =>
           Sock /= null and then
           Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_STREAM) and then
           Sock.S_remoteIpAddr.length = 0 and then
@@ -353,13 +353,13 @@ is
        Local_Port    :        Port)
       with
        Depends => (Sock => (Sock, Local_Ip_Addr, Local_Port)),
-       Pre => 
+       Pre =>
          Sock /= null and then
          Sock.S_remoteIpAddr.length = 0 and then
          Sock.S_localIpAddr.length = 0 and then
          (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep or else
           Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep),
-       Post => 
+       Post =>
          Sock /= null and then
          Sock.all = Sock.all'Old'Update
            (S_localIpAddr => Local_Ip_Addr, S_Local_Port => Local_Port);
@@ -374,12 +374,12 @@ is
           (Sock  =>+ Backlog,
            Error =>  (Sock, Backlog),
            null =>Net_Mutex),
-        Pre => 
+        Pre =>
           Sock /= null and then
           Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
           Sock.S_localIpAddr.length > 0 and then
           Sock.S_remoteIpAddr.length = 0,
-        Post => 
+        Post =>
           Sock /= null and then Sock.all = Sock.all'Old;
 
    procedure Socket_Accept
@@ -388,7 +388,7 @@ is
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
       with
-        Depends => 
+        Depends =>
           (Sock           => Sock,
            Client_Ip_Addr => Sock,
            Client_Port    => Sock,
