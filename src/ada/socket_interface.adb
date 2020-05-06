@@ -10,16 +10,10 @@ is
    procedure Get_Host_By_Name
      (Server_Name    :     char_array;
       Server_Ip_Addr : out IpAddr;
-      Flags          :     Host_Resolver_Flags;
+      Flags          :     Host_Resolver;
       Error          : out Error_T)
-   is
-      F : Natural := 0;
-   begin
-      for I in Flags'Range loop
-         pragma Loop_Invariant (F <= I * 32);
-         F := F + Host_Resolver'Enum_Rep (Flags (I));  -- ??? can you get a bound on the size of Flags?
-      end loop;
-      Get_Host_By_Name_H (Server_Name, Server_Ip_Addr, unsigned (F), Error);
+   is begin
+      Get_Host_By_Name_H (Server_Name, Server_Ip_Addr, unsigned (Flags), Error);
    end Get_Host_By_Name;
 
    procedure Socket_Open
