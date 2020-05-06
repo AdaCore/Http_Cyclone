@@ -23,5 +23,9 @@
         "USE_HAL_DRIVER",
         "USE_STM32F769I_DISCO",
         "__error_t_defined"
-    ]
+    ],
+    "[ada]": {
+        "editor.tabSize": 3,
+        "editor.detectIndentation": false
+    },
 }
