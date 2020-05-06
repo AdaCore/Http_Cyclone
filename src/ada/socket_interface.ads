@@ -33,23 +33,15 @@ is
       SOCKET_IP_PROTO_UDP    => 17,
       SOCKET_IP_PROTO_ICMPV6 => 58);
 
-   type Host_Resolver is
-     (HOST_NAME_RESOLVER_ANY,
-      HOST_NAME_RESOLVER_DNS,
-      HOST_NAME_RESOLVER_MDNS,
-      HOST_NAME_RESOLVER_NBNS,
-      HOST_NAME_RESOLVER_LLMNR,
-      HOST_TYPE_IPV4,
-      HOST_TYPE_IPV6);
+   type Host_Resolver is mod 2 ** 6;
 
-   for Host_Resolver use
-     (HOST_NAME_RESOLVER_ANY   => 0,
-      HOST_NAME_RESOLVER_DNS   => 1,
-      HOST_NAME_RESOLVER_MDNS  => 2,
-      HOST_NAME_RESOLVER_NBNS  => 4,
-      HOST_NAME_RESOLVER_LLMNR => 8,
-      HOST_TYPE_IPV4           => 16,
-      HOST_TYPE_IPV6           => 32);
+   HOST_NAME_RESOLVER_ANY   : Host_Resolver := 0;
+   HOST_NAME_RESOLVER_DNS   : Host_Resolver := 1;
+   HOST_NAME_RESOLVER_MDNS  : Host_Resolver := 2;
+   HOST_NAME_RESOLVER_NBNS  : Host_Resolver := 4;
+   HOST_NAME_RESOLVER_LLMNR : Host_Resolver := 8;
+   HOST_TYPE_IPV4           : Host_Resolver := 16;
+   HOST_TYPE_IPV6           : Host_Resolver := 32;
 
    type Socket_Shutdown_Flags is
      (SOCKET_SD_RECEIVE,
@@ -61,12 +53,10 @@ is
       SOCKET_SD_SEND    => 1,
       SOCKET_SD_BOTH    => 2);
 
-   type Host_Resolver_Flags is array (Positive range <>) of Host_Resolver;
-
    procedure Get_Host_By_Name
      (Server_Name    :     char_array;
       Server_Ip_Addr : out IpAddr;
-      Flags          :     Host_Resolver_Flags;
+      Flags          :     Host_Resolver;
       Error          : out Error_T)
       with
         Depends =>
