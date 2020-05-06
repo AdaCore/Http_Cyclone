@@ -44,7 +44,7 @@ is
             Error := NO_ERROR;
          when SOCKET_TYPE_DGRAM =>
             --Always use UDP as underlying transport protocol
-            Protocol := SOCKET_IP_PROTO_UDP;  -- ??? what's the read effect of calling this function? where does it take its input? or else model with Global=>null
+            Protocol := SOCKET_IP_PROTO_UDP;
             -- Get an ephemeral port number
             P     := Udp_Get_Dynamic_Port;
             Error := NO_ERROR;
@@ -264,7 +264,7 @@ is
          Dest_Ip_Addr := Sock.S_localIpAddr;
          Error        := ERROR_INVALID_SOCKET;
          Received     := 0;
-         Data         := "";  --  ??? you can't do that in SPARK. hence the "length check might fail" because Data needs to have length 0 here
+         Data         := (others => nul);
       end if;
       Os_Release_Mutex (Net_Mutex);
    end Socket_Receive_Ex;
@@ -300,7 +300,7 @@ is
    end Socket_Shutdown;
 
    procedure Socket_Close (Sock : in out Socket) is
-      Error : Error_T;
+      Ignore_Error : Error_T;
    begin
       -- Get exclusive access
       Os_Acquire_Mutex (Net_Mutex);
@@ -310,7 +310,7 @@ is
       end if;
 
       if (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep) then
-         Tcp_Abort (Sock, Error);
+         Tcp_Abort (Sock, Ignore_Error);
       elsif Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep
         or else Sock.S_Type = SOCKET_TYPE_RAW_IP'Enum_Rep
         or else Sock.S_Type = SOCKET_TYPE_RAW_ETH'Enum_Rep

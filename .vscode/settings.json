@@ -28,4 +28,5 @@
         "editor.tabSize": 3,
         "editor.detectIndentation": false
     },
+    "ada.projectFile": "prove.gpr"
 }

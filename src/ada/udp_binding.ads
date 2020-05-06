@@ -13,6 +13,7 @@ package Udp_Binding is
 
    function Udp_Get_Dynamic_Port return Port
       with
+        Global        => null,
         Import        => True,
         Convention    => C,
         External_Name => "udpGetDynamicPort";

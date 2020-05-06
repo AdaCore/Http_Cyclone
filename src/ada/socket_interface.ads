@@ -242,18 +242,18 @@ is
         Global =>
           (Input => Net_Mutex),
         Depends =>
-          (Sock         => (Sock, Flags),
-           Data         => (Sock, Flags),
-           Received     => (Sock, Flags),
-           Src_Ip_Addr  => (Sock, Flags),
-           Src_Port     => (Sock, Flags),
-           Dest_Ip_Addr => (Sock, Flags),
-           Error        => (Sock, Flags),
-           null         => Net_Mutex),
+          (Sock         =>  (Sock, Flags),
+           Data         =>+ (Sock, Flags),
+           Received     =>  (Sock, Flags),
+           Src_Ip_Addr  =>  (Sock, Flags),
+           Src_Port     =>  (Sock, Flags),
+           Dest_Ip_Addr =>  (Sock, Flags),
+           Error        =>  (Sock, Flags),
+           null         =>  Net_Mutex),
         Pre =>
           Sock /= null and then
           Sock.S_remoteIpAddr.length > 0 and then
-          Data'Length > 0,
+          Data'Last >= Data'First,
         Post => 
           Sock /= null and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
@@ -277,15 +277,15 @@ is
         Global =>
           (Input => Net_Mutex),
         Depends =>
-          (Sock     => Sock,
-           Data     => Sock,
-           Error    => Sock,
-           Received => Sock,
-           null     => Net_Mutex),
+          (Sock     =>  Sock,
+           Data     =>+ Sock,
+           Error    =>  Sock,
+           Received =>  Sock,
+           null     =>  Net_Mutex),
         Pre =>
           Sock /= null and then
           Sock.S_remoteIpAddr.length > 0 and then
-          Data'Length > 0,
+          Data'Last >= Data'First,
         Post => 
           Sock /= null and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
