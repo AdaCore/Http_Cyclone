@@ -17,7 +17,7 @@ is
    begin
       for I in Flags'Range loop
          pragma Loop_Invariant (F <= I * 32);
-         F := F + Host_Resolver'Enum_Rep (Flags (I));
+         F := F + Host_Resolver'Enum_Rep (Flags (I));  -- ??? can you get a bound on the size of Flags?
       end loop;
       Get_Host_By_Name_H (Server_Name, Server_Ip_Addr, unsigned (F), Error);
    end Get_Host_By_Name;
@@ -44,7 +44,7 @@ is
             Error := NO_ERROR;
          when SOCKET_TYPE_DGRAM =>
             --Always use UDP as underlying transport protocol
-            Protocol := SOCKET_IP_PROTO_UDP;
+            Protocol := SOCKET_IP_PROTO_UDP;  -- ??? what's the read effect of calling this function? where does it take its input? or else model with Global=>null
             -- Get an ephemeral port number
             P     := Udp_Get_Dynamic_Port;
             Error := NO_ERROR;
@@ -264,7 +264,7 @@ is
          Dest_Ip_Addr := Sock.S_localIpAddr;
          Error        := ERROR_INVALID_SOCKET;
          Received     := 0;
-         Data         := "";
+         Data         := "";  --  ??? you can't do that in SPARK. hence the "length check might fail" because Data needs to have length 0 here
       end if;
       Os_Release_Mutex (Net_Mutex);
    end Socket_Receive_Ex;

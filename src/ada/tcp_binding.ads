@@ -123,7 +123,7 @@ is
         Pre => 
           Sock /= null and then 
           Sock.S_RemoteIpAddr.Length /= 0 and then 
-          Data'Length > 0,
+          Data'Last >= Data'First,
         Post => 
           Sock /= null and then
           Sock.all = Sock.all'Old and then

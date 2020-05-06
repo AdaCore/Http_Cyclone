@@ -11,23 +11,21 @@ package body Ada_Main with
    SPARK_Mode
 is
 
-   procedure HTTP_Client_Test is
-      Sock       : Socket;
-      ServerAddr : IpAddr;
-      Request    : constant char_array :=
-        "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
-      Buf : char_array (1 .. 128);
-      Error      : Error_T;
-      Host_Flags : Host_Resolver_Flags (1 .. 1);
-      Written    : Integer;
-      Received : unsigned;
-   begin
-      Host_Flags :=
-        (1 => HOST_NAME_RESOLVER_ANY);
-      Get_Host_By_Name ("httpbin.org", ServerAddr, Host_Flags, Error);
-      if Error /= NO_ERROR then
-         return;
-      end if;
+    procedure HTTP_Client_Test is
+        Sock : Socket;
+        ServerAddr : IpAddr;
+        Request : constant char_array := "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
+        Buf : char_array (1 .. 128) with Unreferenced;
+        Error : Error_T;
+        Host_Flags : Host_Resolver_Flags(1 .. 1);
+        Written : Integer with Unreferenced;
+        Received : Unsigned with Unreferenced; 
+    begin
+        Host_Flags := (1 => HOST_NAME_RESOLVER_ANY);
+        Get_Host_By_Name("httpbin.org", ServerAddr, Host_Flags, Error);
+        if Error /= NO_ERROR then
+            return;
+        end if;
 
       Socket_Open (Sock, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
       if Sock = null then
@@ -45,19 +43,18 @@ is
          return;
       end if;
 
-      loop
-         pragma Loop_Invariant
-           (Sock.S_remoteIpAddr.length > 0 and Sock /= null);
-         Socket_Receive (Sock, Buf, Received, Error);
-         exit when Error = ERROR_END_OF_STREAM;
-         if Error /= NO_ERROR then
-            return;
-         end if;
-      end loop;
-      Socket_Shutdown (Sock, SOCKET_SD_BOTH, Error);
-      if Error /= NO_ERROR then
-         return;
-      end if;
+        loop
+            pragma Loop_Invariant (Sock.S_remoteIpAddr.length > 0 and Sock /= null);
+            Socket_Receive (Sock, Buf, Received, Error);
+            exit when Error = ERROR_END_OF_STREAM;
+            if Error /= NO_ERROR then
+                return;
+            end if;
+        end loop;
+        Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);  -- ??? you might want to model the effects on the global state of changing Socket state
+        if Error /= NO_ERROR then
+           return;
+        end if;
 
       Socket_Close (Sock);
    end HTTP_Client_Test;
