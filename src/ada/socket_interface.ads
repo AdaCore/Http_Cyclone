@@ -287,9 +287,12 @@ is
 
     procedure Socket_Close (Sock: in out Socket)
     with
-        Depends => (Sock => Sock),
+        Global => (Input => Net_Mutex),
+        Depends => (Sock => Sock,
+                    null => Net_Mutex),
         Pre => Sock /= null,
-        Post => Sock = null;
+        Post => Sock /= null and then
+                Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
 
     procedure Socket_Set_Tx_Buffer_Size (
         Sock : in out Socket;
@@ -330,8 +333,8 @@ is
         Pre => Sock /= null
                and then Sock.S_remoteIpAddr.length = 0
                and then Sock.S_localIpAddr.length = 0
-               and then (Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_STREAM)
-                         or else Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM)),
+               and then (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep
+                         or else Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep),
         Post => Sock /= null and then
                 Sock.all = Sock.all'Old'Update(
                     S_localIpAddr => Local_Ip_Addr,

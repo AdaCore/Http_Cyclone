@@ -145,12 +145,16 @@ is
           Sock /= null and then
           Sock.all = Sock.all'Old;
     
-    function Tcp_Abort (Sock : Socket)
-    return unsigned
+    procedure Tcp_Abort (
+        Sock : in out Socket;
+        Error : out Error_T
+    )
     with
-        Import => True,
-        Convention => C,
-        External_Name => "tcpAbort";
+        Depends => (Sock => Sock,
+                    Error => Sock),
+        Pre => Sock /= null,
+        Post => Sock /= null and then
+                Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
 
     procedure Tcp_Get_State (
         Sock : Socket;

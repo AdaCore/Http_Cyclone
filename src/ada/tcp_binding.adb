@@ -91,6 +91,20 @@ is
         Client_Socket := tcpAccept (Sock, Client_Ip_Addr, Client_Port);
     end Tcp_Accept;
 
+    procedure Tcp_Abort (
+        Sock : in out Socket;
+        Error : out Error_T)
+    is
+        function tcpAbort (Sock : Socket)
+        return unsigned
+        with
+            Import => True,
+            Convention => C,
+            External_Name => "tcpAbort";
+    begin
+        Error := Error_T'Enum_Val(tcpAbort(Sock));
+    end Tcp_Abort;
+
     procedure Tcp_Send (
             Sock : in out Socket;
             Data : char_array;

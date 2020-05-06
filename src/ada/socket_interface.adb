@@ -16,6 +16,7 @@ is
         F : Natural := 0;
     begin
         for I in Flags'Range loop
+            pragma Loop_Invariant (F <= I * 32);
             F := F + Host_Resolver'Enum_Rep(Flags(I));
         end loop;
         Get_Host_By_Name_H(Server_Name, Server_Ip_Addr, unsigned(F), Error);
@@ -182,7 +183,6 @@ is
             Os_Acquire_Mutex (Net_Mutex);
             -- Establish TCP connection
             Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
-            pragma Assert (if Error = NO_ERROR then Sock.S_remoteIpAddr = Remote_Ip_Addr);
             Os_Release_Mutex (Net_Mutex);
         
         -- Connectionless socket?
@@ -276,10 +276,10 @@ is
         Received : out unsigned;
         Error : out Error_T)
     is
-        Src_Ip, Dest_Ip: IpAddr;
-        Src_Port : Port;
+        Ignore_Src_Ip, Ignore_Dest_Ip: IpAddr;
+        Ignore_Src_Port : Port;
     begin
-        Socket_Receive_Ex(Sock, Src_Ip, Src_Port, Dest_Ip, Data, Received, 0, Error);
+        Socket_Receive_Ex(Sock, Ignore_Src_Ip, Ignore_Src_Port, Ignore_Dest_Ip, Data, Received, 0, Error);
     end Socket_Receive;
 
 
@@ -300,17 +300,34 @@ is
 
     procedure Socket_Close (Sock : in out Socket)
     is
-
-        procedure socketClose (sock: in out Socket)
-        with
-            Import => True,
-            Convention => C,
-            External_Name => "socketClose",
-            Depends => (Sock => Sock),
-            Post => Sock = null;
-
+        Error : Error_T;
     begin
-        socketClose (Sock);
+        -- Get exclusive access
+        Os_Acquire_Mutex (Net_Mutex);
+
+        if Sock = null then
+            return;
+        end if;
+
+        if (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep) then
+            Tcp_Abort (Sock, Error);
+        elsif Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep
+                or else Sock.S_Type = SOCKET_TYPE_RAW_IP'Enum_Rep
+                or else Sock.S_Type = SOCKET_TYPE_RAW_ETH'Enum_Rep then
+            
+            -- @TODO : Purge the receive queue
+
+            -- Mark the socket as closed
+            Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+        else
+            -- All others cases that need to be considered
+            -- to be coherent with the C code but that won't
+            -- never appear.
+            Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+        end if;
+
+        -- Release exclusive access
+        Os_Release_Mutex (Net_Mutex);
     end Socket_Close;
 
     procedure Socket_Set_Tx_Buffer_Size (
