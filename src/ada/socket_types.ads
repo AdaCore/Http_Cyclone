@@ -68,9 +68,9 @@ package Socket_Types is
       recover      : unsigned;
 
       txBuffer     : Tcp_Tx_Buffer;
-      txBufferSize : unsigned_long;
+      txBufferSize : Tx_Buffer_Size;
       rxBuffer     : Tcp_Rx_Buffer;
-      rxBufferSize : unsigned_long;
+      rxBufferSize : Rx_Buffer_Size;
 
       retransmitQueue : System.Address;
       retransmitTimer : Tcp_Timer;
@@ -134,6 +134,21 @@ package Socket_Types is
       SOCKET_EVENT_RX_SHUTDOWN => 128,
       SOCKET_EVENT_LINK_UP     => 256,
       SOCKET_EVENT_LINK_DOWN   => 512);
+
+
+   -- @brief Flags used by I/O functions
+
+   subtype Socket_Flags is unsigned;
+
+   SOCKET_FLAG_PEEK       : constant Socket_Flags := 16#0200#;
+   SOCKET_FLAG_DONT_ROUTE : constant Socket_Flags := 16#0400#;
+   SOCKET_FLAG_WAIT_ALL   : constant Socket_Flags := 16#0800#;
+   SOCKET_FLAG_DONT_WAIT  : constant Socket_Flags := 16#0100#;
+   SOCKET_FLAG_BREAK_CHAR : constant Socket_Flags := 16#1000#;
+   SOCKET_FLAG_BREAK_CRLF : constant Socket_Flags := 16#100A#;
+   SOCKET_FLAG_WAIT_ACK   : constant Socket_Flags := 16#2000#;
+   SOCKET_FLAG_NO_DELAY   : constant Socket_Flags := 16#4000#;
+   SOCKET_FLAG_DELAY      : constant Socket_Flags := 16#8000#;
 
    SOCKET_MAX_COUNT : constant Positive := 10;
    type Socket_Type_Index is range 0 .. (SOCKET_MAX_COUNT - 1);

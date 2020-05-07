@@ -96,7 +96,8 @@ is
            Written => (Sock, Data, Flags),
            Error   => (Sock, DAta, Flags)),
         Post =>
-          Sock.all = Sock.all'Old;
+          Sock.all = Sock.all'Old and then
+          (if Error = No_ERROR then Written > 0);
 
     procedure Tcp_Receive
       (Sock     : in out Not_Null_Socket;

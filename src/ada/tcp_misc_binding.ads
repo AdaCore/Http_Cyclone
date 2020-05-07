@@ -12,7 +12,7 @@ is
       (Sock      : in out Not_Null_Socket;
        New_State : in     Tcp_State)
       with
-        Depends => (Sock => (Sock, New_State));
+        Depends => (Sock =>+ New_State);
 
    procedure Tcp_Wait_For_Events
       (Sock       : in out Not_Null_Socket;

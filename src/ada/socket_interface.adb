@@ -200,7 +200,7 @@ is
       Dest_Port    :        Port;
       Data         : in     char_array;
       Written      :    out Integer;
-      Flags        :        unsigned;
+      Flags        :        Socket_Flags;
       Error        :    out Error_T)
    is
    begin
@@ -219,13 +219,14 @@ is
      (Sock    : in out Not_Null_Socket;
       Data    : in     char_array;
       Written :    out Integer;
+      Flags   :        Socket_Flags;
       Error   :    out Error_T)
    is
    begin
       Written := 0;
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_STREAM) then
-         Tcp_Send (Sock, Data, Written, 0, Error);
+         Tcp_Send (Sock, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
       end if;
@@ -239,7 +240,7 @@ is
       Dest_Ip_Addr :    out IpAddr;
       Data         :    out char_array;
       Received     :    out unsigned;
-      Flags        :        unsigned;
+      Flags        :        Socket_Flags;
       Error        :    out Error_T)
    is
    begin
@@ -247,11 +248,12 @@ is
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
          Tcp_Receive (Sock, Data, Received, Flags, Error);
+         -- Save the source IP address
          Src_Ip_Addr  := Sock.S_remoteIpAddr;
+         -- Save the source port number
          Src_Port     := Sock.S_Remote_Port;
+         -- Save the destination IP address
          Dest_Ip_Addr := Sock.S_localIpAddr;
-         -- elsif Sock.S_Type = Socket_Type'Enum_Rep(SOCKET_TYPE_DGRAM) then
-         --     Error := udp_Receive_Datagram(Sock, Src_Ip_Addr, Src_Port, Dest_Ip_Addr, Data, Data'Length, Size, Received, Flags);
       else
          Src_Ip_Addr  := Sock.S_remoteIpAddr;
          Src_Port     := Sock.S_Remote_Port;
@@ -267,6 +269,7 @@ is
      (Sock     : in out Not_Null_Socket;
       Data     :    out char_array;
       Received :    out unsigned;
+      Flags    :        Socket_Flags;
       Error    :    out Error_T)
    is
       Ignore_Src_Ip, Ignore_Dest_Ip : IpAddr;
@@ -274,7 +277,7 @@ is
    begin
       Socket_Receive_Ex
         (Sock, Ignore_Src_Ip, Ignore_Src_Port, Ignore_Dest_Ip, Data, Received,
-         0, Error);
+         Flags, Error);
    end Socket_Receive;
 
    procedure Socket_Shutdown
@@ -317,20 +320,20 @@ is
 
    procedure Socket_Set_Tx_Buffer_Size
      (Sock : in out Not_Null_Socket;
-      Size :        Buffer_Size)
+      Size :        Tx_Buffer_Size)
    is
    begin
         --@TODO check
-      Sock.txBufferSize := unsigned_long (Size);
+      Sock.txBufferSize := Size;
    end Socket_Set_Tx_Buffer_Size;
 
    procedure Socket_Set_Rx_Buffer_Size
      (Sock : in out Not_Null_Socket;
-      Size :        Buffer_Size)
+      Size :        Rx_Buffer_Size)
    is
    begin
         --@TODO check
-      Sock.rxBufferSize := unsigned_long (Size);
+      Sock.rxBufferSize := Size;
    end Socket_Set_Rx_Buffer_Size;
 
    procedure Socket_Bind

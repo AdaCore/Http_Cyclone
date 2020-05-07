@@ -112,8 +112,7 @@ is
                | TCP_STATE_FIN_WAIT_2
                | TCP_STATE_CLOSE_WAIT =>
             -- Send a reset segment
-            Tcp_Send_Segment
-               (Sock, uint8(TCP_FLAG_RST'Enum_Rep), Sock.sndNxt, 0, 0, 0, Error);
+            Tcp_Send_Segment (Sock, TCP_FLAG_RST, Sock.sndNxt, 0, 0, 0, Error);
             -- Enter CLOSED state
             Tcp_Change_State (Sock, TCP_STATE_CLOSED);
             -- Delete TCB
@@ -253,7 +252,7 @@ is
    end Tcp_Receive;
 
    procedure Tcp_Kill_Oldest_Connection (Sock : out Socket) is
-      Time     : Systime := Os_Get_System_Time;
+      Time     : constant Systime := Os_Get_System_Time;
       Aux_Sock : Socket  := null;
    begin
       Sock := null;

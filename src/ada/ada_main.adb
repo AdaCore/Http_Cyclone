@@ -36,14 +36,14 @@ is
          return;
       end if;
 
-      Socket_Send (Sock, Request, Written, Error);
+      Socket_Send (Sock, Request, Written, 0, Error);
       if Error /= NO_ERROR then
          return;
       end if;
 
         loop
             pragma Loop_Invariant (Sock.S_remoteIpAddr.length > 0 and Sock /= null);
-            Socket_Receive (Sock, Buf, Received, Error);
+            Socket_Receive (Sock, Buf, Received, 0, Error);
             exit when Error = ERROR_END_OF_STREAM;
             if Error /= NO_ERROR then
                 return;

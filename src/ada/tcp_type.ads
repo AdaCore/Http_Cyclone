@@ -7,6 +7,9 @@ package Tcp_Type is
    TCP_MAX_SYN_QUEUE_SIZE     : constant unsigned := 16;
    TCP_DEFAULT_SYN_QUEUE_SIZE : constant unsigned := 4;
 
+   TCP_MAX_RX_BUFFER_SIZE : constant unsigned_long := 22_880;
+   TCP_MAX_TX_BUFFER_SIZE : constant unsigned_long := 22_880;
+
    type Tcp_State is
      (TCP_STATE_CLOSED,
       TCP_STATE_LISTEN,
@@ -25,24 +28,20 @@ package Tcp_Type is
       TCP_CONGEST_STATE_RECOVERY,
       TCP_CONGEST_STATE_LOSS_RECOVERY);
 
-   type Tcp_Flags is
-     (TCP_FLAG_FIN,
-      TCP_FLAG_SYN,
-      TCP_FLAG_RST,
-      TCP_FLAG_PSH,
-      TCP_FLAG_ACK,
-      TCP_FLAG_URG);
+   subtype Tcp_Flags is uint8;
 
-   for Tcp_Flags use
-     (TCP_FLAG_FIN => 1,
-      TCP_FLAG_SYN => 2,
-      TCP_FLAG_RST => 4,
-      TCP_FLAG_PSH => 8,
-      TCP_FLAG_ACK => 16,
-      TCP_FLAG_URG => 32);
+   TCP_FLAG_FIN : constant Tcp_Flags := 1;
+   TCP_FLAG_SYN : constant Tcp_Flags := 2;
+   TCP_FLAG_RST : constant Tcp_Flags := 4;
+   TCP_FLAG_PSH : constant Tcp_Flags := 8;
+   TCP_FLAG_ACK : constant Tcp_Flags := 16;
+   TCP_FLAG_URG : constant Tcp_Flags := 32;
 
       -- TODO: use preprocessing instead of 14 to be coherent with the C code.
    type Chunk_Desc_Array is array (0 .. 14) of Chunk_Desc;
+
+   type Tx_Buffer_Size is range 1 .. TCP_MAX_TX_BUFFER_SIZE;
+   type Rx_Buffer_Size is range 1 .. TCP_MAX_RX_BUFFER_SIZE;
 
    type Tcp_Tx_Buffer is record
       chunkCount    : unsigned;
