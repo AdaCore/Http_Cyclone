@@ -10,6 +10,9 @@ package Common_Type is
    -- type IpAddr is new System.Address;
 
    type Bool is new int;
+   True : Bool := 1;
+   False : Bool := 0;
+
    type Systime is new unsigned;
 
    type Sock_Descriptor is new unsigned;

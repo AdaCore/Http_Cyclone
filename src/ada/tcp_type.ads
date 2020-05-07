@@ -25,6 +25,22 @@ package Tcp_Type is
       TCP_CONGEST_STATE_RECOVERY,
       TCP_CONGEST_STATE_LOSS_RECOVERY);
 
+   type Tcp_Flags is
+     (TCP_FLAG_FIN,
+      TCP_FLAG_SYN,
+      TCP_FLAG_RST,
+      TCP_FLAG_PSH,
+      TCP_FLAG_ACK,
+      TCP_FLAG_URG);
+
+   for Tcp_Flags use
+     (TCP_FLAG_FIN => 1,
+      TCP_FLAG_SYN => 2,
+      TCP_FLAG_RST => 4,
+      TCP_FLAG_PSH => 8,
+      TCP_FLAG_ACK => 16,
+      TCP_FLAG_URG => 32);
+
       -- TODO: use preprocessing instead of 14 to be coherent with the C code.
    type Chunk_Desc_Array is array (0 .. 14) of Chunk_Desc;
 

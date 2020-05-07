@@ -1,4 +1,5 @@
 with Common_Type;  use Common_Type;
+with Error_H;      use Error_H;
 with Interfaces.C; use Interfaces.C;
 with Socket_Types; use Socket_Types;
 with Tcp_Type;     use Tcp_Type;
@@ -41,5 +42,20 @@ is
         Import        => True,
         Convention    => C,
         External_Name => "tcpDeleteControlBlock";
+
+   procedure Tcp_Send_Segment
+      (Sock         : in out Socket;
+       Flags        :        uint8;
+       Seq_Num      :        unsigned;
+       Ack_Num      :        unsigned;
+       Length       :        unsigned_long;
+       Add_To_Queue :        Bool;
+       Error        :    out Error_T)
+      with
+        Depends =>
+            (Sock  =>+ (Flags, Seq_Num, Ack_Num, Length, Add_To_Queue),
+             Error =>  (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue)),
+        Pre => Sock /= null;
+
 
 end Tcp_Misc_Binding;

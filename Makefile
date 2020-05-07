@@ -425,4 +425,4 @@ clean:
 
 .PHONY: prove
 prove: prove.gpr $(wildcard ./src/ada/*.adb) $(wildcard ./src/ada/*.ads)
-	$(ADA_PROVER) -P $< -j0
+	$(ADA_PROVER) -P $< --level=2 -j0

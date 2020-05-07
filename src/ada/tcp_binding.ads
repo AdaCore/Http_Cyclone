@@ -114,10 +114,10 @@ is
        Error    :    out Error_T)
       with
         Depends =>
-          (Error    => (Sock, Flags),
+          (Error    =>  (Sock, Flags),
            Sock     =>+ Flags,
-           Data     => (Sock, Flags),
-           Received => (SoCk, Flags)),
+           Data     =>  (Sock, Flags),
+           Received =>  (SoCk, Flags)),
         Pre =>
           Sock /= null and then
           Sock.S_RemoteIpAddr.Length /= 0 and then
@@ -137,7 +137,7 @@ is
       with
         Depends =>
           (Sock  =>+ How,
-           Error => (Sock, How)),
+           Error =>  (Sock, How)),
         Pre => Sock /= null,
         Post =>
           Sock /= null and then
@@ -151,6 +151,9 @@ is
                     Error => Sock),
         Pre => Sock /= null,
         Post => Sock /= null and then
+                -- @TODO
+                -- In a first approximation, it'll work.
+                -- I forget the 2MSL timer...
                 Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
 
     procedure Tcp_Kill_Oldest_Connection

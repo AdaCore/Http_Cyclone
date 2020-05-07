@@ -102,14 +102,44 @@ is
       (Sock  : in out Socket;
        Error :    out Error_T)
    is
-      function tcpAbort
-        (Sock : Socket)
-         return unsigned with
-         Import        => True,
-         Convention    => C,
-         External_Name => "tcpAbort";
    begin
-      Error := Error_T'Enum_Val (tcpAbort (Sock));
+      case Sock.State is
+         -- SYN-RECEIVED, ESTABLISHED, FIN-WAIT-1
+         -- FIN-WAIT-2 or CLOSE-WAIT state?
+         when TCP_STATE_SYN_RECEIVED
+               | TCP_STATE_ESTABLISHED
+               | TCP_STATE_FIN_WAIT_1
+               | TCP_STATE_FIN_WAIT_2
+               | TCP_STATE_CLOSE_WAIT =>
+            -- Send a reset segment
+            Tcp_Send_Segment
+               (Sock, uint8(TCP_FLAG_RST'Enum_Rep), Sock.sndNxt, 0, 0, 0, Error);
+            -- Enter CLOSED state
+            Tcp_Change_State (Sock, TCP_STATE_CLOSED);
+            -- Delete TCB
+            Tcp_Delete_Control_Block (Sock);
+            -- Mark the socket as closed
+            Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+
+         -- TIME-WAIT state?
+         when TCP_STATE_TIME_WAIT =>
+            -- The user doe not own the socket anymore...
+            Sock.owned_Flag := 0;
+            -- TCB will be deleted and socket will be closed
+            -- when the 2MSL timer will elapse
+            Error := NO_ERROR;
+
+         -- Any other state?
+         when others =>
+            -- Enter CLOSED state
+            Tcp_Change_State (Sock, TCP_STATE_CLOSED);
+            --Delete TCB
+            Tcp_Delete_Control_Block (Sock);
+            -- Mark the socket as closed
+            Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+            -- No error to report
+            Error := NO_ERROR;
+      end case;
    end Tcp_Abort;
 
    procedure Tcp_Send

@@ -49,4 +49,30 @@ is
       Event := tcpWaitForEvents (Sock, Event_Mask, Timeout);
    end Tcp_Wait_For_Events;
 
+   procedure Tcp_Send_Segment
+      (Sock         : in out Socket;
+       Flags        :        uint8;
+       Seq_Num      :        unsigned;
+       Ack_Num      :        unsigned;
+       Length       :        unsigned_long;
+       Add_To_Queue :        Bool;
+       Error        :    out Error_T)
+   is
+      function tcpSendSegment
+         (Sock         : in out Socket;
+          Flags        :        uint8;
+          Seq_Num      :        unsigned;
+          Ack_Num      :        unsigned;
+          Length       :        unsigned_long;
+          Add_To_Queue :        Bool) return unsigned
+         with
+            Import => True,
+            Convention => C,
+            External_Name => "tcpSendSegment";
+   begin
+      Error :=
+         Error_T'Enum_Val(tcpSendSegment
+            (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue));
+   end Tcp_Send_Segment;
+
 end Tcp_Misc_Binding;

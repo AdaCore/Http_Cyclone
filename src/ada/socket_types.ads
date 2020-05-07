@@ -38,23 +38,23 @@ package Socket_Types is
 
       smss : unsigned_short;
       rmss : unsigned_short;
-      iss  : unsigned_long;
-      irs  : unsigned_long;
+      iss  : unsigned;
+      irs  : unsigned;
 
-      sndUna    : unsigned_long;
-      sndNxt    : unsigned_long;
+      sndUna    : unsigned;
+      sndNxt    : unsigned;
       sndUser   : unsigned_short;
       sndWnd    : unsigned_short;
       maxSndWnd : unsigned_short;
-      sndWl1    : unsigned_long;
-      sndWl2    : unsigned_long;
+      sndWl1    : unsigned;
+      sndWl2    : unsigned;
 
-      rcvNxt  : unsigned_long;
+      rcvNxt  : unsigned;
       rcvUser : unsigned_short;
       rcvWnd  : unsigned_short;
 
       rttBusy       : Bool;
-      rttSeqNum     : unsigned_long;
+      rttSeqNum     : unsigned;
       rettStartTime : Systime;
       srtt          : Systime;
       rttvar        : Systime;
@@ -65,7 +65,7 @@ package Socket_Types is
       ssthresh     : unsigned_short;
       dupAckCount  : unsigned;
       n            : unsigned;
-      recover      : unsigned_long;
+      recover      : unsigned;
 
       txBuffer     : Tcp_Tx_Buffer;
       txBufferSize : unsigned_long;

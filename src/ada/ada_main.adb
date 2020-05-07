@@ -59,9 +59,10 @@ is
 
    procedure HTTP_Server_Test is
       Error             : Error_T;
-      Sock, Sock_Client : Socket;
-      IPAddr_Client     : IpAddr;
-      Port_Client       : Port;
+      Sock              : Socket;
+      Sock_Client       : Socket with Unreferenced;
+      IPAddr_Client     : IpAddr with Unreferenced;
+      Port_Client       : Port with Unreferenced;
    begin
       Socket_Open (Sock, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
       if Sock = null then
