@@ -3,10 +3,10 @@ package body Tcp_Misc_Binding with
 is
 
    procedure Tcp_Change_State
-      (Sock      : in out Socket;
+      (Sock      : in out Not_Null_Socket;
        New_State : in     Tcp_State)
    is
-      procedure tcpUpdateEvents (Sock : in out Socket) with
+      procedure tcpUpdateEvents (Sock : in out Not_Null_Socket) with
          Import        => True,
          Convention    => C,
          External_Name => "tcpUpdateEvents";
@@ -32,13 +32,13 @@ is
    end Tcp_Change_State;
 
    procedure Tcp_Wait_For_Events
-      (Sock       : in out Socket;
+      (Sock       : in out Not_Null_Socket;
        Event_Mask : in     unsigned;
        Timeout    : in     Systime;
        Event      :    out unsigned)
    is
       function tcpWaitForEvents
-        (Sock      : in out Socket;
+        (Sock      : in out Not_Null_Socket;
          eventMask :        unsigned;
          timeout   :        Systime)
          return unsigned with
@@ -50,7 +50,7 @@ is
    end Tcp_Wait_For_Events;
 
    procedure Tcp_Send_Segment
-      (Sock         : in out Socket;
+      (Sock         : in out Not_Null_Socket;
        Flags        :        uint8;
        Seq_Num      :        unsigned;
        Ack_Num      :        unsigned;
@@ -59,7 +59,7 @@ is
        Error        :    out Error_T)
    is
       function tcpSendSegment
-         (Sock         : in out Socket;
+         (Sock         : in out Not_Null_Socket;
           Flags        :        uint8;
           Seq_Num      :        unsigned;
           Ack_Num      :        unsigned;

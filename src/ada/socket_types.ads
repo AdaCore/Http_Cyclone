@@ -146,6 +146,7 @@ package Socket_Types is
       External_Name => "socketTable";
 
    type Socket is access Socket_Struct;
+   subtype Not_Null_Socket is not null Socket;
 
    SOCKET_EPHEMERAL_PORT_MIN : constant Port := 49_152;
    SOCKET_EPHEMERAL_PORT_MAX : constant Port := 65_535;

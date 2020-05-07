@@ -136,7 +136,7 @@ is
    end Socket_Open;
 
    procedure Socket_Set_Timeout
-     (Sock    : in out Socket;
+     (Sock    : in out Not_Null_Socket;
       Timeout :        Systime)
    is
    begin
@@ -146,7 +146,7 @@ is
    end Socket_Set_Timeout;
 
    procedure Socket_Set_Ttl
-     (Sock : in out Socket;
+     (Sock : in out Not_Null_Socket;
       Ttl  :        Ttl_Type)
    is
    begin
@@ -156,7 +156,7 @@ is
    end Socket_Set_Ttl;
 
    procedure Socket_Set_Multicast_Ttl
-     (Sock : in out Socket;
+     (Sock : in out Not_Null_Socket;
       Ttl  :        Ttl_Type)
    is
    begin
@@ -166,7 +166,7 @@ is
    end Socket_Set_Multicast_Ttl;
 
    procedure Socket_Connect
-     (Sock           : in out Socket;
+     (Sock           : in out Not_Null_Socket;
       Remote_Ip_Addr : in     IpAddr;
       Remote_Port    : in     Port;
       Error          :    out Error_T)
@@ -195,7 +195,7 @@ is
    end Socket_Connect;
 
    procedure Socket_Send_To
-     (Sock         : in out Socket;
+     (Sock         : in out Not_Null_Socket;
       Dest_Ip_Addr :        IpAddr;
       Dest_Port    :        Port;
       Data         : in     char_array;
@@ -216,7 +216,7 @@ is
    end Socket_Send_To;
 
    procedure Socket_Send
-     (Sock    : in out Socket;
+     (Sock    : in out Not_Null_Socket;
       Data    : in     char_array;
       Written :    out Integer;
       Error   :    out Error_T)
@@ -233,7 +233,7 @@ is
    end Socket_Send;
 
    procedure Socket_Receive_Ex
-     (Sock         : in out Socket;
+     (Sock         : in out Not_Null_Socket;
       Src_Ip_Addr  :    out IpAddr;
       Src_Port     :    out Port;
       Dest_Ip_Addr :    out IpAddr;
@@ -264,7 +264,7 @@ is
    end Socket_Receive_Ex;
 
    procedure Socket_Receive
-     (Sock     : in out Socket;
+     (Sock     : in out Not_Null_Socket;
       Data     :    out char_array;
       Received :    out unsigned;
       Error    :    out Error_T)
@@ -278,30 +278,21 @@ is
    end Socket_Receive;
 
    procedure Socket_Shutdown
-     (Sock  : in out Socket;
+     (Sock  : in out Not_Null_Socket;
       How   :        Socket_Shutdown_Flags;
       Error :    out Error_T)
    is
    begin
-      if Sock = null then
-         Error := ERROR_INVALID_PARAMETER;
-         return;
-      end if;
-
       Os_Acquire_Mutex (Net_Mutex);
       Tcp_Shutdown (Sock, Socket_Shutdown_Flags'Enum_Rep (How), Error);
       Os_Release_Mutex (Net_Mutex);
    end Socket_Shutdown;
 
-   procedure Socket_Close (Sock : in out Socket) is
+   procedure Socket_Close (Sock : in out Not_Null_Socket) is
       Ignore_Error : Error_T;
    begin
       -- Get exclusive access
       Os_Acquire_Mutex (Net_Mutex);
-
-      if Sock = null then
-         return;
-      end if;
 
       if (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep) then
          Tcp_Abort (Sock, Ignore_Error);
@@ -325,7 +316,7 @@ is
    end Socket_Close;
 
    procedure Socket_Set_Tx_Buffer_Size
-     (Sock : in out Socket;
+     (Sock : in out Not_Null_Socket;
       Size :        Buffer_Size)
    is
    begin
@@ -334,7 +325,7 @@ is
    end Socket_Set_Tx_Buffer_Size;
 
    procedure Socket_Set_Rx_Buffer_Size
-     (Sock : in out Socket;
+     (Sock : in out Not_Null_Socket;
       Size :        Buffer_Size)
    is
    begin
@@ -343,7 +334,7 @@ is
    end Socket_Set_Rx_Buffer_Size;
 
    procedure Socket_Bind
-     (Sock          : in out Socket;
+     (Sock          : in out Not_Null_Socket;
       Local_Ip_Addr :        IpAddr;
       Local_Port    :        Port)
    is
@@ -353,7 +344,7 @@ is
    end Socket_Bind;
 
    procedure Socket_Listen
-     (Sock    : in out Socket;
+     (Sock    : in out Not_Null_Socket;
       Backlog :        Natural;
       Error   :    out Error_T)
    is
@@ -364,7 +355,7 @@ is
    end Socket_Listen;
 
    procedure Socket_Accept
-     (Sock           : in out Socket;
+     (Sock           : in out Not_Null_Socket;
       Client_Ip_Addr :    out IpAddr;
       Client_Port    :    out Port;
       Client_Socket  :    out Socket)

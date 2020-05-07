@@ -34,7 +34,7 @@ is
           Tcp_Dynamic_Port in SOCKET_EPHEMERAL_PORT_MIN .. SOCKET_EPHEMERAL_PORT_MAX;
 
     procedure Tcp_Connect
-      (Sock           : in out Socket;
+      (Sock           : in out Not_Null_Socket;
        Remote_Ip_Addr :        IpAddr;
        Remote_Port    :        Port;
        Error          :    out Error_T)
@@ -42,9 +42,7 @@ is
         Depends =>
           (Sock  =>+ (Remote_Ip_Addr, Remote_Port),
            Error => (Sock, Remote_Port, Remote_Ip_Addr)),
-        Pre => Sock /= null,
         Post =>
-          Sock /= null and then
           (if Error = No_ERROR then
              Sock.all = Sock.all'Old'Update(
                S_RemoteIpAddr => Remote_Ip_Addr,
@@ -53,20 +51,18 @@ is
              Sock.all = Sock.all'Old);
 
     procedure Tcp_Listen
-      (Sock    : in out Socket;
+      (Sock    : in out Not_Null_Socket;
        Backlog :        Unsigned;
        Error   :    out Error_T)
       with
         Depends =>
           (Sock  =>+ Backlog,
            Error => (Sock, Backlog)),
-        Pre => Sock /= null,
         Post =>
-          Sock /= null and then
           Sock.all = Sock.all'Old;
 
     procedure Tcp_Accept
-      (Sock           : in out Socket;
+      (Sock           : in out Not_Null_Socket;
        Client_Ip_Addr :    out IpAddr;
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
@@ -76,9 +72,7 @@ is
            Client_Ip_Addr => Sock,
            Client_Port    => Sock,
            Client_Socket  => Sock),
-        Pre => Sock /= null,
         Post =>
-          Sock /= null and then
           Client_Ip_Addr.Length > 0 and then
           Client_Port > 0 and then
           Client_Socket /= null and then
@@ -91,7 +85,7 @@ is
           Sock.all = Sock.all'Old;
    
     procedure Tcp_Send
-      (Sock    : in out Socket;
+      (Sock    : in out Not_Null_Socket;
        Data    :        Char_Array;
        Written :    out Integer;
        Flags   :        Unsigned;
@@ -101,13 +95,11 @@ is
           (Sock    => (Sock, Flags),
            Written => (Sock, Data, Flags),
            Error   => (Sock, DAta, Flags)),
-        Pre => Sock /= null,
         Post =>
-          Sock /= null and then
           Sock.all = Sock.all'Old;
 
     procedure Tcp_Receive
-      (Sock     : in out Socket;
+      (Sock     : in out Not_Null_Socket;
        Data     :    out Char_Array;
        Received :    out Unsigned;
        Flags    :        Unsigned;
@@ -119,11 +111,9 @@ is
            Data     =>  (Sock, Flags),
            Received =>  (SoCk, Flags)),
         Pre =>
-          Sock /= null and then
           Sock.S_RemoteIpAddr.Length /= 0 and then
           Data'Last >= Data'First,
         Post =>
-          Sock /= null and then
           Sock.all = Sock.all'Old and then
           (if Error = NO_ERROR then
              Received > 0
@@ -131,27 +121,23 @@ is
              Received = 0);
 
     procedure Tcp_Shutdown
-      (Sock  : in out Socket;
+      (Sock  : in out Not_Null_Socket;
        How   :        Unsigned;
        Error :    out Error_T)
       with
         Depends =>
           (Sock  =>+ How,
            Error =>  (Sock, How)),
-        Pre => Sock /= null,
         Post =>
-          Sock /= null and then
           Sock.all = Sock.all'Old;
    
     procedure Tcp_Abort
-      (Sock  : in out Socket;
+      (Sock  : in out Not_Null_Socket;
        Error :    out Error_T)
       with
         Depends => (Sock => Sock,
                     Error => Sock),
-        Pre => Sock /= null,
-        Post => Sock /= null and then
-                -- @TODO
+        Post => -- @TODO
                 -- In a first approximation, it'll work.
                 -- I forget the 2MSL timer...
                 Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
@@ -164,15 +150,14 @@ is
            (if Sock /= null then
               Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep);
 
-   procedure Tcp_Get_State
-      (Sock  :     Socket;
-       State : out Tcp_State)
+    procedure Tcp_Get_State
+      (Sock  : in     Not_Null_Socket;
+       State :    out Tcp_State)
       with
         Global  => (Input => Net_Mutex),
         Depends =>
           (State => Sock,
            null  => Net_Mutex),
-        Pre  => Sock /= null,
         Post =>
           State = Sock.State and then
           Sock.all = Sock.all'Old;

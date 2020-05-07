@@ -34,13 +34,13 @@ is
    end Tcp_Get_Dynamic_Port;
 
    procedure Tcp_Connect
-      (Sock           : in out Socket;
+      (Sock           : in out Not_Null_Socket;
        Remote_Ip_Addr :        IpAddr;
        Remote_Port    :        Port;
        Error          :    out Error_T)
    is
       function tcpConnect
-        (Sock         : Socket;
+        (Sock         : Not_Null_Socket;
          remoteIpAddr : System.Address;
          remotePort   : Port)
          return unsigned with
@@ -54,7 +54,7 @@ is
    end Tcp_Connect;
 
    procedure Tcp_Listen
-      (Sock    : in out Socket;
+      (Sock    : in out Not_Null_Socket;
        Backlog :        unsigned;
        Error   :    out Error_T)
    is
@@ -81,13 +81,13 @@ is
    end Tcp_Listen;
 
    procedure Tcp_Accept
-      (Sock           : in out Socket;
+      (Sock           : in out Not_Null_Socket;
        Client_Ip_Addr :    out IpAddr;
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
    is
       function tcpAccept
-        (Sock           : in out Socket;
+        (Sock           : in out Not_Null_Socket;
          Client_Ip_Addr :    out IpAddr;
          P              :    out Port)
          return Socket with
@@ -99,7 +99,7 @@ is
    end Tcp_Accept;
 
    procedure Tcp_Abort
-      (Sock  : in out Socket;
+      (Sock  : in out Not_Null_Socket;
        Error :    out Error_T)
    is
    begin
@@ -143,7 +143,7 @@ is
    end Tcp_Abort;
 
    procedure Tcp_Send
-      (Sock    : in out Socket;
+      (Sock    : in out Not_Null_Socket;
        Data    :        char_array;
        Written :    out Integer;
        Flags   :        unsigned;
@@ -153,7 +153,7 @@ is
       -- unsigned; n : unsigned;
 
       function tcpSend
-        (Sock    :     Socket;
+        (Sock    :     Not_Null_Socket;
          Data    :     char_array;
          Length  :     unsigned;
          Written : out unsigned;
@@ -230,14 +230,14 @@ is
    end Tcp_Send;
 
    procedure Tcp_Receive
-      (Sock     : in out Socket;
+      (Sock     : in out Not_Null_Socket;
        Data     :    out char_array;
        Received :    out unsigned;
        Flags    :        unsigned;
        Error    :    out Error_T)
    is
       function tcpReceive
-        (Sock     :     Socket;
+        (Sock     :     Not_Null_Socket;
          Data     : out char_array;
          Size     :     unsigned;
          Received : out unsigned;
@@ -289,8 +289,8 @@ is
    end Tcp_Kill_Oldest_Connection;
 
    procedure Tcp_Get_State
-      (Sock  :     Socket;
-       State : out Tcp_State)
+      (Sock  : in     Not_Null_Socket;
+       State :    out Tcp_State)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
@@ -299,12 +299,12 @@ is
    end Tcp_Get_State;
 
    procedure Tcp_Shutdown
-      (Sock  : in out Socket;
+      (Sock  : in out Not_Null_Socket;
        How   :        unsigned;
        Error :    out Error_T)
    is
       function tcpShutdown
-        (Sock : Socket;
+        (Sock : Not_Null_Socket;
          how  : unsigned)
          return unsigned
         with
