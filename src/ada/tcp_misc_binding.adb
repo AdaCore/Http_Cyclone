@@ -18,10 +18,10 @@ is
            or else Sock.State = TCP_STATE_TIME_WAIT
          then
             -- The connection has been closed properly
-            Sock.closed_Flag := 1;
+            Sock.closed_Flag := True;
          else
             -- the connection has been reset by the peer
-            Sock.reset_Flag := 1;
+            Sock.reset_Flag := True;
          end if;
       end if;
 
@@ -33,7 +33,7 @@ is
 
    procedure Tcp_Wait_For_Events
       (Sock       : in out Not_Null_Socket;
-       Event_Mask : in     unsigned;
+       Event_Mask : in     Socket_Event;
        Timeout    : in     Systime;
        Event      :    out unsigned)
    is
@@ -46,7 +46,7 @@ is
          Convention    => C,
          External_Name => "tcpWaitForEvents";
    begin
-      Event := tcpWaitForEvents (Sock, Event_Mask, Timeout);
+      Event := tcpWaitForEvents (Sock, unsigned(Event_Mask), Timeout);
    end Tcp_Wait_For_Events;
 
    procedure Tcp_Send_Segment

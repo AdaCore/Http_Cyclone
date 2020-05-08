@@ -82,7 +82,9 @@ is
           Client_Socket.S_Local_Port = Sock.S_Local_Port and then
           Client_Socket.S_Type = Sock.S_Type and then
           Client_Socket.S_LocalIpAddr = Sock.S_LocalIpAddr and then
-          Sock.all = Sock.all'Old;
+          Sock.all = Sock.all'Old and then
+          -- TCP STATE Condition
+          Sock.State = TCP_STATE_LISTEN;
    
     procedure Tcp_Send
       (Sock    : in out Not_Null_Socket;

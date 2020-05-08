@@ -1,12 +1,32 @@
-with Interfaces.C; use Interfaces.C;
-with Tcp_Type;     use Tcp_Type;
 with Common_Type;  use Common_Type;
-with System;
+with Interfaces.C; use Interfaces.C;
 with Ip;           use Ip;
+with OS;           use Os;
+with System;
+with Tcp_Type;     use Tcp_Type;
 
 package Socket_Types is
 
    type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
+
+
+   ------------------
+   -- Socket_Event --
+   ------------------
+
+   type Socket_Event is mod 2 ** 10;
+
+   SOCKET_EVENT_TIMEOUT     : constant Socket_Event := 000;
+   SOCKET_EVENT_CONNECTED   : constant Socket_Event := 001;
+   SOCKET_EVENT_CLOSED      : constant Socket_Event := 002;
+   SOCKET_EVENT_TX_READY    : constant Socket_Event := 004;
+   SOCKET_EVENT_TX_DONE     : constant Socket_Event := 008;
+   SOCKET_EVENT_TX_ACKED    : constant Socket_Event := 016;
+   SOCKET_EVENT_TX_SHUTDOWN : constant Socket_Event := 032;
+   SOCKET_EVENT_RX_READY    : constant Socket_Event := 064;
+   SOCKET_EVENT_RX_SHUTDOWN : constant Socket_Event := 128;
+   SOCKET_EVENT_LINK_UP     : constant Socket_Event := 256;
+   SOCKET_EVENT_LINK_DOWN   : constant Socket_Event := 512;
 
    -----------------------
    -- Socket Definition --
@@ -24,10 +44,10 @@ package Socket_Types is
       S_Timeout       : Systime;
       S_TTL           : unsigned_char;
       S_Multicast_TTL : unsigned_char;
-      S_errnoCode     : int;
-      S_event         : OsEvent;
-      S_Event_Mask    : unsigned;
-      S_Event_Flags   : unsigned;
+      S_Errno_Code    : int;
+      S_Event         : Os_Event;
+      S_Event_Mask    : Socket_Event;
+      S_Event_Flags   : Socket_Event;
       userEvent       : System.Address;
 
       -- TCP specific variables
@@ -76,7 +96,7 @@ package Socket_Types is
       retransmitTimer : Tcp_Timer;
       retransmitCount : unsigned;
 
-      synQueue     : System.Address;
+      synQueue     : System.Address;-- Tcp_Syn_Queue_Item_Acc;
       synQueueSize : unsigned;
 
       wndProbeCount    : unsigned;
@@ -108,32 +128,6 @@ package Socket_Types is
       SOCKET_TYPE_DGRAM   => 2,
       SOCKET_TYPE_RAW_IP  => 3,
       SOCKET_TYPE_RAW_ETH => 4);
-
-   type Socket_Event is
-     (SOCKET_EVENT_TIMEOUT,
-      SOCKET_EVENT_CONNECTED,
-      SOCKET_EVENT_CLOSED,
-      SOCKET_EVENT_TX_READY,
-      SOCKET_EVENT_TX_DONE,
-      SOCKET_EVENT_TX_ACKED,
-      SOCKET_EVENT_TX_SHUTDOWN,
-      SOCKET_EVENT_RX_READY,
-      SOCKET_EVENT_RX_SHUTDOWN,
-      SOCKET_EVENT_LINK_UP,
-      SOCKET_EVENT_LINK_DOWN);
-
-   for Socket_Event use
-     (SOCKET_EVENT_TIMEOUT     => 000,
-      SOCKET_EVENT_CONNECTED   => 001,
-      SOCKET_EVENT_CLOSED      => 002,
-      SOCKET_EVENT_TX_READY    => 004,
-      SOCKET_EVENT_TX_DONE     => 008,
-      SOCKET_EVENT_TX_ACKED    => 016,
-      SOCKET_EVENT_TX_SHUTDOWN => 032,
-      SOCKET_EVENT_RX_READY    => 064,
-      SOCKET_EVENT_RX_SHUTDOWN => 128,
-      SOCKET_EVENT_LINK_UP     => 256,
-      SOCKET_EVENT_LINK_DOWN   => 512);
 
 
    -- @brief Flags used by I/O functions

@@ -1,4 +1,4 @@
-pragma Restrictions (No_Tasking);
+pragma Unevaluated_Use_Of_Old (Allow);
 
 with Interfaces.C; use Interfaces.C;
 with Ip;           use Ip;
@@ -13,9 +13,6 @@ with Tcp_Type;     use Tcp_Type;
 package Socket_Interface with
    SPARK_Mode
 is
-   pragma Unevaluated_Use_Of_Old (Allow);
-
-   Socket_error : exception;
 
    type Ttl_Type is mod 2**8;
 

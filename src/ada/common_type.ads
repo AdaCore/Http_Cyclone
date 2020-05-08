@@ -9,9 +9,8 @@ package Common_Type is
 
    -- type IpAddr is new System.Address;
 
-   type Bool is new int;
-   True : Bool := 1;
-   False : Bool := 0;
+   type Bool is new Boolean;
+   for Bool'Size use int'Size;
 
    type Systime is new unsigned;
 
@@ -22,11 +21,5 @@ package Common_Type is
    type uint8 is mod 2**8;
    subtype Index is unsigned range 0 .. MAX_BYTES;
    type Block8 is array (Index range <>) of uint8;
-
-   type OsEvent is record
-      handle : System.Address;
-   end record
-    with
-      Convention => C;
 
 end Common_Type;

@@ -1,29 +1,31 @@
-with System;
-with Tcp_Misc_Binding; use Tcp_Misc_Binding;
-with Socket_Helper;    use Socket_Helper;
-with Os;               use Os;
+with Ip_Binding;        use Ip_Binding;
+with Net_Mem_Interface; use Net_Mem_Interface;
+with Os;                use Os;
+with Socket_Helper;     use Socket_Helper;
+with System;            use System;
+with Tcp_Misc_Binding;  use Tcp_Misc_Binding;
 
 package body Tcp_Binding with
    SPARK_Mode => Off
 is
 
-   procedure Tcp_Get_Dynamic_Port (P : out Port) is
-      function netGetRand return unsigned with
-         Import        => True,
-         Convention    => C,
-         External_Name => "netGetRand";
+   function netGetRand return unsigned
+     with
+       Import        => True,
+       Convention    => C,
+       External_Name => "netGetRand";
 
+
+   procedure Tcp_Get_Dynamic_Port (P : out Port) is
    begin
       -- Retrieve current port number
       P := Tcp_Dynamic_Port;
       -- Invalid port number?
-      if P < SOCKET_EPHEMERAL_PORT_MIN or P > SOCKET_EPHEMERAL_PORT_MAX then
+      if not (P in SOCKET_EPHEMERAL_PORT_MIN .. SOCKET_EPHEMERAL_PORT_MAX) then
          P :=
            SOCKET_EPHEMERAL_PORT_MIN +
-           Port
-             (netGetRand mod
-              unsigned
-                (SOCKET_EPHEMERAL_PORT_MAX - SOCKET_EPHEMERAL_PORT_MIN + 1));
+           Port(netGetRand mod unsigned
+                  (SOCKET_EPHEMERAL_PORT_MAX - SOCKET_EPHEMERAL_PORT_MIN + 1));
       end if;
 
       if P < SOCKET_EPHEMERAL_PORT_MAX then
@@ -47,10 +49,104 @@ is
          Import        => True,
          Convention    => C,
          External_Name => "tcpConnect";
+
+      Event : unsigned;
    begin
-      Error :=
-        Error_T'Enum_Val
-          (tcpConnect (Sock, Remote_Ip_Addr'Address, Remote_Port));
+
+      -- Check current TCP state
+      if Sock.State = TCP_STATE_CLOSED then
+         -- Save port number and IP address of the remote host
+         Sock.S_remoteIpAddr := Remote_Ip_Addr;
+         Sock.S_Remote_Port := Remote_Port;
+
+         -- Select the source address and the relevant network interface
+         -- to use when establishing the connection
+         Ip_Select_Source_Addr (Sock, Error);
+         if Error /= NO_ERROR then
+            return;
+         end if;
+
+         -- Make sure the source address is valid
+         if Ip_Is_Unspecified_Addr(Sock.S_localIpAddr) then
+            Error := ERROR_NOT_CONFIGURED;
+            return;
+         end if;
+
+         -- The user owns the socket
+         Sock.owned_Flag := True;
+
+         -- Number of chunks that comprise the TX and the RX buffers
+         Sock.txBuffer.maxChunkCound := 
+               Sock.txBuffer.chunk'Size / Sock.txBuffer.chunk(0)'Size;
+         Sock.rxBuffer.maxChunkCound :=
+               Sock.rxBuffer.chunk'Size / Sock.rxBuffer.chunk(0)'Size;
+         
+         -- Allocate transmit buffer
+         Net_Tx_Buffer_Set_Length (Sock.txBuffer, Sock.txBufferSize, Error);
+
+         if Error /= NO_ERROR then
+            Net_Rx_Buffer_Set_Length (Sock.rxBuffer, Sock.rxBufferSize, Error);
+         end if;
+
+         if Error /= NO_ERROR then
+            Tcp_Delete_Control_Block (Sock);
+            return;
+         end if;
+
+         -- The SMSS is the size of the largest segment that the sender can transmit
+         Sock.smss := unsigned_short'Min (TCP_DEFAULT_MSS, TCP_MAX_MSS);
+         -- The RMSS is the size of the largest segment the receiver is willing to accept
+         Sock.rmss := unsigned_short(unsigned_long'Min 
+                                       (unsigned_long(Sock.rxBufferSize), 
+                                        unsigned_long(TCP_MAX_MSS)));
+
+         -- An initial send sequence number is selected
+         Sock.iss := netGetRand;
+
+         -- Initialize TCP control block
+         -- @TODO : Il y aura forcément des overflows ici.
+         -- Voir avec Clément.
+         Sock.sndUna := Sock.iss;
+         Sock.sndNxt := Sock.iss + 1;
+         Sock.rcvUser := 0;
+         Sock.rcvWnd := unsigned_short(Sock.rxBufferSize);
+
+         -- Default retransmission timeout
+         Sock.rto := TCP_INITIAL_RTO;
+         
+         -- Default congestion state
+         Sock.congestState := TCP_CONGEST_STATE_IDLE;
+         
+         -- @TODO voir pour l'overflow
+         -- Initial congestion window
+         Sock.cwnd := unsigned_short(
+                        unsigned_long'Min(unsigned_long(TCP_INITIAL_WINDOW) * unsigned_long(Sock.smss),
+                                          unsigned_long(Sock.txBufferSize)));
+         -- Slow start threshold should be set arbitrarily high
+         Sock.ssthresh := unsigned_short'Last;
+         -- Recover is set to the initial send sequence number
+         Sock.recover := Sock.iss;
+
+         -- Send a SYN segment
+         Tcp_Send_Segment (Sock, TCP_FLAG_SYN, Sock.iss, 0, 0, True, ERROR);
+      end if;
+
+      -- Wait for the connection to be established
+      Tcp_Wait_For_Events (Sock, SOCKET_EVENT_CONNECTED or SOCKET_EVENT_CLOSED,
+                           Sock.S_Timeout, Event);
+
+      -- Connection successfully established?
+      if event = SOCKET_EVENT_CONNECTED'Enum_Rep then
+         ERROR := NO_ERROR;
+
+      -- Failed to establish connection?
+      elsif event = SOCKET_EVENT_CLOSED'Enum_Rep then
+         ERROR := ERROR_CONNECTION_FAILED;
+      
+      -- Timeout exception?
+      else
+         ERROR := ERROR_TIMEOUT;
+      end if;
    end Tcp_Connect;
 
    procedure Tcp_Listen
@@ -94,8 +190,51 @@ is
          Import        => True,
          Convention    => C,
          External_Name => "tcpAccept";
+
+      Error : Error_T;
+      Queue_Item : Tcp_Syn_Queue_Item_Acc;
    begin
-      Client_Socket := tcpAccept (Sock, Client_Ip_Addr, Client_Port);
+
+      Os_Acquire_Mutex (Net_Mutex);
+
+      -- Wait for an connection attempt
+      while 1 = 1 loop
+         -- The SYN queue is empty ?
+         if Sock.synQueue = System.Null_Address -- null 
+         then
+            -- Set the events the application is interested in
+            Sock.S_Event_Mask := SOCKET_EVENT_RX_READY;
+            -- Reset the event object
+            Os_Reset_Event (Sock.S_Event);
+
+            -- Release exclusive access
+            Os_Release_Mutex (Net_Mutex);
+            -- Wait until a SYN message is received from a client
+            Os_Wait_For_Event (Sock.S_Event, Sock.S_Timeout);
+            -- Get exclusive access
+            Os_Acquire_Mutex (Net_Mutex);
+         end if;
+
+         -- Check whether the queue is still empty
+         if Sock.synQueue = System.Null_Address -- null
+         then
+            -- Timeout error
+            Client_Socket := null;
+            -- Exit immediately
+            exit;
+         end if;
+
+         -- Point to the first item in the SYN queue
+         -- Queue_Item := Sock.synQueue;
+
+         -- Return the client IP address and port number
+         -- Client_Ip_Addr := Queue_Item. ;
+         -- @TODO : Implement queue structure
+      end loop;
+
+
+
+      -- Client_Socket := tcpAccept (Sock, Client_Ip_Addr, Client_Port);
    end Tcp_Accept;
 
    procedure Tcp_Abort
@@ -112,7 +251,7 @@ is
                | TCP_STATE_FIN_WAIT_2
                | TCP_STATE_CLOSE_WAIT =>
             -- Send a reset segment
-            Tcp_Send_Segment (Sock, TCP_FLAG_RST, Sock.sndNxt, 0, 0, 0, Error);
+            Tcp_Send_Segment (Sock, TCP_FLAG_RST, Sock.sndNxt, 0, 0, False, Error);
             -- Enter CLOSED state
             Tcp_Change_State (Sock, TCP_STATE_CLOSED);
             -- Delete TCB
@@ -123,7 +262,7 @@ is
          -- TIME-WAIT state?
          when TCP_STATE_TIME_WAIT =>
             -- The user doe not own the socket anymore...
-            Sock.owned_Flag := 0;
+            Sock.owned_Flag := False;
             -- TCB will be deleted and socket will be closed
             -- when the 2MSL timer will elapse
             Error := NO_ERROR;

@@ -7,20 +7,57 @@
             "label": "Build Project",
             "type": "shell",
             "command": "make -j",
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
+            "problemMatcher": [
+                {
+                    "base": "$ada",
+                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
+                    "pattern": [
+                        {
+                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|)(?:[:]\\s+)?(.*)$",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "severity": 4,
+                            "message": 5
+                        }
+                    ]
+                },
+                "$gcc"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "never",
+                "clear": true,
+                "showReuseMessage": false,
             }
         },
         {
             "label": "prove",
             "type": "shell",
-            "command": "make prove",
+            "command": "gnatprove",
+            "args": [
+                "-P",
+                "prove.gpr",
+                "--level=2",
+                "-j0"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "showReuseMessage": false,
+                "clear": true
+            },
             "group": {
-                "kind": "test",
+                "kind": "build",
                 "isDefault": true
-            }
+            },
+            "problemMatcher": [
+                {
+                    "base": "$ada",
+                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"]
+                }
+            ]
         }
     ]
 }

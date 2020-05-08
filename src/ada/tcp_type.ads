@@ -1,6 +1,8 @@
 with Common_Type;  use Common_Type;
 with Interfaces.C; use Interfaces.C;
+with Ip;           use Ip;
 with Net_Mem;      use Net_Mem;
+with System;       use System;
 
 package Tcp_Type is
 
@@ -9,6 +11,13 @@ package Tcp_Type is
 
    TCP_MAX_RX_BUFFER_SIZE : constant unsigned_long := 22_880;
    TCP_MAX_TX_BUFFER_SIZE : constant unsigned_long := 22_880;
+
+   TCP_DEFAULT_MSS : constant unsigned_short := 536;
+   TCP_MAX_MSS     : constant unsigned_short := 1_430;
+
+   TCP_INITIAL_RTO : constant Systime := 1_000;
+
+   TCP_INITIAL_WINDOW : constant unsigned_short := 3;
 
    type Tcp_State is
      (TCP_STATE_CLOSED,
@@ -67,7 +76,7 @@ package Tcp_Type is
    with
       Convention => C;
 
-   type TcpQueueItem is record
+   type Tcp_Queue_Item is record
       length : unsigned;
    end record
    with
@@ -81,5 +90,19 @@ package Tcp_Type is
       Convention => C;
 
    type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
+
+   type Tcp_Syn_Queue_Item;
+   type Tcp_Syn_Queue_Item_Acc is access Tcp_Syn_Queue_Item;
+   type Tcp_Syn_Queue_Item is
+    record
+      Next          : Tcp_Syn_Queue_Item_Acc;
+      Net_Interface : System.Address;
+      Src_Addr      : IpAddr;
+      Src_Port      : Port;
+      Dest_Addr     : IpAddr;
+      Isn           : unsigned;
+      Mss           : unsigned_short;
+    end record
+      with Convention => C;
 
 end Tcp_Type;

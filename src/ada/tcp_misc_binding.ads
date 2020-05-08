@@ -16,7 +16,7 @@ is
 
    procedure Tcp_Wait_For_Events
       (Sock       : in out Not_Null_Socket;
-       Event_Mask : in     unsigned;
+       Event_Mask : in     Socket_Event;
        Timeout    : in     Systime;
        Event      :    out unsigned)
       with
