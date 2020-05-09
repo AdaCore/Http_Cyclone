@@ -96,7 +96,7 @@ package Socket_Types is
       retransmitTimer : Tcp_Timer;
       retransmitCount : unsigned;
 
-      synQueue     : System.Address;-- Tcp_Syn_Queue_Item_Acc;
+      synQueue     : Tcp_Syn_Queue_Item_Acc;-- Tcp_Syn_Queue_Item_Acc;
       synQueueSize : unsigned;
 
       wndProbeCount    : unsigned;

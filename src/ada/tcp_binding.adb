@@ -200,7 +200,7 @@ is
       -- Wait for an connection attempt
       while 1 = 1 loop
          -- The SYN queue is empty ?
-         if Sock.synQueue = System.Null_Address -- null 
+         if Sock.synQueue = null --System.Null_Address 
          then
             -- Set the events the application is interested in
             Sock.S_Event_Mask := SOCKET_EVENT_RX_READY;
@@ -216,7 +216,7 @@ is
          end if;
 
          -- Check whether the queue is still empty
-         if Sock.synQueue = System.Null_Address -- null
+         if Sock.synQueue = null -- System.Null_Address
          then
             -- Timeout error
             Client_Socket := null;
