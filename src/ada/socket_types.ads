@@ -192,9 +192,23 @@ is
    end record
      with Ghost;
 
-   
-   function Model (Sock : Not_Null_Socket)
-   return Socket_Model
+
+   function Model (Sock : Not_Null_Socket) return Socket_Model is
+     (Socket_Model'(
+         S_Descriptor     => Sock.S_Descriptor,
+         S_Type           => Sock.S_Type,
+         S_Protocol       => Sock.S_Protocol,
+         S_localIpAddr    => Sock.S_localIpAddr,
+         S_Local_Port     => Sock.S_Local_Port,
+         S_remoteIpAddr   => Sock.S_remoteIpAddr,
+         S_Remote_Port    => Sock.S_Remote_Port,
+         S_Timeout        => Sock.S_Timeout,
+         S_TTL            => Sock.S_TTL,
+         S_Multicast_TTL  => Sock.S_Multicast_TTL,
+         S_State          => Sock.State,
+         S_Rx_Buffer_Size => Sock.rxBufferSize,
+         S_Tx_Buffer_Size => Sock.txBufferSize
+     ))
      with Ghost;
 
 end Socket_Types;

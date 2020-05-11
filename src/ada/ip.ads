@@ -2,6 +2,10 @@ with Interfaces.C; use Interfaces.C;
 
 package Ip is
 
+   -----------------------
+   -- IpAddr definition --
+   -----------------------
+
    type fakeIP is array (1 .. 4) of unsigned_long;
 
    type IpAddr is record
@@ -26,5 +30,15 @@ package Ip is
       Import        => True,
       Convention    => C,
       External_Name => "IP_ADDR_UNSPECIFIED";
+
+
+
+   -----------------------------
+   -- Functions for contracts --
+   -----------------------------
+
+   function Is_Initialized_Ip (Ip : IpAddr) return Boolean is
+      (Ip.length > 0)
+      with Ghost;
 
 end Ip;
