@@ -13,7 +13,7 @@
                     "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
                     "pattern": [
                         {
-                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|)(?:[:]\\s+)?(.*)$",
+                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|note|)(?:[:]\\s+)?(.*)$",
                             "file": 1,
                             "line": 2,
                             "column": 3,
@@ -55,7 +55,17 @@
             "problemMatcher": [
                 {
                     "base": "$ada",
-                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"]
+                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
+                    "pattern": [
+                        {
+                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(high|medium|warning)(?:[:]\\s+)?(.*)$",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "severity": 4,
+                            "message": 5
+                        }
+                    ]
                 }
             ]
         }

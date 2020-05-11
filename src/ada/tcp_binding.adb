@@ -225,11 +225,11 @@ is
          end if;
 
          -- Point to the first item in the SYN queue
-         -- Queue_Item := Sock.synQueue;
+         Queue_Item := Sock.synQueue;
 
          -- Return the client IP address and port number
-         -- Client_Ip_Addr := Queue_Item. ;
-         -- @TODO : Implement queue structure
+         Client_Ip_Addr := Queue_Item.Src_Addr;
+         Client_Port    := Queue_Item.Src_Port;
       end loop;
 
 

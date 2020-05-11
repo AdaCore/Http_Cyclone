@@ -323,7 +323,6 @@ is
       Size :        Tx_Buffer_Size)
    is
    begin
-        --@TODO check
       Sock.txBufferSize := Size;
    end Socket_Set_Tx_Buffer_Size;
 
@@ -332,7 +331,6 @@ is
       Size :        Rx_Buffer_Size)
    is
    begin
-        --@TODO check
       Sock.rxBufferSize := Size;
    end Socket_Set_Rx_Buffer_Size;
 

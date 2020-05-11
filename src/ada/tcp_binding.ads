@@ -44,11 +44,11 @@ is
            Error => (Sock, Remote_Port, Remote_Ip_Addr)),
         Post =>
           (if Error = No_ERROR then
-             Sock.all = Sock.all'Old'Update(
+             Model(Sock) = Model(Sock)'Old'Update(
                S_RemoteIpAddr => Remote_Ip_Addr,
                S_Remote_Port  => Remote_Port)
            else
-             Sock.all = Sock.all'Old);
+             Model(Sock) = Model(Sock)'Old);
 
     procedure Tcp_Listen
       (Sock    : in out Not_Null_Socket;
@@ -59,7 +59,7 @@ is
           (Sock  =>+ Backlog,
            Error => (Sock, Backlog)),
         Post =>
-          Sock.all = Sock.all'Old;
+          Model(Sock) = Model(Sock)'Old;
 
     procedure Tcp_Accept
       (Sock           : in out Not_Null_Socket;
@@ -82,7 +82,7 @@ is
           Client_Socket.S_Local_Port = Sock.S_Local_Port and then
           Client_Socket.S_Type = Sock.S_Type and then
           Client_Socket.S_LocalIpAddr = Sock.S_LocalIpAddr and then
-          Sock.all = Sock.all'Old and then
+          Model(Sock) = Model(Sock)'Old and then
           -- TCP STATE Condition
           Sock.State = TCP_STATE_LISTEN;
    
@@ -96,9 +96,9 @@ is
         Depends =>
           (Sock    => (Sock, Flags),
            Written => (Sock, Data, Flags),
-           Error   => (Sock, DAta, Flags)),
+           Error   => (Sock, Data, Flags)),
         Post =>
-          Sock.all = Sock.all'Old and then
+          Model(Sock) = Model(Sock)'Old and then
           (if Error = No_ERROR then Written > 0);
 
     procedure Tcp_Receive
@@ -114,10 +114,11 @@ is
            Data     =>  (Sock, Flags),
            Received =>  (SoCk, Flags)),
         Pre =>
+          Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
           Sock.S_RemoteIpAddr.Length /= 0 and then
           Data'Last >= Data'First,
         Post =>
-          Sock.all = Sock.all'Old and then
+          Model(Sock) = Model(Sock)'Old and then
           (if Error = NO_ERROR then
              Received > 0
            elsif Error = ERROR_END_OF_STREAM then
@@ -132,7 +133,7 @@ is
           (Sock  =>+ How,
            Error =>  (Sock, How)),
         Post =>
-          Sock.all = Sock.all'Old;
+          Model(Sock) = Model(Sock)'Old;
    
     procedure Tcp_Abort
       (Sock  : in out Not_Null_Socket;
@@ -163,6 +164,6 @@ is
            null  => Net_Mutex),
         Post =>
           State = Sock.State and then
-          Sock.all = Sock.all'Old;
+          Model(Sock) = Model(Sock)'Old;
 
 end Tcp_binding;

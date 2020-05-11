@@ -1,4 +1,5 @@
 pragma Unevaluated_Use_Of_Old (Allow);
+pragma Ada_2020;
 
 with Interfaces.C; use Interfaces.C;
 with Ip;           use Ip;
@@ -94,8 +95,8 @@ is
           (Sock => (Timeout, Sock),
            null => Net_Mutex),
         Post =>
-          Sock.all = Sock.all'Old'Update (
-             S_Timeout => timeout);
+          Model(Sock) = Model(Sock)'Old'Update
+             (S_Timeout => timeout);
 
    procedure Socket_Set_Ttl
       (Sock : in out Not_Null_Socket;
@@ -107,7 +108,7 @@ is
           (Sock => (Ttl, Sock),
            null => Net_Mutex),
         Post =>
-          Sock.all = Sock.all'Old'Update (
+          Model(Sock) = Model(Sock)'Old'Update (
              S_TTL => unsigned_char (Ttl));
 
    procedure Socket_Set_Multicast_Ttl
@@ -120,7 +121,7 @@ is
           (Sock => (Ttl, Sock),
            null => Net_Mutex),
         Post =>
-          Sock.all = Sock.all'Old'Update (
+          Model(Sock) = Model(Sock)'Old'Update (
               S_Multicast_TTL => unsigned_char (Ttl));
 
    procedure Socket_Connect
@@ -140,22 +141,22 @@ is
         Post =>
           (if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
              (if Error = NO_ERROR then
-                Sock.all = Sock.all'Old'Update
+                Model(Sock) = Model(Sock)'Old'Update
                    (S_remoteIpAddr => Remote_Ip_Addr,
                     S_Remote_Port  => Remote_Port)
              else
-                Sock.all = Sock.all'Old)
+                Model(Sock) = Model(Sock)'Old)
           elsif Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep then
              Error = NO_ERROR and then
-             Sock.all = Sock.all'Old'Update
+             Model(Sock) = Model(Sock)'Old'Update
                    (S_remoteIpAddr => Remote_Ip_Addr,
                     S_Remote_Port  => Remote_Port)
           elsif Sock.S_Type = SOCKET_TYPE_RAW_IP'Enum_Rep then
              Error = NO_ERROR and then
-             Sock.all = Sock.all'Old'Update
+             Model(Sock) = Model(Sock)'Old'Update
                 (S_remoteIpAddr => Remote_Ip_Addr)
           else
-             Sock.all = Sock.all'Old);
+             Model(Sock) = Model(Sock)'Old);
 
    procedure Socket_Send_To
       (Sock         : in out Not_Null_Socket;
@@ -177,7 +178,7 @@ is
           Sock.S_remoteIpAddr.length > 0,
         Post =>
           (if Error = NO_ERROR then
-             Sock.all = Sock.all'Old and then
+             Model(Sock) = Model(Sock)'Old and then
              Written > 0);
 
    procedure Socket_Send
@@ -198,7 +199,7 @@ is
           Sock.S_remoteIpAddr.length > 0,
         Post =>
           (if Error = NO_ERROR then 
-             Sock.all = Sock.all'Old and then
+             Model(Sock) = Model(Sock)'Old and then
              Written > 0);
 
    procedure Socket_Receive_Ex
@@ -225,18 +226,18 @@ is
         Pre =>
           Sock.S_remoteIpAddr.length > 0 and then
           Data'Last >= Data'First,
-        Post =>
-          (if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
-             (if Error = NO_ERROR then
-                Sock.all = Sock.all'Old and then
-                Received > 0
-             elsif Error = ERROR_END_OF_STREAM then
-                Sock.all = Sock.all'Old and then
-                Received = 0)
-          elsif Sock.S_Type /= SOCKET_TYPE_STREAM'Enum_Rep then
-             Error = ERROR_INVALID_SOCKET and then
-             Sock.all = Sock.all'Old and then
-             Received = 0);
+        Contract_Cases =>
+          (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep =>
+               (if Error = NO_ERROR then
+                  Model(Sock) = Model(Sock)'Old and then
+                  Received > 0
+                elsif Error = ERROR_END_OF_STREAM then
+                  Model(Sock) = Model(Sock)'Old and then
+                  Received = 0),
+           others =>
+               Error = ERROR_INVALID_SOCKET and then
+               Model(Sock) = Model(Sock)'Old and then
+               Received = 0);
 
    procedure Socket_Receive
       (Sock     : in out Not_Null_Socket;
@@ -256,17 +257,17 @@ is
         Pre =>
           Sock.S_remoteIpAddr.length > 0 and then
           Data'Last >= Data'First,
-        Post =>
-          (if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
+        Contract_Cases =>
+          (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep =>
              (if Error = NO_ERROR then
-                Sock.all = Sock.all'Old and then
+                Model(Sock) = Model(Sock)'Old and then
                 Received > 0
              elsif Error = ERROR_END_OF_STREAM then
-                Sock.all = Sock.all'Old and then
-                Received = 0)
-          elsif Sock.S_Type /= SOCKET_TYPE_STREAM'Enum_Rep then
+                Model(Sock) = Model(Sock)'Old and then
+                Received = 0),
+           others =>
              Error = ERROR_INVALID_SOCKET and then
-             Sock.all = Sock.all'Old and then
+             Model(Sock) = Model(Sock)'Old and then
              Received = 0);
 
    procedure Socket_Shutdown
@@ -285,7 +286,7 @@ is
           Sock.S_remoteIpAddr.length > 0,
         Post =>
           (if Error = NO_ERROR then
-             Sock.all = Sock.all'Old);
+             Model(Sock) = Model(Sock)'Old);
 
    procedure Socket_Close
       (Sock : in out Not_Null_Socket)
@@ -303,8 +304,8 @@ is
                Sock.S_remoteIpAddr.length = 0 and then
                Sock.State = TCP_STATE_CLOSED,
         Post =>
-          Sock.all = Sock.all'Old'Update
-               (txBufferSize => Size);
+          Model(Sock) = Model(Sock)'Old'Update
+               (S_Tx_Buffer_Size => Size);
 
    procedure Socket_Set_Rx_Buffer_Size
       (Sock : in out Not_Null_Socket;
@@ -316,8 +317,8 @@ is
           Sock.S_remoteIpAddr.length = 0 and then
           Sock.State = TCP_STATE_CLOSED,
         Post =>
-            Sock.all = Sock.all'Old'Update
-                  (rxBufferSize => Size);
+            Model(Sock) = Model(Sock)'Old'Update
+                  (S_Rx_Buffer_Size => Size);
 
    procedure Socket_Bind
       (Sock          : in out Not_Null_Socket;
@@ -332,8 +333,9 @@ is
          (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep or else
           Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep),
        Post =>
-         Sock.all = Sock.all'Old'Update
-           (S_localIpAddr => Local_Ip_Addr, S_Local_Port => Local_Port);
+         Model(Sock) = Model(Sock)'Old'Update
+           (S_localIpAddr => Local_Ip_Addr,
+            S_Local_Port  => Local_Port);
 
    procedure Socket_Listen
       (Sock    : in out Not_Null_Socket;
@@ -350,7 +352,7 @@ is
           Sock.S_localIpAddr.length > 0 and then
           Sock.S_remoteIpAddr.length = 0,
         Post =>
-          Sock.all = Sock.all'Old;
+          Model(Sock) = Model(Sock)'Old;
 
    procedure Socket_Accept
       (Sock           : in out Not_Null_Socket;
@@ -366,7 +368,7 @@ is
        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
               Sock.S_localIpAddr.length > 0 and then
               Sock.S_remoteIpAddr.length = 0,
-       Post => Sock.all = Sock.all'Old and then
+       Post => Model(Sock) = Model(Sock)'Old and then
                Client_Ip_Addr.length > 0 and then
                Client_Port > 0 and then
                Client_Socket /= null and then

@@ -5,7 +5,9 @@ with OS;           use Os;
 with System;
 with Tcp_Type;     use Tcp_Type;
 
-package Socket_Types is
+package Socket_Types
+   with SPARK_Mode
+is
 
    type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
 
@@ -159,5 +161,40 @@ package Socket_Types is
 
    SOCKET_EPHEMERAL_PORT_MIN : constant Port := 49_152;
    SOCKET_EPHEMERAL_PORT_MAX : constant Port := 65_535;
+
+
+
+
+
+
+
+
+
+
+   ------------------------------
+   -- Ghost Sockets for Proofs --
+   ------------------------------
+
+   type Socket_Model is record
+      S_Descriptor    : Sock_Descriptor;
+      S_Type          : Sock_Type;
+      S_Protocol      : Sock_Protocol;
+      S_localIpAddr   : IpAddr;
+      S_Local_Port    : Port;
+      S_remoteIpAddr  : IpAddr;
+      S_Remote_Port   : Port;
+      S_Timeout       : Systime;
+      S_TTL           : unsigned_char;
+      S_Multicast_TTL : unsigned_char;
+      S_State         : Tcp_State;
+      S_Tx_Buffer_Size: Tx_Buffer_Size;
+      S_Rx_Buffer_Size: Rx_Buffer_Size;
+   end record
+     with Ghost;
+
+   
+   function Model (Sock : Not_Null_Socket)
+   return Socket_Model
+     with Ghost;
 
 end Socket_Types;
