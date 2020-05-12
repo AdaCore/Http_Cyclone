@@ -27,7 +27,8 @@ is
      with
       Import        => True,
       Convention    => C,
-      External_Name => "osGetSystemTime";
+      External_Name => "osGetSystemTime",
+      Global        => null;
    
    procedure Os_Reset_Event (Event : Os_Event);
 

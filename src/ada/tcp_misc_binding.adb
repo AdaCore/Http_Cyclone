@@ -35,7 +35,7 @@ is
       (Sock       : in out Not_Null_Socket;
        Event_Mask : in     Socket_Event;
        Timeout    : in     Systime;
-       Event      :    out unsigned)
+       Event      :    out Socket_Event)
    is
       function tcpWaitForEvents
         (Sock      : in out Not_Null_Socket;
@@ -46,7 +46,7 @@ is
          Convention    => C,
          External_Name => "tcpWaitForEvents";
    begin
-      Event := tcpWaitForEvents (Sock, unsigned(Event_Mask), Timeout);
+      Event := Socket_Event(tcpWaitForEvents (Sock, unsigned(Event_Mask), Timeout));
    end Tcp_Wait_For_Events;
 
    procedure Tcp_Send_Segment

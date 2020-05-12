@@ -287,7 +287,7 @@ is
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
-      Tcp_Shutdown (Sock, Socket_Shutdown_Flags'Enum_Rep (How), Error);
+      Tcp_Shutdown (Sock, How, Error);
       Os_Release_Mutex (Net_Mutex);
    end Socket_Shutdown;
 

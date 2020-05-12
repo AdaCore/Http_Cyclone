@@ -58,7 +58,7 @@
                     "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
                     "pattern": [
                         {
-                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(high|medium|warning)(?:[:]\\s+)?(.*)$",
+                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|)(?:[:]\\s+)?(.*)$",
                             "file": 1,
                             "line": 2,
                             "column": 3,

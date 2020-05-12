@@ -5,3 +5,8 @@ obj/
 *.lst
 *.map
 *.hex
+gnathub/
+gnatprove/
+*.cgpr
+libs/
+prove-loc.xml

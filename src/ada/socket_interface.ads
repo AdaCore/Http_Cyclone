@@ -7,8 +7,8 @@ with Error_H;      use Error_H;
 with Common_Type;  use Common_Type;
 with Socket_Types; use Socket_Types;
 with Net;          use Net;
-with Tcp_binding, Udp_Binding;
-use Tcp_binding, Udp_Binding;
+with Tcp_Interface, Udp_Binding;
+use Tcp_Interface, Udp_Binding;
 with Tcp_Type;     use Tcp_Type;
 
 package Socket_Interface with
@@ -40,11 +40,6 @@ is
    HOST_NAME_RESOLVER_LLMNR : Host_Resolver := 8;
    HOST_TYPE_IPV4           : Host_Resolver := 16;
    HOST_TYPE_IPV6           : Host_Resolver := 32;
-
-   type Socket_Shutdown_Flags is range 0 .. 2;
-   SOCKET_SD_RECEIVE : Socket_Shutdown_Flags := 0;
-   SOCKET_SD_SEND    : Socket_Shutdown_Flags := 1;
-   SOCKET_SD_BOTH    : Socket_Shutdown_Flags := 2;
 
    procedure Get_Host_By_Name
      (Server_Name    :     char_array;
@@ -174,7 +169,7 @@ is
           (Input => Net_Mutex),
         Depends =>
           (Error   => (Sock, Data, Flags),
-           Sock    => (Sock, Flags),
+           Sock    => (Sock, Data, Flags),
            Written => (Sock, Data, Flags),
            null    => (Net_Mutex, Dest_Port, Dest_Ip_Addr)),
         Pre  =>
@@ -195,7 +190,7 @@ is
           (Input => Net_Mutex),
         Depends =>
           (Error   =>  (Sock, Data, Flags),
-           Sock    =>+ Flags,
+           Sock    =>+ (Flags, Data),
            Written =>  (Sock, Data, Flags),
            null    =>  Net_Mutex),
         Pre  =>
@@ -218,13 +213,13 @@ is
         Global =>
           (Input => Net_Mutex),
         Depends =>
-          (Sock         =>  (Sock, Flags),
-           Data         =>+ (Sock, Flags),
-           Received     =>  (Sock, Flags),
-           Src_Ip_Addr  =>  (Sock, Flags),
-           Src_Port     =>  (Sock, Flags),
-           Dest_Ip_Addr =>  (Sock, Flags),
-           Error        =>  (Sock, Flags),
+          (Sock         =>  (Sock, Data, Flags),
+           Data         =>  (Sock, Data, Flags),
+           Received     =>  (Sock, Data, Flags),
+           Src_Ip_Addr  =>  (Sock, Data, Flags),
+           Src_Port     =>  (Sock, Data, Flags),
+           Dest_Ip_Addr =>  (Sock, Data, Flags),
+           Error        =>  (Sock, Data, Flags),
            null         =>  Net_Mutex),
         Pre =>
           Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
@@ -252,10 +247,10 @@ is
         Global =>
           (Input => Net_Mutex),
         Depends =>
-          (Sock     =>  (Sock, Flags),
-           Data     =>+ (Sock, Flags),
-           Error    =>  (Sock, Flags),
-           Received =>  (Sock, Flags),
+          (Sock     =>  (Sock, Data, Flags),
+           Data     =>  (Sock, Data, Flags),
+           Error    =>  (Sock, Data, Flags),
+           Received =>  (Sock, Data, Flags),
            null     =>  Net_Mutex),
         Pre =>
           Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
@@ -348,7 +343,7 @@ is
         Global => Net_Mutex,
         Depends =>
           (Sock  =>+ Backlog,
-           Error =>  (Sock, Backlog),
+           Error =>  (Sock),
            null =>Net_Mutex),
         Pre =>
           Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
@@ -363,11 +358,16 @@ is
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
       with
-        Depends =>
-          (Sock           => Sock,
-           Client_Ip_Addr => Sock,
-           Client_Port    => Sock,
-           Client_Socket  => Sock),
+       Global =>
+         (Input  => (Net_Mutex, Socket_Table),
+          In_Out => Tcp_Dynamic_Port),
+       Depends =>
+          (Sock             => (Sock, Tcp_Dynamic_Port, Socket_Table),
+           Client_Ip_Addr   => (Sock, Tcp_Dynamic_Port, Socket_Table),
+           Client_Port      => (Sock, Tcp_Dynamic_Port, Socket_Table),
+           Client_Socket    => (Sock, Tcp_Dynamic_Port, Socket_Table),
+           Tcp_Dynamic_Port =>+ (Sock, Socket_Table),
+           null             => Net_Mutex),
        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
               Is_Initialized_Ip(Sock.S_localIpAddr) and then
               not Is_Initialized_Ip(Sock.S_remoteIpAddr),

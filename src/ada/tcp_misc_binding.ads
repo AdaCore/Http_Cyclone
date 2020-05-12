@@ -18,7 +18,7 @@ is
       (Sock       : in out Not_Null_Socket;
        Event_Mask : in     Socket_Event;
        Timeout    : in     Systime;
-       Event      :    out unsigned)
+       Event      :    out Socket_Event)
       with
          Depends =>
            (Sock  =>+ (Event_Mask, Timeout),
@@ -39,7 +39,8 @@ is
       with
         Import        => True,
         Convention    => C,
-        External_Name => "tcpDeleteControlBlock";
+        External_Name => "tcpDeleteControlBlock",
+        Global        => null;
 
    procedure Tcp_Send_Segment
       (Sock         : in out Not_Null_Socket;
@@ -54,5 +55,12 @@ is
             (Sock  =>+ (Flags, Seq_Num, Ack_Num, Length, Add_To_Queue),
              Error =>  (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue));
 
+   procedure Tcp_Update_Events
+      (Sock : in out Not_Null_Socket)
+      with
+         Import => True,
+         Convention => C,
+         External_Name => "tcpUpdateEvents",
+         Global => null;
 
 end Tcp_Misc_Binding;
