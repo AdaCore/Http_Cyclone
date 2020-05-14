@@ -1,3 +1,5 @@
+with System;
+
 package body Tcp_Misc_Binding with
    SPARK_Mode => Off
 is
@@ -6,7 +8,7 @@ is
       (Sock      : in out Not_Null_Socket;
        New_State : in     Tcp_State)
    is
-      procedure tcpUpdateEvents (Sock : in out Not_Null_Socket) with
+      procedure tcpUpdateEvents (Sock : Socket) with
          Import        => True,
          Convention    => C,
          External_Name => "tcpUpdateEvents";
@@ -38,9 +40,9 @@ is
        Event      :    out Socket_Event)
    is
       function tcpWaitForEvents
-        (Sock      : in out Not_Null_Socket;
-         eventMask :        unsigned;
-         timeout   :        Systime)
+        (Sock      : Socket;
+         eventMask : unsigned;
+         timeout   : Systime)
          return unsigned with
          Import        => True,
          Convention    => C,
@@ -59,12 +61,12 @@ is
        Error        :    out Error_T)
    is
       function tcpSendSegment
-         (Sock         : in out Not_Null_Socket;
-          Flags        :        uint8;
-          Seq_Num      :        unsigned;
-          Ack_Num      :        unsigned;
-          Length       :        unsigned_long;
-          Add_To_Queue :        Bool) return unsigned
+         (Sock         : Socket;
+          Flags        : uint8;
+          Seq_Num      : unsigned;
+          Ack_Num      : unsigned;
+          Length       : unsigned_long;
+          Add_To_Queue : Bool) return unsigned
          with
             Import => True,
             Convention => C,

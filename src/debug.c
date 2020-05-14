@@ -137,3 +137,11 @@ int_t fputc(int_t c, FILE *stream)
       return EOF;
    }
 }
+
+void debugString (char* str, int length) {
+   osSuspendAllTasks();
+   if (str == NULL) return;
+   str[length+1] = '\0'; 
+   fprintf(stderr, "%s", str);
+   osResumeAllTasks();
+}

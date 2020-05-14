@@ -1,3 +1,6 @@
+with Interfaces.C; use Interfaces.C;
+with System;       use System;
+
 package body Net_Mem_Interface 
    with SPARK_Mode => Off
 is

@@ -15,21 +15,27 @@ is
         Sock : Socket;
         ServerAddr : IpAddr;
         Request : constant char_array := "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
-        Buf : char_array (1 .. 128) with Unreferenced;
+        Buf : char_array (1 .. 128);
         Error : Error_T;
         Written : Integer with Unreferenced;
-        Received : Unsigned with Unreferenced;
+        Received : Unsigned;
+
+        procedure Print_String (str : char_array; length : int)
+        with
+         Import => True,
+         Convention => C,
+         External_Name => "debugString";
     begin
-        Get_Host_By_Name("httpbin.org", ServerAddr, HOST_NAME_RESOLVER_ANY, Error);
-        if Error /= NO_ERROR then
-            return;
-        end if;
+      Get_Host_By_Name("httpbin.org", ServerAddr, HOST_NAME_RESOLVER_ANY, Error);
+      if Error /= NO_ERROR then
+         return;
+      end if;
 
       Socket_Open (Sock, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
       if Sock = null then
          return;
       end if;
-      Socket_Set_Timeout (Sock, 30_000);
+      Socket_Set_Timeout (Sock, 10_000);
 
       Socket_Connect (Sock, ServerAddr, 80, Error);
       if Error /= NO_ERROR then
@@ -48,6 +54,7 @@ is
             if Error /= NO_ERROR then
                 return;
             end if;
+            Print_String (Buf, int(Received));
         end loop;
         Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);  -- ??? you might want to model the effects on the global state of changing Socket state
         if Error /= NO_ERROR then

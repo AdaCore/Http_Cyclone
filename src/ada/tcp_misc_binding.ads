@@ -12,7 +12,10 @@ is
       (Sock      : in out Not_Null_Socket;
        New_State : in     Tcp_State)
       with
-        Depends => (Sock =>+ New_State);
+        Depends => (Sock =>+ New_State),
+        Post => 
+            Model(Sock) = Model(Sock)'Old'Update
+                              (S_State => New_State);
 
    procedure Tcp_Wait_For_Events
       (Sock       : in out Not_Null_Socket;
@@ -22,10 +25,13 @@ is
       with
          Depends =>
            (Sock  =>+ (Event_Mask, Timeout),
-            Event =>  (Event_Mask, Timeout));
+            Event =>  (Event_Mask, Timeout)),
+         Pre  => Event_Mask /= 0,
+         Post => Event = 0 or else
+                 ((Event_Mask and Event) /= 0);
 
    procedure Tcp_Write_Tx_Buffer
-      (Sock    : in out Not_Null_Socket;
+      (Sock    :        Not_Null_Socket;
        Seq_Num :        unsigned;
        Data    :        char_array;
        Length  :        unsigned)
@@ -35,7 +41,7 @@ is
         External_Name => "tcpWriteTxBuffer";
 
    procedure Tcp_Delete_Control_Block
-      (Sock : in out Not_Null_Socket)
+      (Sock : Not_Null_Socket)
       with
         Import        => True,
         Convention    => C,
@@ -56,7 +62,7 @@ is
              Error =>  (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue));
 
    procedure Tcp_Update_Events
-      (Sock : in out Not_Null_Socket)
+      (Sock : Not_Null_Socket)
       with
          Import => True,
          Convention => C,

@@ -1,6 +1,5 @@
 with Error_H     ; use Error_H;
 with Interfaces.C; use Interfaces.C;
-with Tcp_Type;     use Tcp_Type;
 with Socket_Types; use Socket_Types;
 
 package Tcp_Binding

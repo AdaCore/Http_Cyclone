@@ -1,11 +1,12 @@
 with Interfaces.C; use Interfaces.C;
-with System;       use System;
 
 package body Ip_Binding is
 
    procedure Ip_Select_Source_Addr
-      (Sock  :     Socket;
-       Error : out Error_T)
+      (Net_Interface  : in out System.Address;
+       Dest_Addr      : in     IpAddr;
+       Src_Addr       :    out IpAddr;
+       Error          :    out Error_T)
    is
       function ipSelectSourceAddr
          (Net_Interface : Address;
@@ -19,9 +20,9 @@ package body Ip_Binding is
    begin
       Error := Error_T'Enum_Val(
          ipSelectSourceAddr(
-            Sock.S_Net_Interface'Address,
-            Sock.S_remoteIpAddr'Address,
-            Sock.S_localIpAddr'Address));
+            Net_Interface => Net_Interface'Address,
+            Dest_Addr     => Dest_Addr'Address,
+            Src_Addr      => Src_Addr'Address));
    end Ip_Select_Source_Addr;
 
    function Ip_Is_Unspecified_Addr (Ip_Addr : IpAddr)

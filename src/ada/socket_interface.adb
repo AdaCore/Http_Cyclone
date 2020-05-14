@@ -1,7 +1,6 @@
 with Os;            use Os;
 with Socket_Helper; use Socket_Helper;
 with System;
-with Tcp_Type;      use Tcp_Type;
 
 package body Socket_interface
    with SPARK_Mode

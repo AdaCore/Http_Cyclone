@@ -42,6 +42,8 @@ is
         Depends =>
           (Sock  =>+ (Remote_Ip_Addr, Remote_Port),
            Error => (Sock, Remote_Port, Remote_Ip_Addr)),
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+               Is_Initialized_Ip (Remote_Ip_Addr),
         Post =>
           (if Error = No_ERROR then
              Model(Sock) = Model(Sock)'Old'Update(
@@ -58,6 +60,7 @@ is
         Depends =>
           (Sock  =>+ Backlog,
            Error => Sock),
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
         Post =>
           Model(Sock) = Model(Sock)'Old;
 
@@ -77,6 +80,7 @@ is
            Client_Socket    =>  (Sock, Tcp_Dynamic_Port, Socket_Table),
            Tcp_Dynamic_Port =>+ (Socket_Table, Sock),
            null             =>  Net_Mutex),
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
         Post =>
           Model(Sock) = Model(Sock)'Old and then
           -- TCP STATE Condition
@@ -102,6 +106,7 @@ is
           (Sock    =>+ (Data, Flags),
            Written =>  (Sock, Data, Flags),
            Error   =>  (Sock, Data, Flags)),
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
         Post =>
           Model(Sock) = Model(Sock)'Old and then
           (if Error = No_ERROR then Written > 0);
@@ -137,6 +142,7 @@ is
         Depends =>
           (Sock  =>+ How,
            Error =>  (Sock, How)),
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
         Post =>
           Model(Sock) = Model(Sock)'Old;
    
@@ -167,6 +173,7 @@ is
         Depends =>
           (State => Sock,
            null  => Net_Mutex),
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
         Post =>
           State = Sock.State and then
           Model(Sock) = Model(Sock)'Old;

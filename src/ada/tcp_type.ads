@@ -31,11 +31,40 @@ package Tcp_Type is
       TCP_STATE_FIN_WAIT_2,
       TCP_STATE_CLOSING,
       TCP_STATE_TIME_WAIT);
+   
+   for Tcp_State'Size use int'Size;
 
-   type TCP_Congest_State is
-     (TCP_CONGEST_STATE_IDLE,
-      TCP_CONGEST_STATE_RECOVERY,
-      TCP_CONGEST_STATE_LOSS_RECOVERY);
+   for Tcp_State use 
+      (TCP_STATE_CLOSED       => 0,
+       TCP_STATE_LISTEN       => 1,
+       TCP_STATE_SYN_SENT     => 2,
+       TCP_STATE_SYN_RECEIVED => 3,
+       TCP_STATE_ESTABLISHED  => 4,
+       TCP_STATE_CLOSE_WAIT   => 5,
+       TCP_STATE_LAST_ACK     => 6,
+       TCP_STATE_FIN_WAIT_1   => 7,
+       TCP_STATE_FIN_WAIT_2   => 8,
+       TCP_STATE_CLOSING      => 9,
+       TCP_STATE_TIME_WAIT    => 10
+      );
+   
+   function Tcp_State_Convert (State : int) return Tcp_State is
+      (if State = 0 then TCP_STATE_CLOSED
+       elsif State = 1 then TCP_STATE_LISTEN
+       elsif State = 2 then TCP_STATE_SYN_SENT
+       elsif State = 3 then TCP_STATE_SYN_RECEIVED
+       elsif State = 4 then TCP_STATE_ESTABLISHED
+       elsif State = 5 then TCP_STATE_CLOSE_WAIT
+       elsif State = 6 then TCP_STATE_LAST_ACK
+       elsif State = 7 then TCP_STATE_FIN_WAIT_1
+       elsif State = 8 then TCP_STATE_FIN_WAIT_2
+       elsif State = 9 then TCP_STATE_CLOSING
+       else TCP_STATE_TIME_WAIT);
+
+   type TCP_Congest_State is new int;
+      TCP_CONGEST_STATE_IDLE           : constant Tcp_Congest_State := 0;
+      TCP_CONGEST_STATE_RECOVERY       : constant Tcp_Congest_State := 1;
+      TCP_CONGEST_STATE_LOSS_RECOVERY  : constant Tcp_Congest_State := 2;
 
    subtype Tcp_Flags is uint8;
 

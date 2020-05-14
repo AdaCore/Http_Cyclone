@@ -1,6 +1,4 @@
 with Error_H;      use Error_H;
-with Interfaces.C; use Interfaces.C;
-with System;       use System;
 with Tcp_Type;     use Tcp_Type;
 
 package Net_Mem_Interface 

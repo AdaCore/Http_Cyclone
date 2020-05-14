@@ -17,6 +17,7 @@ is
    ------------------
 
    type Socket_Event is mod 2 ** 10;
+   for Socket_Event'Size use unsigned'Size;
 
    SOCKET_EVENT_TIMEOUT     : constant Socket_Event := 000;
    SOCKET_EVENT_CONNECTED   : constant Socket_Event := 001;
@@ -39,6 +40,27 @@ is
       (SOCKET_SD_RECEIVE,
        SOCKET_SD_SEND,
        SOCKET_SD_BOTH);
+
+   
+   -----------------
+   -- Socket_Type --
+   -----------------
+
+   type Socket_Type is
+     (SOCKET_TYPE_UNUSED,
+      SOCKET_TYPE_STREAM,
+      SOCKET_TYPE_DGRAM,
+      SOCKET_TYPE_RAW_IP,
+      SOCKET_TYPE_RAW_ETH);
+
+   for Socket_Type'Size use int'Size;
+
+   for Socket_Type use
+     (SOCKET_TYPE_UNUSED  => 0,
+      SOCKET_TYPE_STREAM  => 1,
+      SOCKET_TYPE_DGRAM   => 2,
+      SOCKET_TYPE_RAW_IP  => 3,
+      SOCKET_TYPE_RAW_ETH => 4);
 
 
    -----------------------
@@ -127,20 +149,6 @@ is
       receiveQueue : System.Address;
    end record
      with Convention => C;
-
-   type Socket_Type is
-     (SOCKET_TYPE_UNUSED,
-      SOCKET_TYPE_STREAM,
-      SOCKET_TYPE_DGRAM,
-      SOCKET_TYPE_RAW_IP,
-      SOCKET_TYPE_RAW_ETH);
-
-   for Socket_Type use
-     (SOCKET_TYPE_UNUSED  => 0,
-      SOCKET_TYPE_STREAM  => 1,
-      SOCKET_TYPE_DGRAM   => 2,
-      SOCKET_TYPE_RAW_IP  => 3,
-      SOCKET_TYPE_RAW_ETH => 4);
 
 
    -- @brief Flags used by I/O functions

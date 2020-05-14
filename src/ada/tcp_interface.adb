@@ -4,7 +4,7 @@ with Os;                use Os;
 with Socket_Helper;     use Socket_Helper;
 with Socket_Interface;  use Socket_Interface;
 with System;            use System;
-with Tcp_Binding;       use Tcp_Binding;
+with Tcp_Binding;
 with Tcp_Misc_Binding;  use Tcp_Misc_Binding;
 
 package body Tcp_Interface with
@@ -63,7 +63,13 @@ is
 
          -- Select the source address and the relevant network interface
          -- to use when establishing the connection
-         Ip_Select_Source_Addr (Sock, Error);
+         Ip_Select_Source_Addr (
+               Net_Interface => Sock.S_Net_Interface,
+               Dest_Addr     => Sock.S_remoteIpAddr,
+               Src_Addr      => Sock.S_localIpAddr,
+               Error         => Error);
+         
+         
          if Error /= NO_ERROR then
             return;
          end if;
@@ -86,7 +92,7 @@ is
          -- Allocate transmit buffer
          Net_Tx_Buffer_Set_Length (Sock.txBuffer, Sock.txBufferSize, Error);
 
-         if Error /= NO_ERROR then
+         if Error = NO_ERROR then
             Net_Rx_Buffer_Set_Length (Sock.rxBuffer, Sock.rxBufferSize, Error);
          end if;
 
@@ -131,6 +137,14 @@ is
 
          -- Send a SYN segment
          Tcp_Send_Segment (Sock, TCP_FLAG_SYN, Sock.iss, 0, 0, True, Error);
+
+         -- Failed to send TCP segment?
+         if Error /= NO_ERROR then
+            return;
+         end if;
+
+         -- Switch to the SYN-SENT state
+         Tcp_Change_State (Sock, TCP_STATE_SYN_SENT);
       end if;
 
       -- Wait for the connection to be established
@@ -138,11 +152,11 @@ is
                            Sock.S_Timeout, Event);
 
       -- Connection successfully established?
-      if event = SOCKET_EVENT_CONNECTED'Enum_Rep then
+      if Event = SOCKET_EVENT_CONNECTED then
          ERROR := NO_ERROR;
 
       -- Failed to establish connection?
-      elsif event = SOCKET_EVENT_CLOSED'Enum_Rep then
+      elsif Event = SOCKET_EVENT_CLOSED then
          ERROR := ERROR_CONNECTION_FAILED;
       
       -- Timeout exception?
@@ -216,7 +230,7 @@ is
       Client_Socket := null;
 
       -- Wait for an connection attempt
-      while 1 = 1 loop
+      loop
          -- The SYN queue is empty ?
          if Sock.synQueue = null then
             -- Set the events the application is interested in
@@ -338,6 +352,7 @@ is
                   -- Remove the item from the SYN queue
                   Sock.synQueue := Queue_Item.Next;
                   -- Deallocate memory buffer
+                  Queue_Item.Next := null;
                   Mem_Pool_Free (Queue_Item);
                   -- Update the state of events
                   Tcp_Update_Events (Sock);
@@ -357,6 +372,7 @@ is
          -- Remove the item from the SYN queue
          Sock.synQueue := Queue_Item.Next;
          -- Deallocate memory buffer
+         Queue_Item.Next := null;
          Mem_Pool_Free (Queue_Item);
 
          -- Wait for the next connection attempt
@@ -525,7 +541,10 @@ is
                -- Keep track of the oldest socket in the TIME-WAIT state
                if Sock = null then
                   -- Save socket handle
-                  Sock := Aux_Sock;
+                  -- Sock := Aux_Sock;
+                  -- It's to prevent SPARK to see that Sock and Aux_Sock
+                  -- are aliased
+                  Get_Socket_From_Table (I, Sock);
                end if;
 
                if (Time - Aux_Sock.timeWaitTimer.startTime) >
