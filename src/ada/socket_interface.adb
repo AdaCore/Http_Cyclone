@@ -71,7 +71,7 @@ is
             -- Reset Socket
             -- Maybe there is a simplest way to perform that in Ada
             Sock.S_Type                := S_Type;
-            Sock.S_Protocol            := Socket_Protocol'Enum_Rep (Protocol);
+            Sock.S_Protocol            := Protocol;
             Sock.S_Local_Port          := P;
             Sock.S_Timeout             := Systime'Last;
             Sock.S_remoteIpAddr.length := 0;
@@ -344,12 +344,12 @@ is
 
    procedure Socket_Listen
      (Sock    : in out Not_Null_Socket;
-      Backlog :        Natural;
-      Error   :    out Error_T)
+      Backlog :        Natural)
+      -- Error   :    out Error_T)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
-      Tcp_Listen (Sock, unsigned (Backlog), Error);
+      Tcp_Listen (Sock, unsigned (Backlog));
       Os_Release_Mutex (Net_Mutex);
    end Socket_Listen;
 

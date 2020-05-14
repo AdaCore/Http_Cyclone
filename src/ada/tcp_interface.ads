@@ -43,26 +43,38 @@ is
           (Sock  =>+ (Remote_Ip_Addr, Remote_Port),
            Error => (Sock, Remote_Port, Remote_Ip_Addr)),
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
-               Is_Initialized_Ip (Remote_Ip_Addr),
+               Is_Initialized_Ip (Remote_Ip_Addr) and then
+               -- @Clément : not sure this condition is wanted
+               -- I don't know what happen if the connexion isn't closed.
+               Sock.State = TCP_STATE_CLOSED,
         Post =>
-          (if Error = No_ERROR then
-             Model(Sock) = Model(Sock)'Old'Update(
-               S_RemoteIpAddr => Remote_Ip_Addr,
-               S_Remote_Port  => Remote_Port)
-           else
-             Model(Sock) = Model(Sock)'Old);
+            (if Error = NO_ERROR then
+               -- Sock.S_Descriptor = Sock.S_Descriptor'Old and then
+               Sock.S_Type = Sock.S_Type'Old and then
+               Sock.S_Protocol = Sock.S_Protocol'Old and then
+               Is_Initialized_Ip (Sock.S_localIpAddr) and then
+               Sock.S_Local_Port = Sock.S_Local_Port'Old and then
+               Sock.S_remoteIpAddr = Remote_Ip_Addr and then
+               Sock.S_Remote_Port = Remote_Port and then
+               -- Sock.S_Timeout = Sock.S_Timeout'Old and then
+               -- Sock.S_TTL = Sock.S_TTL'Old and then
+               -- Sock.S_Multicast_TTL = Sock.S_Multicast_TTL'Old and then
+               -- Sock.txBufferSize = Sock.txBufferSize'Old and then
+               -- Sock.rxBufferSize = Sock.rxBufferSize'Old and then
+               Sock.State = TCP_STATE_ESTABLISHED);
 
     procedure Tcp_Listen
       (Sock    : in out Not_Null_Socket;
-       Backlog :        Unsigned;
-       Error   :    out Error_T)
+       Backlog :        Unsigned)
+       -- Error   :    out Error_T)
       with
         Depends =>
-          (Sock  =>+ Backlog,
-           Error => Sock),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
+          (Sock  =>+ Backlog),
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
+               Sock.State = TCP_STATE_CLOSED,
         Post =>
-          Model(Sock) = Model(Sock)'Old;
+          Model(Sock) = Model(Sock)'Old'Update
+                  (S_State => TCP_STATE_LISTEN);
 
     procedure Tcp_Accept
       (Sock           : in out Not_Null_Socket;

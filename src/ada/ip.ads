@@ -17,7 +17,8 @@ package Ip is
 
    subtype IpAddrAny is IpAddr
      with
-      Predicate => IpAddrAny.length > 0;
+      Predicate => IpAddrAny.length = 4  or else
+                   IpAddrAny.length = 16;
 
    IP_ADDR_ANY : aliased constant IpAddrAny
      with
@@ -38,7 +39,7 @@ package Ip is
    -----------------------------
 
    function Is_Initialized_Ip (Ip : IpAddr) return Boolean is
-      (Ip.length > 0)
+      (Ip.length = 4 or else Ip.length = 16)
       with Ghost;
 
 end Ip;

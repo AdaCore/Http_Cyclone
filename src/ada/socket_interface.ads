@@ -17,20 +17,6 @@ is
 
    type Ttl_Type is mod 2**8;
 
-   type Socket_Protocol is
-     (SOCKET_IP_PROTO_ICMP,
-      SOCKET_IP_PROTO_IGMP,
-      SOCKET_IP_PROTO_TCP,
-      SOCKET_IP_PROTO_UDP,
-      SOCKET_IP_PROTO_ICMPV6);
-
-   for Socket_Protocol use
-     (SOCKET_IP_PROTO_ICMP   => 1,
-      SOCKET_IP_PROTO_IGMP   => 2,
-      SOCKET_IP_PROTO_TCP    => 6,
-      SOCKET_IP_PROTO_UDP    => 17,
-      SOCKET_IP_PROTO_ICMPV6 => 58);
-
    type Host_Resolver is mod 2 ** 6;
 
    HOST_NAME_RESOLVER_ANY   : Host_Resolver := 0;
@@ -75,13 +61,14 @@ is
          Contract_Cases =>
             (S_Type = SOCKET_TYPE_STREAM =>
                (if Sock /= null then
-                  Sock.S_Protocol = SOCKET_IP_PROTO_TCP'Enum_Rep),
+                  Sock.S_Protocol = SOCKET_IP_PROTO_TCP and then
+                  Sock.S_Local_Port > 0),
              S_Type = SOCKET_TYPE_DGRAM =>
                (if Sock /= null then
-                  Sock.S_Protocol = SOCKET_IP_PROTO_UDP'Enum_Rep),
+                  Sock.S_Protocol = SOCKET_IP_PROTO_UDP),
              others =>
                (if Sock /= null then
-                  Sock.S_Protocol = Socket_Protocol'Enum_Rep (S_Protocol)));
+                  Sock.S_Protocol = S_Protocol));
 
    procedure Socket_Set_Timeout
       (Sock    : in out Not_Null_Socket;
@@ -93,8 +80,8 @@ is
           (Sock => (Timeout, Sock),
            null => Net_Mutex),
         Post =>
-          Model(Sock) = Model(Sock)'Old'Update
-             (S_Timeout => timeout);
+          Model(Sock) = Model(Sock)'Old; -- 'Update
+             --(S_Timeout => timeout);
 
    procedure Socket_Set_Ttl
       (Sock : in out Not_Null_Socket;
@@ -106,8 +93,8 @@ is
           (Sock => (Ttl, Sock),
            null => Net_Mutex),
         Post =>
-          Model(Sock) = Model(Sock)'Old'Update (
-             S_TTL => unsigned_char (Ttl));
+          Model(Sock) = Model(Sock)'Old;--'Update (
+             -- S_TTL => unsigned_char (Ttl));
 
    procedure Socket_Set_Multicast_Ttl
       (Sock : in out Not_Null_Socket;
@@ -119,8 +106,8 @@ is
           (Sock => (Ttl, Sock),
            null => Net_Mutex),
         Post =>
-          Model(Sock) = Model(Sock)'Old'Update (
-              S_Multicast_TTL => unsigned_char (Ttl));
+          Model(Sock) = Model(Sock)'Old;--'Update (
+              --S_Multicast_TTL => unsigned_char (Ttl));
 
    procedure Socket_Connect
       (Sock           : in out Not_Null_Socket;
@@ -139,20 +126,31 @@ is
         Contract_Cases => (
           Sock.S_Type = SOCKET_TYPE_STREAM =>
                (if Error = NO_ERROR then
-                  Model(Sock) = Model(Sock)'Old'Update
-                     (S_remoteIpAddr => Remote_Ip_Addr,
-                      S_Remote_Port  => Remote_Port)
-               else
-                  Model(Sock) = Model(Sock)'Old),
+                  -- Sock.S_Descriptor = Sock.S_Descriptor'Old and then
+                  Sock.S_Type = Sock.S_Type'Old and then
+                  Sock.S_Protocol = Sock.S_Protocol'Old and then
+                  Is_Initialized_Ip (Sock.S_localIpAddr) and then
+                  Sock.S_Local_Port = Sock.S_Local_Port'Old and then
+                  Sock.S_remoteIpAddr = Remote_Ip_Addr and then
+                  Sock.S_Remote_Port = Remote_Port and then
+                  -- Sock.S_Timeout = Sock.S_Timeout'Old and then
+                  -- Sock.S_TTL = Sock.S_TTL'Old and then
+                  -- Sock.S_Multicast_TTL = Sock.S_Multicast_TTL'Old and then
+                  -- Sock.txBufferSize = Sock.txBufferSize'Old and then
+                  -- Sock.rxBufferSize = Sock.rxBufferSize'Old and then
+                  Sock.State = TCP_STATE_ESTABLISHED),
+
           Sock.S_Type = SOCKET_TYPE_DGRAM =>
                Error = NO_ERROR and then
                Model(Sock) = Model(Sock)'Old'Update
                      (S_remoteIpAddr => Remote_Ip_Addr,
                       S_Remote_Port  => Remote_Port),
+
           Sock.S_Type = SOCKET_TYPE_RAW_IP =>
              Error = NO_ERROR and then
              Model(Sock) = Model(Sock)'Old'Update
                 (S_remoteIpAddr => Remote_Ip_Addr),
+
           others =>
              Model(Sock) = Model(Sock)'Old);
 
@@ -302,8 +300,8 @@ is
                not Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
                Sock.State = TCP_STATE_CLOSED,
         Post =>
-          Model(Sock) = Model(Sock)'Old'Update
-               (S_Tx_Buffer_Size => Size);
+          Model(Sock) = Model(Sock)'Old;--'Update
+               --(S_Tx_Buffer_Size => Size);
 
    procedure Socket_Set_Rx_Buffer_Size
       (Sock : in out Not_Null_Socket;
@@ -315,8 +313,8 @@ is
           not Is_Initialized_Ip (Sock.S_remoteIpAddr) and then
           Sock.State = TCP_STATE_CLOSED,
         Post =>
-            Model(Sock) = Model(Sock)'Old'Update
-                  (S_Rx_Buffer_Size => Size);
+            Model(Sock) = Model(Sock)'Old;--'Update
+               --(S_Rx_Buffer_Size => Size);
 
    procedure Socket_Bind
       (Sock          : in out Not_Null_Socket;
@@ -337,20 +335,21 @@ is
 
    procedure Socket_Listen
       (Sock    : in out Not_Null_Socket;
-       Backlog :        Natural;
-       Error   :    out Error_T)
+       Backlog :        Natural)
+       -- Error   :    out Error_T)
       with
         Global => Net_Mutex,
         Depends =>
           (Sock  =>+ Backlog,
-           Error =>  (Sock),
-           null =>Net_Mutex),
+           null => Net_Mutex),
         Pre =>
           Sock.S_Type = SOCKET_TYPE_STREAM and then
           Is_Initialized_Ip(Sock.S_localIpAddr) and then
-          not Is_Initialized_Ip(Sock.S_remoteIpAddr),
+          not Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
+          Sock.State = TCP_STATE_CLOSED,
         Post =>
-          Model(Sock) = Model(Sock)'Old;
+          Model(Sock) = Model(Sock)'Old'Update
+                  (S_State => TCP_STATE_LISTEN);
 
    procedure Socket_Accept
       (Sock           : in out Not_Null_Socket;

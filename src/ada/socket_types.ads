@@ -63,6 +63,27 @@ is
       SOCKET_TYPE_RAW_ETH => 4);
 
 
+   ----------------------
+   -- Socket_Porotocol --
+   ----------------------
+
+   type Socket_Protocol is
+     (SOCKET_IP_PROTO_ICMP,
+      SOCKET_IP_PROTO_IGMP,
+      SOCKET_IP_PROTO_TCP,
+      SOCKET_IP_PROTO_UDP,
+      SOCKET_IP_PROTO_ICMPV6);
+
+   for Socket_Protocol'Size use int'Size;
+
+   for Socket_Protocol use
+     (SOCKET_IP_PROTO_ICMP   => 1,
+      SOCKET_IP_PROTO_IGMP   => 2,
+      SOCKET_IP_PROTO_TCP    => 6,
+      SOCKET_IP_PROTO_UDP    => 17,
+      SOCKET_IP_PROTO_ICMPV6 => 58);
+
+
    -----------------------
    -- Socket Definition --
    -----------------------
@@ -70,7 +91,7 @@ is
    type Socket_Struct is record
       S_Descriptor    : Sock_Descriptor;
       S_Type          : Socket_Type;
-      S_Protocol      : Sock_Protocol;
+      S_Protocol      : Socket_Protocol;
       S_Net_Interface : System.Address;
       S_localIpAddr   : IpAddr;
       S_Local_Port    : Port;
@@ -195,38 +216,38 @@ is
    ------------------------------
 
    type Socket_Model is record
-      S_Descriptor    : Sock_Descriptor;
+      -- S_Descriptor    : Sock_Descriptor;
       S_Type          : Socket_Type;
-      S_Protocol      : Sock_Protocol;
+      S_Protocol      : Socket_Protocol;
       S_localIpAddr   : IpAddr;
       S_Local_Port    : Port;
       S_remoteIpAddr  : IpAddr;
       S_Remote_Port   : Port;
-      S_Timeout       : Systime;
-      S_TTL           : unsigned_char;
-      S_Multicast_TTL : unsigned_char;
+      -- S_Timeout       : Systime;
+      -- S_TTL           : unsigned_char;
+      -- S_Multicast_TTL : unsigned_char;
       S_State         : Tcp_State;
-      S_Tx_Buffer_Size: Tx_Buffer_Size;
-      S_Rx_Buffer_Size: Rx_Buffer_Size;
+      -- S_Tx_Buffer_Size: Tx_Buffer_Size;
+      -- S_Rx_Buffer_Size: Rx_Buffer_Size;
    end record
      with Ghost;
 
 
    function Model (Sock : Not_Null_Socket) return Socket_Model is
      (Socket_Model'(
-         S_Descriptor     => Sock.S_Descriptor,
+         -- S_Descriptor     => Sock.S_Descriptor,
          S_Type           => Sock.S_Type,
          S_Protocol       => Sock.S_Protocol,
          S_localIpAddr    => Sock.S_localIpAddr,
          S_Local_Port     => Sock.S_Local_Port,
          S_remoteIpAddr   => Sock.S_remoteIpAddr,
          S_Remote_Port    => Sock.S_Remote_Port,
-         S_Timeout        => Sock.S_Timeout,
-         S_TTL            => Sock.S_TTL,
-         S_Multicast_TTL  => Sock.S_Multicast_TTL,
-         S_State          => Sock.State,
-         S_Rx_Buffer_Size => Sock.rxBufferSize,
-         S_Tx_Buffer_Size => Sock.txBufferSize
+         -- S_Timeout        => Sock.S_Timeout,
+         -- S_TTL            => Sock.S_TTL,
+         -- S_Multicast_TTL  => Sock.S_Multicast_TTL,
+         S_State          => Sock.State --,
+         -- S_Rx_Buffer_Size => Sock.rxBufferSize,
+         -- S_Tx_Buffer_Size => Sock.txBufferSize
      ))
      with Ghost;
 

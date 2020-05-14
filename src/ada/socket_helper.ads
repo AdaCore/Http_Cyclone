@@ -23,6 +23,7 @@ is
       Error          : out Error_T)
      with
       Post =>
-         (if Error = NO_ERROR then Server_Ip_Addr.length > 0);
+         (if Error = NO_ERROR then
+            Is_Initialized_Ip (Server_Ip_Addr));
 
 end Socket_Helper;

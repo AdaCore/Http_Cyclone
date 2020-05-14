@@ -59,7 +59,7 @@ is
       if Sock.State = TCP_STATE_CLOSED then
          -- Save port number and IP address of the remote host
          Sock.S_remoteIpAddr := Remote_Ip_Addr;
-         Sock.S_Remote_Port := Remote_Port;
+         Sock.S_Remote_Port  := Remote_Port;
 
          -- Select the source address and the relevant network interface
          -- to use when establishing the connection
@@ -172,15 +172,15 @@ is
 
    procedure Tcp_Listen
       (Sock    : in out Not_Null_Socket;
-       Backlog :        unsigned;
-       Error   :    out Error_T)
+       Backlog :        unsigned)
+       -- Error   :    out Error_T)
    is
    begin
       -- Socket already connected?
-      if Sock.State /= TCP_STATE_CLOSED then
-         Error := ERROR_ALREADY_CONNECTED;
-         return;
-      end if;
+      -- if Sock.State /= TCP_STATE_CLOSED then
+      --    Error := ERROR_ALREADY_CONNECTED;
+      --    return;
+      -- end if;
 
       -- Set the size of the SYN queue Limit the number of pending connections
       if Backlog > 0 then
@@ -194,7 +194,7 @@ is
       Tcp_Change_State (Sock, TCP_STATE_LISTEN);
 
       -- Sucessful processing
-      Error := NO_ERROR;
+      -- Error := NO_ERROR;
    end Tcp_Listen;
 
 

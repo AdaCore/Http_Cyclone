@@ -64,7 +64,7 @@ is
             end if;
             Print_String (Buf, int(Received));
         end loop;
-        Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);  -- ??? you might want to model the effects on the global state of changing Socket state
+        Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);
         if Error /= NO_ERROR then
            return;
         end if;
@@ -73,7 +73,6 @@ is
    end HTTP_Client_Test;
 
    procedure HTTP_Server_Test is
-      Error             : Error_T;
       Sock              : Socket;
       Sock_Client       : Socket with Unreferenced;
       IPAddr_Client     : IpAddr with Unreferenced;
@@ -86,10 +85,7 @@ is
 
       Socket_Bind (Sock, IP_ADDR_ANY, 80);
 
-      Socket_Listen (Sock, 0, Error);
-      if Error /= NO_ERROR then
-         return;
-      end if;
+      Socket_Listen (Sock, 0);
 
       Socket_Accept (Sock, IPAddr_Client, Port_Client, Sock_Client);
 
