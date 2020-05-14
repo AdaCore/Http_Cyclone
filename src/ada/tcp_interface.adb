@@ -407,7 +407,7 @@ is
             -- Delete TCB
             Tcp_Delete_Control_Block (Sock);
             -- Mark the socket as closed
-            Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+            Sock.S_Type := SOCKET_TYPE_UNUSED;
 
          -- TIME-WAIT state?
          when TCP_STATE_TIME_WAIT =>
@@ -424,7 +424,7 @@ is
             --Delete TCB
             Tcp_Delete_Control_Block (Sock);
             -- Mark the socket as closed
-            Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+            Sock.S_Type := SOCKET_TYPE_UNUSED;
             -- No error to report
             Error := NO_ERROR;
       end case;
@@ -536,7 +536,7 @@ is
       for I in Socket_Table'Range loop
          Get_Socket_From_Table (I, Aux_Sock);
 
-         if Aux_Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
+         if Aux_Sock.S_Type = SOCKET_TYPE_STREAM then
             if Aux_Sock.State = TCP_STATE_TIME_WAIT then
                -- Keep track of the oldest socket in the TIME-WAIT state
                if Sock = null then
@@ -563,7 +563,7 @@ is
          -- Delete TCB
          Tcp_Delete_Control_Block (Sock);
          -- Mark the socket as closed
-         Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+         Sock.S_Type := SOCKET_TYPE_UNUSED;
       end if;
    end Tcp_Kill_Oldest_Connection;
 

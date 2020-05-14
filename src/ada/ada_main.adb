@@ -14,7 +14,15 @@ is
     procedure HTTP_Client_Test is
         Sock : Socket;
         ServerAddr : IpAddr;
-        Request : constant char_array := "GET /anything HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\n\r\n";
+        End_Of_Line : constant char_array(1 .. 2) :=
+                  (1 => char'Val(13), 2 => char'Val(10));
+        End_Of_Request : constant char_array (1 .. 1) :=
+                  (1 => char'Val(0));
+        Request : constant char_array := 
+                  "GET /anything HTTP/1.1" & End_Of_Line &
+                  "Host: httpbin.org" & End_Of_Line &
+                  "Connection: close" & End_Of_Line & End_Of_Line
+                  & End_Of_Request;
         Buf : char_array (1 .. 128);
         Error : Error_T;
         Written : Integer with Unreferenced;

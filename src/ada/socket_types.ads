@@ -69,7 +69,7 @@ is
 
    type Socket_Struct is record
       S_Descriptor    : Sock_Descriptor;
-      S_Type          : Sock_Type;
+      S_Type          : Socket_Type;
       S_Protocol      : Sock_Protocol;
       S_Net_Interface : System.Address;
       S_localIpAddr   : IpAddr;
@@ -196,7 +196,7 @@ is
 
    type Socket_Model is record
       S_Descriptor    : Sock_Descriptor;
-      S_Type          : Sock_Type;
+      S_Type          : Socket_Type;
       S_Protocol      : Sock_Protocol;
       S_localIpAddr   : IpAddr;
       S_Local_Port    : Port;

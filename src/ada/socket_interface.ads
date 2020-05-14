@@ -69,7 +69,7 @@ is
          Post =>
            (if Sock /= null then
               Sock.S_Descriptor >= 0 and then
-              Sock.S_Type = Socket_Type'Enum_Rep (S_Type) and then
+              Sock.S_Type = S_Type and then
               not Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
               not Is_Initialized_Ip(Sock.S_localIpAddr)),
          Contract_Cases =>
@@ -137,19 +137,19 @@ is
         Pre =>
           Is_Initialized_Ip (Remote_Ip_Addr),
         Contract_Cases => (
-          Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep =>
+          Sock.S_Type = SOCKET_TYPE_STREAM =>
                (if Error = NO_ERROR then
                   Model(Sock) = Model(Sock)'Old'Update
                      (S_remoteIpAddr => Remote_Ip_Addr,
                       S_Remote_Port  => Remote_Port)
                else
                   Model(Sock) = Model(Sock)'Old),
-          Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep =>
+          Sock.S_Type = SOCKET_TYPE_DGRAM =>
                Error = NO_ERROR and then
                Model(Sock) = Model(Sock)'Old'Update
                      (S_remoteIpAddr => Remote_Ip_Addr,
                       S_Remote_Port  => Remote_Port),
-          Sock.S_Type = SOCKET_TYPE_RAW_IP'Enum_Rep =>
+          Sock.S_Type = SOCKET_TYPE_RAW_IP =>
              Error = NO_ERROR and then
              Model(Sock) = Model(Sock)'Old'Update
                 (S_remoteIpAddr => Remote_Ip_Addr),
@@ -225,7 +225,7 @@ is
           Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
           Data'Last >= Data'First,
         Contract_Cases =>
-          (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep =>
+          (Sock.S_Type = SOCKET_TYPE_STREAM =>
                (if Error = NO_ERROR then
                   Model(Sock) = Model(Sock)'Old and then
                   Received > 0
@@ -256,7 +256,7 @@ is
           Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
           Data'Last >= Data'First,
         Contract_Cases =>
-          (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep =>
+          (Sock.S_Type = SOCKET_TYPE_STREAM =>
              (if Error = NO_ERROR then
                 Model(Sock) = Model(Sock)'Old and then
                 Received > 0
@@ -280,7 +280,7 @@ is
            Error => (Sock, How),
            null  => Net_Mutex),
         Pre =>
-          Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+          Sock.S_Type = SOCKET_TYPE_STREAM and then
           Is_Initialized_Ip(Sock.S_remoteIpAddr),
         Post =>
           (if Error = NO_ERROR then
@@ -291,14 +291,14 @@ is
       with
         Global  => (Input => Net_Mutex),
         Depends => (Sock => Sock, null => Net_Mutex),
-        Post    => Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
+        Post    => Sock.S_Type = SOCKET_TYPE_UNUSED;
 
    procedure Socket_Set_Tx_Buffer_Size
       (Sock : in out Not_Null_Socket;
        Size :        Tx_Buffer_Size)
       with
         Depends => (Sock => (Size, Sock)),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
                not Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
                Sock.State = TCP_STATE_CLOSED,
         Post =>
@@ -311,7 +311,7 @@ is
       with
         Depends => (Sock => (Size, Sock)),
         Pre =>
-          Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+          Sock.S_Type = SOCKET_TYPE_STREAM and then
           not Is_Initialized_Ip (Sock.S_remoteIpAddr) and then
           Sock.State = TCP_STATE_CLOSED,
         Post =>
@@ -328,8 +328,8 @@ is
          not Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
          not Is_Initialized_Ip(Sock.S_localIpAddr) and then
          Is_Initialized_Ip(Local_Ip_Addr) and then
-         (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep or else
-          Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep),
+         (Sock.S_Type = SOCKET_TYPE_STREAM or else
+          Sock.S_Type = SOCKET_TYPE_DGRAM),
        Post =>
          Model(Sock) = Model(Sock)'Old'Update
            (S_localIpAddr => Local_Ip_Addr,
@@ -346,7 +346,7 @@ is
            Error =>  (Sock),
            null =>Net_Mutex),
         Pre =>
-          Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+          Sock.S_Type = SOCKET_TYPE_STREAM and then
           Is_Initialized_Ip(Sock.S_localIpAddr) and then
           not Is_Initialized_Ip(Sock.S_remoteIpAddr),
         Post =>
@@ -368,7 +368,7 @@ is
            Client_Socket    => (Sock, Tcp_Dynamic_Port, Socket_Table),
            Tcp_Dynamic_Port =>+ (Sock, Socket_Table),
            null             => Net_Mutex),
-       Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+       Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
               Is_Initialized_Ip(Sock.S_localIpAddr) and then
               not Is_Initialized_Ip(Sock.S_remoteIpAddr),
        Post => Model(Sock) = Model(Sock)'Old and then

@@ -51,8 +51,7 @@ is
 
       if Error = NO_ERROR then
          for I in Socket_Table'Range loop
-            if Socket_Table (I).S_Type =
-              Socket_Type'Enum_Rep (SOCKET_TYPE_UNUSED)
+            if Socket_Table (I).S_Type = SOCKET_TYPE_UNUSED
             then
                -- Save socket handle
                Get_Socket_From_Table (I, Sock);
@@ -71,7 +70,7 @@ is
          if Sock /= null then
             -- Reset Socket
             -- Maybe there is a simplest way to perform that in Ada
-            Sock.S_Type                := Socket_Type'Enum_Rep (S_Type);
+            Sock.S_Type                := S_Type;
             Sock.S_Protocol            := Socket_Protocol'Enum_Rep (Protocol);
             Sock.S_Local_Port          := P;
             Sock.S_Timeout             := Systime'Last;
@@ -172,20 +171,20 @@ is
    is
    begin
       -- Connection oriented socket?
-      if Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_STREAM) then
+      if Sock.S_Type = SOCKET_TYPE_STREAM then
          Os_Acquire_Mutex (Net_Mutex);
          -- Establish TCP connection
          Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
          Os_Release_Mutex (Net_Mutex);
 
          -- Connectionless socket?
-      elsif Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_DGRAM) then
+      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
          Sock.S_remoteIpAddr := Remote_Ip_Addr;
          Sock.S_Remote_Port  := Remote_Port;
          Error               := NO_ERROR;
 
          -- Raw Socket?
-      elsif Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_RAW_IP) then
+      elsif Sock.S_Type = SOCKET_TYPE_RAW_IP then
          Sock.S_remoteIpAddr := Remote_Ip_Addr;
          Error               := NO_ERROR;
       else
@@ -206,7 +205,7 @@ is
       Written := 0;
       Os_Acquire_Mutex (Net_Mutex);
         --@TODO : finish
-      if Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_STREAM) then
+      if Sock.S_Type = SOCKET_TYPE_STREAM then
          Tcp_Send (Sock, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
@@ -224,7 +223,7 @@ is
    begin
       Written := 0;
       Os_Acquire_Mutex (Net_Mutex);
-      if Sock.S_Type = Socket_Type'Enum_Rep (SOCKET_TYPE_STREAM) then
+      if Sock.S_Type = SOCKET_TYPE_STREAM then
          Tcp_Send (Sock, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
@@ -245,7 +244,7 @@ is
    begin
 
       Os_Acquire_Mutex (Net_Mutex);
-      if Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep then
+      if Sock.S_Type = SOCKET_TYPE_STREAM then
          Tcp_Receive (Sock, Data, Received, Flags, Error);
          -- Save the source IP address
          Src_Ip_Addr  := Sock.S_remoteIpAddr;
@@ -296,21 +295,21 @@ is
       -- Get exclusive access
       Os_Acquire_Mutex (Net_Mutex);
 
-      if (Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep) then
+      if (Sock.S_Type = SOCKET_TYPE_STREAM) then
          Tcp_Abort (Sock, Ignore_Error);
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM'Enum_Rep
-        or else Sock.S_Type = SOCKET_TYPE_RAW_IP'Enum_Rep
-        or else Sock.S_Type = SOCKET_TYPE_RAW_ETH'Enum_Rep
+      elsif Sock.S_Type = SOCKET_TYPE_DGRAM
+        or else Sock.S_Type = SOCKET_TYPE_RAW_IP
+        or else Sock.S_Type = SOCKET_TYPE_RAW_ETH
       then
 
          -- @TODO : Purge the receive queue
 
          -- Mark the socket as closed
-         Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+         Sock.S_Type := SOCKET_TYPE_UNUSED;
       else
          -- All others cases that need to be considered to be coherent with the
          -- C code but that won't never appear.
-         Sock.S_Type := SOCKET_TYPE_UNUSED'Enum_Rep;
+         Sock.S_Type := SOCKET_TYPE_UNUSED;
       end if;
 
       -- Release exclusive access

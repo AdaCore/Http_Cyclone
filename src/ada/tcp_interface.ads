@@ -42,7 +42,7 @@ is
         Depends =>
           (Sock  =>+ (Remote_Ip_Addr, Remote_Port),
            Error => (Sock, Remote_Port, Remote_Ip_Addr)),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
                Is_Initialized_Ip (Remote_Ip_Addr),
         Post =>
           (if Error = No_ERROR then
@@ -60,7 +60,7 @@ is
         Depends =>
           (Sock  =>+ Backlog,
            Error => Sock),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>
           Model(Sock) = Model(Sock)'Old;
 
@@ -80,7 +80,7 @@ is
            Client_Socket    =>  (Sock, Tcp_Dynamic_Port, Socket_Table),
            Tcp_Dynamic_Port =>+ (Socket_Table, Sock),
            null             =>  Net_Mutex),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>
           Model(Sock) = Model(Sock)'Old and then
           -- TCP STATE Condition
@@ -106,7 +106,7 @@ is
           (Sock    =>+ (Data, Flags),
            Written =>  (Sock, Data, Flags),
            Error   =>  (Sock, Data, Flags)),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>
           Model(Sock) = Model(Sock)'Old and then
           (if Error = No_ERROR then Written > 0);
@@ -124,7 +124,7 @@ is
            Data     =>  (Sock, Data, Flags),
            Received =>  (SoCk, Data, Flags)),
         Pre =>
-          Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep and then
+          Sock.S_Type = SOCKET_TYPE_STREAM and then
           Is_Initialized_Ip (Sock.S_RemoteIpAddr) and then
           Data'Last >= Data'First,
         Post =>
@@ -142,7 +142,7 @@ is
         Depends =>
           (Sock  =>+ How,
            Error =>  (Sock, How)),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>
           Model(Sock) = Model(Sock)'Old;
    
@@ -155,7 +155,7 @@ is
         Post => -- @TODO
                 -- In a first approximation, it'll work.
                 -- I forget the 2MSL timer...
-                Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep;
+                Sock.S_Type = SOCKET_TYPE_UNUSED;
 
     procedure Tcp_Kill_Oldest_Connection
       (Sock : out Socket)
@@ -163,7 +163,7 @@ is
         Depends => (Sock => null),
         Post =>
            (if Sock /= null then
-              Sock.S_Type = SOCKET_TYPE_UNUSED'Enum_Rep);
+              Sock.S_Type = SOCKET_TYPE_UNUSED);
 
     procedure Tcp_Get_State
       (Sock  : in     Not_Null_Socket;
@@ -173,7 +173,7 @@ is
         Depends =>
           (State => Sock,
            null  => Net_Mutex),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM'Enum_Rep,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>
           State = Sock.State and then
           Model(Sock) = Model(Sock)'Old;
