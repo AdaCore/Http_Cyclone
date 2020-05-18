@@ -1,7 +1,7 @@
 with Common_Type;  use Common_Type;
 with Interfaces.C; use Interfaces.C;
 with Ip;           use Ip;
-with OS;           use Os;
+with Os_Types;     use Os_Types;
 with System;
 with Tcp_Type;     use Tcp_Type;
 

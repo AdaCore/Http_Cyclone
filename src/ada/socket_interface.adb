@@ -1,4 +1,5 @@
 with Os;            use Os;
+with Os_Types;      use Os_Types;
 with Socket_Helper; use Socket_Helper;
 with System;
 

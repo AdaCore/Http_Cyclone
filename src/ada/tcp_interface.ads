@@ -92,20 +92,22 @@ is
            Client_Socket    =>  (Sock, Tcp_Dynamic_Port, Socket_Table),
            Tcp_Dynamic_Port =>+ (Socket_Table, Sock),
            null             =>  Net_Mutex),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
+               -- Ensure the socket was previously placed in the listening state
+               Sock.State = TCP_STATE_LISTEN,
         Post =>
-          Model(Sock) = Model(Sock)'Old and then
-          -- TCP STATE Condition
-          Sock.State = TCP_STATE_LISTEN and then
-          (if Client_Socket /= null then
-           (Is_Initialized_Ip (Client_Ip_Addr) and then
-            Client_Port > 0 and then
-            Client_Socket.S_RemoteIpAddr = Client_Ip_Addr and then
-            Client_Socket.S_Remote_Port = Client_Port and then
-            Client_Socket.S_Protocol = Sock.S_Protocol and then
-            Client_Socket.S_Local_Port = Sock.S_Local_Port and then
-            Client_Socket.S_Type = Sock.S_Type and then
-            Client_Socket.S_LocalIpAddr = Sock.S_LocalIpAddr));
+            (if Sock.State = TCP_STATE_SYN_RECEIVED then
+               (Model(Sock) = Model(Sock)'Old'Update
+                        (S_State => TCP_STATE_SYN_RECEIVED) and then
+               Is_Initialized_Ip (Client_Ip_Addr) and then
+               Client_Port > 0 and then
+               (if Client_Socket /= null then
+                  Client_Socket.S_Type = SOCKET_TYPE_STREAM and then
+                  Client_Socket.S_Protocol = SOCKET_IP_PROTO_TCP and then
+                  Is_Initialized_Ip(Client_Socket.S_localIpAddr) and then
+                  Client_Socket.S_Local_Port = Sock.S_Local_Port and then
+                  Client_Socket.S_RemoteIpAddr = Client_Ip_Addr and then
+                  Client_Socket.S_Remote_Port = Client_Port)));
    
     procedure Tcp_Send
       (Sock    : in out Not_Null_Socket;
@@ -164,10 +166,13 @@ is
       with
         Depends => (Sock => Sock,
                     Error => Sock),
-        Post => -- @TODO
-                -- In a first approximation, it'll work.
-                -- I forget the 2MSL timer...
-                Sock.S_Type = SOCKET_TYPE_UNUSED;
+        Contract_Cases => -- @TODO
+                -- It's True for all state except TCP_STATE_TIME_WAIT
+         (Sock.State = TCP_STATE_TIME_WAIT => 
+               Model(Sock) = Model(Sock)'Old,
+          others => 
+                Sock.S_Type = SOCKET_TYPE_UNUSED and then
+                Sock.State = TCP_STATE_CLOSED);
 
     procedure Tcp_Kill_Oldest_Connection
       (Sock : out Socket)

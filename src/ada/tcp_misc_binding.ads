@@ -58,7 +58,9 @@ is
         Import        => True,
         Convention    => C,
         External_Name => "tcpDeleteControlBlock",
-        Global        => null;
+        Global        => null,
+        Post => -- Change the Post condition to something more true
+            Model (Sock) = Model (Sock)'Old;
 
    procedure Tcp_Send_Segment
       (Sock         : in out Not_Null_Socket;

@@ -231,6 +231,10 @@ is
 
       -- Wait for an connection attempt
       loop
+
+         pragma Loop_Invariant 
+            (Model(Sock) = Model(Sock)'Loop_Entry) ;
+         
          -- The SYN queue is empty ?
          if Sock.synQueue = null then
             -- Set the events the application is interested in
@@ -241,7 +245,7 @@ is
             -- Release exclusive access
             Os_Release_Mutex (Net_Mutex);
             -- Wait until a SYN message is received from a client
-            Os_Wait_For_Event (Sock.S_Event, Sock.S_Timeout);
+            Os_Wait_For_Event (Sock);
             -- Get exclusive access
             Os_Acquire_Mutex (Net_Mutex);
          end if;
@@ -358,7 +362,7 @@ is
                   Tcp_Update_Events (Sock);
 
                   -- The connection state should be change to SYN-RECEIVED
-                  Tcp_Change_State (Sock, TCP_STATE_SYN_RECEIVED);
+                  Tcp_Change_State (Client_Socket, TCP_STATE_SYN_RECEIVED);
 
                   -- We are done...
                   exit;
@@ -411,7 +415,7 @@ is
 
          -- TIME-WAIT state?
          when TCP_STATE_TIME_WAIT =>
-            -- The user doe not own the socket anymore...
+            -- The user does not own the socket anymore...
             Sock.owned_Flag := False;
             -- TCB will be deleted and socket will be closed
             -- when the 2MSL timer will elapse

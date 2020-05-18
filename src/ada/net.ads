@@ -1,4 +1,4 @@
-with Os; use Os;
+with Os_Types; use Os_Types;
 
 package Net is
 

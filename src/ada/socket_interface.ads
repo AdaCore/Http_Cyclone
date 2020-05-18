@@ -288,7 +288,8 @@ is
       (Sock : in out Not_Null_Socket)
       with
         Global  => (Input => Net_Mutex),
-        Depends => (Sock => Sock, null => Net_Mutex),
+        Depends => (Sock =>+ null,
+                    null => Net_Mutex),
         Post    => Sock.S_Type = SOCKET_TYPE_UNUSED;
 
    procedure Socket_Set_Tx_Buffer_Size
