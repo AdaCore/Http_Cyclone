@@ -76,7 +76,12 @@ is
              Error =>  (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue)),
         Post =>
             (if Error = NO_ERROR then
-               Model (Sock) = Model(Sock)'Old);
+               Model (Sock) = Model(Sock)'Old
+             else
+               -- If the send of the segment fail, we don't know anything
+               -- about the TCP state of the Socket. But we know that our
+               -- Socket still have the same type (Stream)
+               Sock.S_Type = SOCKET_TYPE_STREAM);
 
    procedure Tcp_Update_Events
       (Sock : Not_Null_Socket)
@@ -84,6 +89,7 @@ is
          Import => True,
          Convention => C,
          External_Name => "tcpUpdateEvents",
-         Global => null;
+         Global => null,
+         Post => Model(Sock) = Model(Sock)'Old;
 
 end Tcp_Misc_Binding;

@@ -94,7 +94,8 @@ is
            null             =>  Net_Mutex),
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
                -- Ensure the socket was previously placed in the listening state
-               Sock.State = TCP_STATE_LISTEN,
+               Sock.State = TCP_STATE_LISTEN and then
+               Sock.S_Local_Port > 0,
         Post =>
             (if Sock.State = TCP_STATE_SYN_RECEIVED then
                (Model(Sock) = Model(Sock)'Old'Update
@@ -166,13 +167,10 @@ is
       with
         Depends => (Sock => Sock,
                     Error => Sock),
-        Contract_Cases => -- @TODO
-                -- It's True for all state except TCP_STATE_TIME_WAIT
-         (Sock.State = TCP_STATE_TIME_WAIT => 
-               Model(Sock) = Model(Sock)'Old,
-          others => 
-                Sock.S_Type = SOCKET_TYPE_UNUSED and then
-                Sock.State = TCP_STATE_CLOSED);
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
+        Post =>
+            Sock.S_Type = SOCKET_TYPE_UNUSED and then
+            Sock.State = TCP_STATE_CLOSED;
 
     procedure Tcp_Kill_Oldest_Connection
       (Sock : out Socket)
@@ -183,12 +181,12 @@ is
               Sock.S_Type = SOCKET_TYPE_UNUSED);
 
     procedure Tcp_Get_State
-      (Sock  : in     Not_Null_Socket;
+      (Sock  : in out Not_Null_Socket;
        State :    out Tcp_State)
       with
         Global  => (Input => Net_Mutex),
         Depends =>
-          (State => Sock,
+          ((State, Sock) => Sock,
            null  => Net_Mutex),
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>

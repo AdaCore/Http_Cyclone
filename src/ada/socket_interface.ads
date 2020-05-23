@@ -62,7 +62,8 @@ is
             (S_Type = SOCKET_TYPE_STREAM =>
                (if Sock /= null then
                   Sock.S_Protocol = SOCKET_IP_PROTO_TCP and then
-                  Sock.S_Local_Port > 0),
+                  Sock.S_Local_Port > 0 and then
+                  Sock.State = TCP_STATE_CLOSED),
              S_Type = SOCKET_TYPE_DGRAM =>
                (if Sock /= null then
                   Sock.S_Protocol = SOCKET_IP_PROTO_UDP),
@@ -122,7 +123,9 @@ is
            Error => (Sock, Remote_Ip_Addr, Remote_Port),
            null  => Net_Mutex),
         Pre =>
-          Is_Initialized_Ip (Remote_Ip_Addr),
+          Is_Initialized_Ip (Remote_Ip_Addr) and then
+          (if Sock.S_Type = SOCKET_TYPE_STREAM then
+            Sock.State = TCP_STATE_CLOSED),
         Contract_Cases => (
           Sock.S_Type = SOCKET_TYPE_STREAM =>
                (if Error = NO_ERROR then
@@ -370,7 +373,9 @@ is
            null             => Net_Mutex),
        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
               Is_Initialized_Ip(Sock.S_localIpAddr) and then
-              not Is_Initialized_Ip(Sock.S_remoteIpAddr),
+              not Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
+              Sock.State = TCP_STATE_LISTEN and then
+              Sock.S_Local_Port > 0,
        Post => Model(Sock) = Model(Sock)'Old and then
                Is_Initialized_Ip(Client_Ip_Addr) and then
                Client_Port > 0 and then

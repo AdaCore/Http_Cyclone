@@ -45,7 +45,8 @@ is
                (if Sock.synQueue /= null then
                   Is_Initialized_Ip (Sock.synQueue.Src_Addr) and then
                   Sock.synQueue.Src_Port > 0 and then
-                  Is_Initialized_Ip (Sock.synQueue.Dest_Addr)),
+                  Is_Initialized_Ip (Sock.synQueue.Dest_Addr) and then
+                  Sock.synQueue.Next = null),
          others => Model(Sock) = Model(Sock)'Old);
             
 

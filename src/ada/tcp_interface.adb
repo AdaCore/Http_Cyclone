@@ -1,11 +1,13 @@
-with Ip_Binding;        use Ip_Binding;
-with Net_Mem_Interface; use Net_Mem_Interface;
-with Os;                use Os;
-with Socket_Helper;     use Socket_Helper;
-with Socket_Interface;  use Socket_Interface;
-with System;            use System;
+with Ip_Binding;          use Ip_Binding;
+with Net_Mem_Interface;   use Net_Mem_Interface;
+with Os;                  use Os;
+with Socket_Helper;       use Socket_Helper;
+with Socket_Interface;    use Socket_Interface;
+with System;              use System;
 with Tcp_Binding;
-with Tcp_Misc_Binding;  use Tcp_Misc_Binding;
+with Tcp_Fsm_Binding;     use Tcp_Fsm_Binding;
+with Tcp_Misc_Binding;    use Tcp_Misc_Binding;
+with Tcp_Timer_Interface; use Tcp_Timer_Interface;
 
 package body Tcp_Interface with
    SPARK_Mode => On
@@ -111,12 +113,14 @@ is
          -- An initial send sequence number is selected
          Sock.iss := netGetRand;
 
-         -- Initialize TCP control block
-         -- @TODO : Il y aura forcément des overflows ici.
-         -- Voir avec Clément.
+         
          Sock.sndUna := Sock.iss;
          Sock.sndNxt := Sock.iss + 1;
          Sock.rcvUser := 0;
+         -- Initialize TCP control block
+         -- @TODO : Sock.rxBufferSize = uint32_t
+         -- et Sock.rcvWnd = uint16_t.
+         -- Voir avec Clément.
          Sock.rcvWnd := unsigned_short(Sock.rxBufferSize);
 
          -- Default retransmission timeout
@@ -221,6 +225,12 @@ is
       Queue_Item : Tcp_Syn_Queue_Item_Acc;
    begin
 
+      -- A segment of data might have been received by another
+      -- thread.
+      -- This function does nothing and is only here for the
+      -- needs of the verification.
+      Tcp_Process_Segment(Sock);
+
       Os_Acquire_Mutex (Net_Mutex);
 
       -- Initialization of out variables
@@ -233,7 +243,15 @@ is
       loop
 
          pragma Loop_Invariant 
-            (Model(Sock) = Model(Sock)'Loop_Entry) ;
+            (Model(Sock) = Model(Sock)'Loop_Entry and then
+             not Is_Initialized_Ip (Client_Ip_Addr) and then
+             Client_Socket = null and then
+             Sock.S_Local_Port > 0 and then
+             (Sock.synQueue = null or else
+               (Is_Initialized_Ip (Sock.synQueue.Src_Addr) and then
+               Sock.synQueue.Next = null and then
+               Is_Initialized_Ip (Sock.synQueue.Dest_Addr) and then
+               Sock.synQueue.Src_Port > 0)));
          
          -- The SYN queue is empty ?
          if Sock.synQueue = null then
@@ -258,6 +276,9 @@ is
             exit;
          end if;
 
+         pragma Assert (Sock.synQueue /= null);
+         pragma Assert (Is_Initialized_Ip(Sock.synQueue.Src_Addr));
+
          -- Point to the first item in the SYN queue
          Queue_Item := Sock.synQueue;
 
@@ -272,6 +293,8 @@ is
          -- Get exclusive access
          Os_Acquire_Mutex (Net_Mutex);
 
+         pragma Assert (Is_Initialized_Ip (Client_Ip_Addr));
+
          -- Socket successfully created?
          if Client_Socket /= null then
             -- The user owns the socket;
@@ -281,12 +304,18 @@ is
             Client_Socket.txBufferSize := Sock.txBufferSize;
             Client_Socket.rxBufferSize := Sock.rxBufferSize;
 
+            -- Number of chunks that comprise the TX and the RX buffers
+            Client_Socket.txBuffer.maxChunkCound :=
+               Client_Socket.txBuffer.chunk'Size / Client_Socket.txBuffer.chunk(0)'Size;
+            Client_Socket.rxBuffer.maxChunkCound :=
+               Client_Socket.rxBuffer.chunk'Size / Client_Socket.rxBuffer.chunk(0)'Size;
+
             -- Allocate transmit buffer
             Net_Tx_Buffer_Set_Length 
                   (Client_Socket.txBuffer,
                    Client_Socket.txBufferSize,
                    Error);
-            
+
             -- Check status code
             if Error = NO_ERROR then
                -- Allocate receive buffer
@@ -365,6 +394,9 @@ is
                   Tcp_Change_State (Client_Socket, TCP_STATE_SYN_RECEIVED);
 
                   -- We are done...
+                  pragma Assert (Is_Initialized_Ip (Client_Ip_Addr));
+                  pragma Assert (Is_Initialized_Ip (Client_Socket.S_localIpAddr));
+                  pragma Assert (Sock.S_Local_Port > 0);
                   exit;
                end if;
             end if;
@@ -378,6 +410,9 @@ is
          -- Deallocate memory buffer
          Queue_Item.Next := null;
          Mem_Pool_Free (Queue_Item);
+         
+         Client_Ip_Addr.length := 0;
+         Client_Socket := null;
 
          -- Wait for the next connection attempt
       end loop;
@@ -421,6 +456,10 @@ is
             -- when the 2MSL timer will elapse
             Error := NO_ERROR;
 
+            -- This statement does nothing except simulate the
+            -- 2MSL timer
+            Tcp_Tick(Sock);
+
          -- Any other state?
          when others =>
             -- Enter CLOSED state
@@ -449,10 +488,6 @@ is
       -- Actual number of bytes written Total_Length : Natural := 0; Event :
       -- unsigned; n : unsigned;
    begin
-      -- -- Check whether the socket is in the listening state if Sock.State /=
-      -- TCP_STATE_LISTEN then
-      --     Error := ERROR_NOT_CONNECTED;
-      -- end if;
 
       -- -- Send as much as possible loop
       --     -- Wait until there is more room in the send buffer
@@ -577,7 +612,7 @@ is
    -------------------
 
    procedure Tcp_Get_State
-      (Sock  : in     Not_Null_Socket;
+      (Sock  : in out Not_Null_Socket;
        State :    out Tcp_State)
    is
    begin

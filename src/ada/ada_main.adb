@@ -45,33 +45,30 @@ is
          return;
       end if;
 
-      Main_loop:
+      Socket_Set_Timeout (Sock, 10_000);
+
+      Socket_Connect (Sock, ServerAddr, 80, Error);
+      if Error /= NO_ERROR then
+         goto End_Of_Loop;
+      end if;
+
+      Socket_Send (Sock, Request, Written, 0, Error);
+      if Error /= NO_ERROR then
+         goto End_Of_Loop;
+      end if;
+
       loop
-         Socket_Set_Timeout (Sock, 10_000);
+            pragma Loop_Invariant (Sock.S_remoteIpAddr.length > 0 and Sock /= null);
+            Socket_Receive (Sock, Buf, Received, 0, Error);
+            exit when Error = ERROR_END_OF_STREAM;
+            if Error /= NO_ERROR then
+               goto End_Of_Loop;
+            end if;
+            Print_String (Buf, int(Received));
+      end loop;
+      Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);
 
-         Socket_Connect (Sock, ServerAddr, 80, Error);
-         if Error /= NO_ERROR then
-            exit Main_loop;
-         end if;
-
-         Socket_Send (Sock, Request, Written, 0, Error);
-         if Error /= NO_ERROR then
-            exit Main_loop;
-         end if;
-
-         loop
-               pragma Loop_Invariant (Sock.S_remoteIpAddr.length > 0 and Sock /= null);
-               Socket_Receive (Sock, Buf, Received, 0, Error);
-               exit when Error = ERROR_END_OF_STREAM;
-               if Error /= NO_ERROR then
-                  exit Main_loop;
-               end if;
-               Print_String (Buf, int(Received));
-         end loop;
-         Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);
-         exit Main_loop;
-      end loop Main_loop;
-
+      <<End_Of_Loop>>
       Socket_Close (Sock);
    end HTTP_Client_Test;
 

@@ -121,7 +121,7 @@ is
             Sock.rxBufferSize          := 2_860;
             Sock.retransmitQueue       := System.Null_Address;
             Sock.retransmitCount       := 0;
-            Sock.synQueue              := null; --System.Null_Address;
+            Sock.synQueue              := null;
             Sock.synQueueSize          := 0;
             Sock.wndProbeCount         := 0;
             Sock.wndProbeInterval      := 0;
