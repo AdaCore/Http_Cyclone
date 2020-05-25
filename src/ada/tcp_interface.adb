@@ -485,66 +485,128 @@ is
        Flags   :        unsigned;
        Error   :    out Error_T)
    is
-      -- Actual number of bytes written Total_Length : Natural := 0; Event :
-      -- unsigned; n : unsigned;
+      -- Actual number of bytes written
+      n : unsigned;
+      Event : Socket_Event;
+      Data_Buffer : char_array := Data;
+      Total_Length : Integer := 0;
    begin
+      -- Initialize data
+      Written := 0;
 
-      -- -- Send as much as possible loop
-      --     -- Wait until there is more room in the send buffer
-      --     Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_READY'Enum_Rep, Sock.S_Timeout, Event);
-      --     if Event /= SOCKET_EVENT_TX_READY'Enum_Rep then
-      --         Error := ERROR_TIMEOUT;
-      --     end if;
+      loop
+         -- Send as much as possible loop
+          -- Wait until there is more room in the send buffer
+         Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_READY, Sock.S_Timeout, Event);
+         if Event /= SOCKET_EVENT_TX_READY then
+            Error := ERROR_TIMEOUT;
+            return;
+         end if;
 
-      --     -- Check current TCP state
-      --     case Sock.State is
-      --         when TCP_STATE_ESTABLISHED | TCP_STATE_CLOSE_WAIT =>
-      --             -- The send buffer is now available for writing
-      --             null;
-      --         when TCP_STATE_LAST_ACK | TCP_STATE_FIN_WAIT_1
-      --             | TCP_STATE_FIN_WAIT_2 | TCP_STATE_CLOSING
-      --             | TCP_STATE_TIME_WAIT =>
-      --             Error := ERROR_CONNECTION_CLOSING;
-      --             return;
+         -- Check current TCP state
+         case Sock.State is
+            when TCP_STATE_ESTABLISHED
+               | TCP_STATE_CLOSE_WAIT =>
+               -- The send buffer is now available for writing
+               null;
+            when TCP_STATE_LAST_ACK
+               | TCP_STATE_FIN_WAIT_1
+               | TCP_STATE_FIN_WAIT_2
+               | TCP_STATE_CLOSING
+               | TCP_STATE_TIME_WAIT   =>
+               -- The connexion is being closed
+               Error := ERROR_CONNECTION_CLOSING;
+               return;
 
-      --         -- CLOSED state ?
-      --         when others =>
-      --             -- The connection was reset by remote side?
-      --             if Sock.reset_Flag /= 0 then
-      --                 Error := ERROR_CONNECTION_RESET;
-      --             else
-      --                 Error := ERROR_NOT_CONNECTED;
-      --             end if;
-      --             return;
-      --     end case;
+            -- CLOSED state ?
+            when others =>
+               -- The connection was reset by remote side?
+               if Sock.reset_Flag then
+                  Error := ERROR_CONNECTION_RESET;
+               else
+                  Error := ERROR_NOT_CONNECTED;
+               end if;
+               return;
+         end case;
 
-      --     -- Determine the actual number of bytes in the send buffer
-      --     n := Sock.sndUser + Sock.sndNxt - Sock.sndUna;
+         -- Determine the actual number of bytes in the send buffer
+         n := unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna;
 
-   --     -- Exit immediately if the transmission buffer is full (sanity check)
-      --     if n >= Sock.txBufferSize then
-      --         Error := ERROR_FAILURE;
-      --         return;
-      --     end if;
+         -- Exit immediately if the transmission buffer is full (sanity check)
+         if n >= unsigned(Sock.txBufferSize) then
+            Error := ERROR_FAILURE;
+            return;
+         end if;
 
-      --     -- Number of bytes available for writing
-      --     n := Sock.txBufferSize - n;
-      --     -- Calculate the number of bytes to copy at a time
-      --     n := unsigned'Min(n, Data'Length - Total_Length);
+         -- Number of bytes available for writing
+         n := unsigned(Sock.txBufferSize) - n;
+         -- Calculate the number of bytes to copy at a time
+         n := unsigned'Min(n, unsigned(Data_Buffer'Length - Total_Length));
 
-      --     -- Any Data to copy
-      --     if n > 0 then
-      --         -- Copy user data to send buffer
-   --         Tcp_Write_Tx_Buffer(Sock, Sock.sndNxt + Sock.sndUser, Data, n);
+         -- Any Data to copy
+         if n > 0 then
+            -- Copy user data to send buffer
+            Tcp_Write_Tx_Buffer(Sock, Sock.sndNxt + unsigned(Sock.sndUser), Data_Buffer, n);
 
-      --         -- Update the number of data buffered but not yet sent
-      --         Sock.sndUser := Sock.sndUser + n;
+            -- Update the number of data buffered but not yet sent
+            Sock.sndUser := Sock.sndUser + unsigned_short(n);
+            -- Advance data pointer...
+            -- @TODO
+            
+            -- Update byte counter
+            Total_Length := Total_Length + Natural(n);
 
-      --     end if;
+            if Total_Length > Data'Length then
+               Data_Buffer (Data_Buffer'First .. Data_Buffer'Last - size_t(n)) :=
+                  Data_Buffer(Data_Buffer'First + size_t(n) .. Data_Buffer'Last);
+            end if;
+            -- Total number of data that have been written
+            Written := Total_Length;
 
-      -- exit when Total_Length < Data'Length; end loop;
+            -- Update TX events
+            Tcp_Update_Events (Sock);
 
-      Tcp_Binding.Tcp_Send (Sock, Data, Written, Flags, Error);
+            -- To avoid a deadlock, it is necessary to have a timeout to force
+            -- transmission of data, overriding the SWS avoidance algorithm. In
+            -- practice, this timeout should seldom occur (refer to RFC 1122,
+            -- section 4.2.3.4)
+            if unsigned(Sock.sndUser) = n then
+               Tcp_Timer_Start (Sock.overrideTimer, TCP_OVERRIDE_TIMEOUT);
+            end if;
+         end if;
+
+         -- The Nagle algorithm should be implemented to coalesce
+         -- short segments (refer to RFC 1122 4.2.3.4)
+         Tcp_Nagle_Algo(Sock, Flags, Error);
+
+         -- Exit when all the data have been sent
+         exit when Total_Length >= Data_Buffer'Length;
+      end loop;
+
+      -- The SOCKET_FLAG_WAIT_ACK flag causes the function to
+      -- wait for acknowledgment from the remote side
+      if (Flags and SOCKET_FLAG_WAIT_ACK) /= 0 then
+         -- Wait for the data to be acknowledged
+         Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_ACKED, Sock.S_Timeout, Event);
+
+         -- A Timeout exception occured?
+         if Event /= SOCKET_EVENT_TX_ACKED then
+            Error := ERROR_TIMEOUT;
+            return;
+         end if;
+
+         -- The connection was closed before an acknowledgement was received?
+         if Sock.State /= TCP_STATE_ESTABLISHED and then
+            Sock.State /= TCP_STATE_CLOSE_WAIT then
+            Error := ERROR_NOT_CONNECTED;
+            return;
+         end if;
+
+      end if;
+
+      Error := NO_ERROR;
+
+      -- Tcp_Binding.Tcp_Send (Sock, Data, Written, Flags, Error);
    end Tcp_Send;
 
 

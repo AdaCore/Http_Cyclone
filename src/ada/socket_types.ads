@@ -16,8 +16,9 @@ is
    -- Socket_Event --
    ------------------
 
-   type Socket_Event is mod 2 ** 10;
-   for Socket_Event'Size use unsigned'Size;
+   type Socket_Event is mod 2 ** 10
+      with Size => int'Size;
+   -- for Socket_Event'Size use unsigned'Size;
 
    SOCKET_EVENT_TIMEOUT     : constant Socket_Event := 000;
    SOCKET_EVENT_CONNECTED   : constant Socket_Event := 001;

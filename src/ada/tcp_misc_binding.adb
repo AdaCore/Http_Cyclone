@@ -77,4 +77,21 @@ is
             (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue));
    end Tcp_Send_Segment;
 
+   procedure Tcp_Nagle_Algo
+      (Sock  : in out Not_Null_Socket;
+       Flags : in     unsigned;
+       Error :    out Error_T)
+   is
+      function tcpNagleAlgo
+         (Sock  : Socket;
+          Flags : unsigned) return unsigned
+         with
+            Import => True,
+            Convention => C,
+            External_Name => "tcpNagleAlgo";
+   begin
+      Error :=
+         Error_T'Enum_Val(tcpNagleAlgo (Sock, Flags));
+   end Tcp_Nagle_Algo;
+
 end Tcp_Misc_Binding;

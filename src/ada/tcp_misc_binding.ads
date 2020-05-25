@@ -31,15 +31,20 @@ is
          Post => Event = 0 or else
                  ((Event_Mask and Event) /= 0),
          Contract_Cases =>
-           (Sock.State = TCP_STATE_SYN_SENT =>
-               (if Event = SOCKET_EVENT_CONNECTED then
+           (Event = SOCKET_EVENT_CONNECTED =>
+               (if Sock.State = TCP_STATE_SYN_SENT then
                   Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_ESTABLISHED)
-               elsif Event = SOCKET_EVENT_CLOSED then
-                  -- Maybe here it's not the correct state return
+                        (S_State => TCP_STATE_ESTABLISHED)),
+
+            Event = SOCKET_EVENT_CLOSED =>
+               (if Sock.State = TCP_STATE_SYN_SENT then
+                  -- Maybe here it's not the correct state returned
                   -- @TODO investigate
                   Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_CLOSED)),
+                     (S_State => TCP_STATE_CLOSED)),
+              
+            Event = SOCKET_EVENT_TX_READY =>
+               Model (Sock) = Model (Sock)'Old,
             others => True);
 
    procedure Tcp_Write_Tx_Buffer
@@ -89,6 +94,14 @@ is
          Import => True,
          Convention => C,
          External_Name => "tcpUpdateEvents",
+         Global => null,
+         Post => Model(Sock) = Model(Sock)'Old;
+   
+   procedure Tcp_Nagle_Algo
+      (Sock  : in out Not_Null_Socket;
+       Flags : in     unsigned;
+       Error :    out Error_T)
+      with
          Global => null,
          Post => Model(Sock) = Model(Sock)'Old;
 

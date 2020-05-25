@@ -19,6 +19,9 @@ package Tcp_Type is
 
    TCP_INITIAL_WINDOW : constant unsigned_short := 3;
 
+   -- Override timeout (should be in the range 0.1 to 1 seconds)
+   TCP_OVERRIDE_TIMEOUT : constant Systime := 500;
+
    type Tcp_State is
      (TCP_STATE_CLOSED,
       TCP_STATE_LISTEN,

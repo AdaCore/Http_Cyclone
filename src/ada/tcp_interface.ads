@@ -119,7 +119,7 @@ is
       with
         Depends =>
           (Sock    =>+ (Data, Flags),
-           Written =>  (Sock, Data, Flags),
+           Written =>  (Sock, Data),
            Error   =>  (Sock, Data, Flags)),
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>

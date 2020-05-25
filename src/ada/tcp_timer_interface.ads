@@ -7,6 +7,7 @@
 --                                                --
 ----------------------------------------------------
 
+with Common_Type;  use Common_Type;
 with Socket_Types; use Socket_Types;
 with Tcp_Type;     use Tcp_Type;
 
@@ -26,6 +27,10 @@ is
              Sock.State  = TCP_STATE_CLOSED),
          others => True
       );
+
+   procedure Tcp_Timer_Start
+      (Timer       : in out Tcp_Timer;
+       Timer_Delay : in     Systime);
 
 end Tcp_Timer_Interface;
 
