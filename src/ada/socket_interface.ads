@@ -37,7 +37,7 @@ is
           (Server_Ip_Addr => (Server_Name, Flags),
            Error          => (Server_Name, Flags)),
         Post =>
-          (if Error = NO_ERROR then 
+          (if Error = NO_ERROR then
              Is_Initialized_Ip(Server_Ip_Addr));
 
    procedure Socket_Open
@@ -124,6 +124,7 @@ is
            null  => Net_Mutex),
         Pre =>
           Is_Initialized_Ip (Remote_Ip_Addr) and then
+          Remote_Port > 0 and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM then
             Sock.State = TCP_STATE_CLOSED),
         Contract_Cases => (
@@ -197,7 +198,7 @@ is
         Pre  =>
           Is_Initialized_Ip(Sock.S_remoteIpAddr),
         Post =>
-          (if Error = NO_ERROR then 
+          (if Error = NO_ERROR then
              Model(Sock) = Model(Sock)'Old and then
              Written > 0);
 

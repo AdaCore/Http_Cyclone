@@ -44,6 +44,7 @@ is
            Error => (Sock, Remote_Port, Remote_Ip_Addr)),
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
                Is_Initialized_Ip (Remote_Ip_Addr) and then
+               Remote_Port > 0 and then
                -- @Clément : not sure this condition is wanted
                -- I don't know what happen if the connexion isn't closed.
                Sock.State = TCP_STATE_CLOSED,
@@ -82,7 +83,7 @@ is
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
       with
-        Global => 
+        Global =>
           (Input  => (Net_Mutex, Socket_Table),
            In_Out => Tcp_Dynamic_Port),
         Depends =>
@@ -109,7 +110,7 @@ is
                   Client_Socket.S_Local_Port = Sock.S_Local_Port and then
                   Client_Socket.S_RemoteIpAddr = Client_Ip_Addr and then
                   Client_Socket.S_Remote_Port = Client_Port)));
-   
+
     procedure Tcp_Send
       (Sock    : in out Not_Null_Socket;
        Data    :        Char_Array;
@@ -119,9 +120,10 @@ is
       with
         Depends =>
           (Sock    =>+ (Data, Flags),
-           Written =>  (Sock, Data),
+           Written =>  (Sock, Data, Flags),
            Error   =>  (Sock, Data, Flags)),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
+               Data'First <= Data'Last,
         Post =>
           Model(Sock) = Model(Sock)'Old and then
           (if Error = No_ERROR then Written > 0);
@@ -160,7 +162,7 @@ is
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>
           Model(Sock) = Model(Sock)'Old;
-   
+
     procedure Tcp_Abort
       (Sock  : in out Not_Null_Socket;
        Error :    out Error_T)

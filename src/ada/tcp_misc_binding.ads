@@ -28,24 +28,21 @@ is
            (Sock  =>+ (Event_Mask, Timeout),
             Event =>  (Event_Mask, Timeout)),
          Pre  => Event_Mask /= 0,
-         Post => Event = 0 or else
-                 ((Event_Mask and Event) /= 0),
-         Contract_Cases =>
-           (Event = SOCKET_EVENT_CONNECTED =>
-               (if Sock.State = TCP_STATE_SYN_SENT then
+         Post => 
+           (if Event = SOCKET_EVENT_CONNECTED then
+               (if Sock.State'Old = TCP_STATE_SYN_SENT then
                   Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_ESTABLISHED)),
+                        (S_State => TCP_STATE_ESTABLISHED))
 
-            Event = SOCKET_EVENT_CLOSED =>
-               (if Sock.State = TCP_STATE_SYN_SENT then
+            elsif Event = SOCKET_EVENT_CLOSED then
+               (if Sock.State'Old = TCP_STATE_SYN_SENT then
                   -- Maybe here it's not the correct state returned
                   -- @TODO investigate
                   Model(Sock) = Model(Sock)'Old'Update
-                     (S_State => TCP_STATE_CLOSED)),
-              
-            Event = SOCKET_EVENT_TX_READY =>
-               Model (Sock) = Model (Sock)'Old,
-            others => True);
+                     (S_State => TCP_STATE_CLOSED))
+
+            elsif Event = SOCKET_EVENT_TX_READY then
+               Model (Sock) = Model (Sock)'Old);
 
    procedure Tcp_Write_Tx_Buffer
       (Sock    :        Not_Null_Socket;
@@ -53,6 +50,7 @@ is
        Data    :        char_array;
        Length  :        unsigned)
       with
+        Global => null,
         Import        => True,
         Convention    => C,
         External_Name => "tcpWriteTxBuffer";
@@ -96,7 +94,7 @@ is
          External_Name => "tcpUpdateEvents",
          Global => null,
          Post => Model(Sock) = Model(Sock)'Old;
-   
+
    procedure Tcp_Nagle_Algo
       (Sock  : in out Not_Null_Socket;
        Flags : in     unsigned;

@@ -34,10 +34,10 @@ package Tcp_Type is
       TCP_STATE_FIN_WAIT_2,
       TCP_STATE_CLOSING,
       TCP_STATE_TIME_WAIT);
-   
+
    for Tcp_State'Size use int'Size;
 
-   for Tcp_State use 
+   for Tcp_State use
       (TCP_STATE_CLOSED       => 0,
        TCP_STATE_LISTEN       => 1,
        TCP_STATE_SYN_SENT     => 2,
@@ -50,7 +50,7 @@ package Tcp_Type is
        TCP_STATE_CLOSING      => 9,
        TCP_STATE_TIME_WAIT    => 10
       );
-   
+
    function Tcp_State_Convert (State : int) return Tcp_State is
       (if State = 0 then TCP_STATE_CLOSED
        elsif State = 1 then TCP_STATE_LISTEN

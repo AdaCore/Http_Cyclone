@@ -20,7 +20,7 @@ is
       Convention    => C,
       External_Name => "osGetSystemTime",
       Global        => null;
-   
+
    procedure Os_Reset_Event (Event : Os_Event);
 
    procedure Os_Wait_For_Event
@@ -48,6 +48,6 @@ is
                   Is_Initialized_Ip (Sock.synQueue.Dest_Addr) and then
                   Sock.synQueue.Next = null),
          others => Model(Sock) = Model(Sock)'Old);
-            
+
 
 end Os;

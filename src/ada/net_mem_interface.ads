@@ -1,7 +1,7 @@
 with Error_H;      use Error_H;
 with Tcp_Type;     use Tcp_Type;
 
-package Net_Mem_Interface 
+package Net_Mem_Interface
    with SPARK_Mode
 is
 

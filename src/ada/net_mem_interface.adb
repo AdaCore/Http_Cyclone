@@ -1,7 +1,7 @@
 with Interfaces.C; use Interfaces.C;
 with System;       use System;
 
-package body Net_Mem_Interface 
+package body Net_Mem_Interface
    with SPARK_Mode => Off
 is
 
@@ -30,5 +30,5 @@ is
    begin
       Error := Error_T'Enum_Val(netBufferSetLength (Buffer'Address, unsigned_long(Length)));
    end Net_Rx_Buffer_Set_Length;
-   
+
 end Net_Mem_Interface;

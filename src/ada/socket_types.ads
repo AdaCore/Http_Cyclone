@@ -32,7 +32,7 @@ is
    SOCKET_EVENT_LINK_UP     : constant Socket_Event := 256;
    SOCKET_EVENT_LINK_DOWN   : constant Socket_Event := 512;
 
-   
+
    ---------------------------
    -- Socket_Shutdown_Flags --
    ---------------------------
@@ -42,7 +42,7 @@ is
        SOCKET_SD_SEND,
        SOCKET_SD_BOTH);
 
-   
+
    -----------------
    -- Socket_Type --
    -----------------

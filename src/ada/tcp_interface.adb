@@ -1,3 +1,5 @@
+pragma Unevaluated_Use_Of_Old (Allow);
+
 with Ip_Binding;          use Ip_Binding;
 with Net_Mem_Interface;   use Net_Mem_Interface;
 with Os;                  use Os;
@@ -70,11 +72,12 @@ is
                Dest_Addr     => Sock.S_remoteIpAddr,
                Src_Addr      => Sock.S_localIpAddr,
                Error         => Error);
-         
-         
+
          if Error /= NO_ERROR then
             return;
          end if;
+
+         pragma Assert (Is_Initialized_Ip (Sock.S_localIpAddr));
 
          -- Make sure the source address is valid
          if Ip_Is_Unspecified_Addr(Sock.S_localIpAddr) then
@@ -86,11 +89,11 @@ is
          Sock.owned_Flag := True;
 
          -- Number of chunks that comprise the TX and the RX buffers
-         Sock.txBuffer.maxChunkCound := 
+         Sock.txBuffer.maxChunkCound :=
                Sock.txBuffer.chunk'Size / Sock.txBuffer.chunk(0)'Size;
          Sock.rxBuffer.maxChunkCound :=
                Sock.rxBuffer.chunk'Size / Sock.rxBuffer.chunk(0)'Size;
-         
+
          -- Allocate transmit buffer
          Net_Tx_Buffer_Set_Length (Sock.txBuffer, Sock.txBufferSize, Error);
 
@@ -106,30 +109,27 @@ is
          -- The SMSS is the size of the largest segment that the sender can transmit
          Sock.smss := unsigned_short'Min (TCP_DEFAULT_MSS, TCP_MAX_MSS);
          -- The RMSS is the size of the largest segment the receiver is willing to accept
-         Sock.rmss := unsigned_short(unsigned_long'Min 
-                                       (unsigned_long(Sock.rxBufferSize), 
+         Sock.rmss := unsigned_short(unsigned_long'Min
+                                       (unsigned_long(Sock.rxBufferSize),
                                         unsigned_long(TCP_MAX_MSS)));
 
          -- An initial send sequence number is selected
          Sock.iss := netGetRand;
 
-         
+
          Sock.sndUna := Sock.iss;
          Sock.sndNxt := Sock.iss + 1;
          Sock.rcvUser := 0;
+
          -- Initialize TCP control block
-         -- @TODO : Sock.rxBufferSize = uint32_t
-         -- et Sock.rcvWnd = uint16_t.
-         -- Voir avec Clément.
          Sock.rcvWnd := unsigned_short(Sock.rxBufferSize);
 
          -- Default retransmission timeout
          Sock.rto := TCP_INITIAL_RTO;
-         
+
          -- Default congestion state
          Sock.congestState := TCP_CONGEST_STATE_IDLE;
-         
-         -- @TODO voir pour l'overflow
+
          -- Initial congestion window
          Sock.cwnd := unsigned_short(
                         unsigned_long'Min(unsigned_long(TCP_INITIAL_WINDOW) * unsigned_long(Sock.smss),
@@ -162,7 +162,7 @@ is
       -- Failed to establish connection?
       elsif Event = SOCKET_EVENT_CLOSED then
          ERROR := ERROR_CONNECTION_FAILED;
-      
+
       -- Timeout exception?
       else
          ERROR := ERROR_TIMEOUT;
@@ -212,7 +212,7 @@ is
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
    is
-      procedure Mem_Pool_Free 
+      procedure Mem_Pool_Free
          (Queue_Item : in out Tcp_Syn_Queue_Item_Acc)
          with
             Import => True,
@@ -242,7 +242,7 @@ is
       -- Wait for an connection attempt
       loop
 
-         pragma Loop_Invariant 
+         pragma Loop_Invariant
             (Model(Sock) = Model(Sock)'Loop_Entry and then
              not Is_Initialized_Ip (Client_Ip_Addr) and then
              Client_Socket = null and then
@@ -252,7 +252,7 @@ is
                Sock.synQueue.Next = null and then
                Is_Initialized_Ip (Sock.synQueue.Dest_Addr) and then
                Sock.synQueue.Src_Port > 0)));
-         
+
          -- The SYN queue is empty ?
          if Sock.synQueue = null then
             -- Set the events the application is interested in
@@ -298,7 +298,7 @@ is
          -- Socket successfully created?
          if Client_Socket /= null then
             -- The user owns the socket;
-            Client_Socket.owned_Flag := True; 
+            Client_Socket.owned_Flag := True;
 
             -- Inherit settings from the listening socket
             Client_Socket.txBufferSize := Sock.txBufferSize;
@@ -311,7 +311,7 @@ is
                Client_Socket.rxBuffer.chunk'Size / Client_Socket.rxBuffer.chunk(0)'Size;
 
             -- Allocate transmit buffer
-            Net_Tx_Buffer_Set_Length 
+            Net_Tx_Buffer_Set_Length
                   (Client_Socket.txBuffer,
                    Client_Socket.txBufferSize,
                    Error);
@@ -319,7 +319,7 @@ is
             -- Check status code
             if Error = NO_ERROR then
                -- Allocate receive buffer
-               Net_Rx_Buffer_Set_Length 
+               Net_Rx_Buffer_Set_Length
                   (Client_Socket.rxBuffer,
                    Client_Socket.rxBufferSize,
                    Error);
@@ -346,7 +346,7 @@ is
                Client_Socket.rmss := unsigned_short'Min
                      (unsigned_short(Client_Socket.rxBufferSize),
                       TCP_MAX_MSS);
-               
+
                -- Initialize TCP control block
                Client_Socket.iss     := netGetRand;
                Client_Socket.irs     := Queue_Item.Isn;
@@ -362,7 +362,7 @@ is
                -- Default congestion state
                Sock.congestState := TCP_CONGEST_STATE_IDLE;
                -- Initial congestion window
-               Client_Socket.cwnd := unsigned_short(unsigned_long'Min 
+               Client_Socket.cwnd := unsigned_short(unsigned_long'Min
                         (unsigned_long(TCP_INITIAL_WINDOW * Client_Socket.smss),
                          unsigned_long(Client_Socket.txBufferSize)));
                -- Slow start threshold should be set arbitrarily high
@@ -371,7 +371,7 @@ is
                Client_Socket.recover := Client_Socket.iss;
 
                -- Send a SYN ACK control segment
-               Tcp_Send_Segment 
+               Tcp_Send_Segment
                   (Sock         => Client_Socket,
                    Flags        => TCP_FLAG_SYN or TCP_FLAG_ACK,
                    Seq_Num      => Client_Socket.iss,
@@ -410,7 +410,7 @@ is
          -- Deallocate memory buffer
          Queue_Item.Next := null;
          Mem_Pool_Free (Queue_Item);
-         
+
          Client_Ip_Addr.length := 0;
          Client_Socket := null;
 
@@ -421,7 +421,7 @@ is
       Os_Release_Mutex (Net_Mutex);
    end Tcp_Accept;
 
-   
+
    ---------------
    -- Tcp_Abord --
    ---------------
@@ -486,17 +486,16 @@ is
        Error   :    out Error_T)
    is
       -- Actual number of bytes written
-      n : unsigned;
+      n : unsigned := 0;
       Event : Socket_Event;
       Data_Buffer : char_array := Data;
       Total_Length : Integer := 0;
    begin
       -- Initialize data
       Written := 0;
-
       loop
          -- Send as much as possible loop
-          -- Wait until there is more room in the send buffer
+         -- Wait until there is more room in the send buffer
          Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_READY, Sock.S_Timeout, Event);
          if Event /= SOCKET_EVENT_TX_READY then
             Error := ERROR_TIMEOUT;
@@ -529,6 +528,11 @@ is
                return;
          end case;
 
+         pragma Loop_Invariant
+            (n = 0 and then Total_Length >= 0 and then
+             Data_Buffer'First <= Data_Buffer'Last and then
+             Model(Sock) = Model(Sock)'Loop_Entry);
+
          -- Determine the actual number of bytes in the send buffer
          n := unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna;
 
@@ -538,10 +542,16 @@ is
             return;
          end if;
 
+         pragma Assert (n in 0 .. unsigned(Sock.txBufferSize) - 1);
+
          -- Number of bytes available for writing
          n := unsigned(Sock.txBufferSize) - n;
+         pragma Assert (n in 0 .. unsigned(Sock.txBufferSize));
+
          -- Calculate the number of bytes to copy at a time
          n := unsigned'Min(n, unsigned(Data_Buffer'Length - Total_Length));
+
+         pragma Assert (n <= unsigned(Sock.txBufferSize));
 
          -- Any Data to copy
          if n > 0 then
@@ -550,18 +560,12 @@ is
 
             -- Update the number of data buffered but not yet sent
             Sock.sndUser := Sock.sndUser + unsigned_short(n);
-            -- Advance data pointer...
-            -- @TODO
-            
-            -- Update byte counter
-            Total_Length := Total_Length + Natural(n);
 
-            if Total_Length > Data'Length then
+            -- Recopy data from the end of the buffer to the beggining.
+            if Total_Length > Data_Buffer'Length then
                Data_Buffer (Data_Buffer'First .. Data_Buffer'Last - size_t(n)) :=
                   Data_Buffer(Data_Buffer'First + size_t(n) .. Data_Buffer'Last);
             end if;
-            -- Total number of data that have been written
-            Written := Total_Length;
 
             -- Update TX events
             Tcp_Update_Events (Sock);
@@ -575,13 +579,23 @@ is
             end if;
          end if;
 
+         -- Update byte counter
+         Total_Length := Total_Length + Natural(n);
+
+         -- Total number of data that have been written
+         Written := Total_Length;
+
          -- The Nagle algorithm should be implemented to coalesce
          -- short segments (refer to RFC 1122 4.2.3.4)
          Tcp_Nagle_Algo(Sock, Flags, Error);
 
          -- Exit when all the data have been sent
          exit when Total_Length >= Data_Buffer'Length;
+         -- Reset n to zero for the needs of verification
+         n := 0;
       end loop;
+
+      pragma Assert (Written = Total_Length);
 
       -- The SOCKET_FLAG_WAIT_ACK flag causes the function to
       -- wait for acknowledgment from the remote side
@@ -706,7 +720,7 @@ is
                -- The connection does not exist
                Error := ERROR_NOT_CONNECTED;
                return;
-            
+
             when TCP_STATE_SYN_RECEIVED | TCP_STATE_ESTABLISHED =>
                -- Flush the send buffer
                Tcp_Send (Sock, Buf, Written, SOCKET_FLAG_NO_DELAY, Error);
@@ -715,12 +729,12 @@ is
                end if;
 
                -- Make sure all the data has been sent out
-               Tcp_Wait_For_Events 
+               Tcp_Wait_For_Events
                   (Sock       => Sock,
                    Event_Mask => SOCKET_EVENT_TX_DONE,
                    Timeout    => Sock.S_Timeout,
                    Event      => Event);
-               
+
                -- Timeout error?
                if event /= SOCKET_EVENT_TX_DONE then
                   Error := ERROR_TIMEOUT;
@@ -728,12 +742,12 @@ is
                end if;
 
                -- Send a FIN segment
-               Tcp_Send_Segment 
+               Tcp_Send_Segment
                   (Sock         => Sock,
                    Flags        => TCP_FLAG_FIN or TCP_FLAG_ACK,
                    Seq_Num      => Sock.sndNxt,
                    Ack_Num      => Sock.rcvNxt,
-                   Length       => 0, 
+                   Length       => 0,
                    Add_To_Queue => True,
                    Error        => Error);
 
@@ -753,7 +767,7 @@ is
                   Event_Mask => SOCKET_EVENT_TX_SHUTDOWN,
                   Timeout    => Sock.S_Timeout,
                   Event      => Event);
-               
+
                -- Timeout interval elapsed?
                if event /= SOCKET_EVENT_TX_SHUTDOWN then
                   Error := ERROR_TIMEOUT;
@@ -769,12 +783,12 @@ is
                end if;
 
                -- Make sure all the data has been sent out
-               Tcp_Wait_For_Events 
+               Tcp_Wait_For_Events
                   (Sock       => Sock,
                    Event_Mask => SOCKET_EVENT_TX_DONE,
                    Timeout    => Sock.S_Timeout,
                    Event      => Event);
-               
+
                -- Timeout error?
                if event /= SOCKET_EVENT_TX_DONE then
                   Error := ERROR_TIMEOUT;
@@ -782,12 +796,12 @@ is
                end if;
 
                -- Send a FIN segment
-               Tcp_Send_Segment 
+               Tcp_Send_Segment
                   (Sock         => Sock,
                    Flags        => TCP_FLAG_FIN or TCP_FLAG_ACK,
                    Seq_Num      => Sock.sndNxt,
                    Ack_Num      => Sock.rcvNxt,
-                   Length       => 0, 
+                   Length       => 0,
                    Add_To_Queue => True,
                    Error        => Error);
 
@@ -807,7 +821,7 @@ is
                   Event_Mask => SOCKET_EVENT_TX_SHUTDOWN,
                   Timeout    => Sock.S_Timeout,
                   Event      => Event);
-               
+
                -- Timeout interval elapsed?
                if event /= SOCKET_EVENT_TX_SHUTDOWN then
                   Error := ERROR_TIMEOUT;
@@ -830,7 +844,7 @@ is
                end if;
 
                -- Continue processing
-            
+
             when others =>
                -- Nothing to do
                -- Continue processing
@@ -844,7 +858,7 @@ is
          -- Check current state
          case Sock.State is
             when TCP_STATE_LISTEN =>
-               -- The connection does not exist 
+               -- The connection does not exist
                Error := ERROR_NOT_CONNECTED;
                return;
 
@@ -862,7 +876,7 @@ is
                   Error := ERROR_TIMEOUT;
                   return;
                end if;
-            
+
             when others =>
                -- A FIN segment has already been received
                null;

@@ -18,7 +18,7 @@ is
                   (1 => char'Val(13), 2 => char'Val(10));
         End_Of_Request : constant char_array (1 .. 1) :=
                   (1 => char'Val(0));
-        Request : constant char_array := 
+        Request : constant char_array :=
                   "GET /anything HTTP/1.1" & End_Of_Line &
                   "Host: httpbin.org" & End_Of_Line &
                   "Connection: close" & End_Of_Line & End_Of_Line

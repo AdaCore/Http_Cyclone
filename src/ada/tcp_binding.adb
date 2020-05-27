@@ -1,4 +1,4 @@
-package body Tcp_Binding 
+package body Tcp_Binding
    with SPARK_Mode => Off
 is
 

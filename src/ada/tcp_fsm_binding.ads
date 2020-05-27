@@ -28,7 +28,7 @@ is
       Contract_Cases => (
          Sock.State = TCP_STATE_CLOSED =>
             Model(Sock) = Model(Sock)'Old,
-         
+
          -- C: tcpStateListen
          Sock.State = TCP_STATE_LISTEN =>
             Model(Sock) = Model(Sock)'Old and then
