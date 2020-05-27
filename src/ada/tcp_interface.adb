@@ -665,7 +665,7 @@ is
                if (Time - Aux_Sock.timeWaitTimer.startTime) >
                  (Time - Sock.timeWaitTimer.startTime)
                then
-                  Sock := Aux_Sock;
+                  Get_Socket_From_Table (I, Sock);
                end if;
             end if;
          end if;
