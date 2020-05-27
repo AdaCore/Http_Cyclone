@@ -28,21 +28,24 @@ is
            (Sock  =>+ (Event_Mask, Timeout),
             Event =>  (Event_Mask, Timeout)),
          Pre  => Event_Mask /= 0,
-         Post => 
-           (if Event = SOCKET_EVENT_CONNECTED then
-               (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                  Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_ESTABLISHED))
-
-            elsif Event = SOCKET_EVENT_CLOSED then
-               (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                  -- Maybe here it's not the correct state returned
-                  -- @TODO investigate
-                  Model(Sock) = Model(Sock)'Old'Update
-                     (S_State => TCP_STATE_CLOSED))
-
-            elsif Event = SOCKET_EVENT_TX_READY then
-               Model (Sock) = Model (Sock)'Old);
+         Post =>
+            (if (Event_Mask and SOCKET_EVENT_CONNECTED) /= 0 then
+               (if Event = SOCKET_EVENT_CONNECTED then
+                     (if Sock.State'Old = TCP_STATE_SYN_SENT then
+                        Model(Sock) = Model(Sock)'Old'Update
+                              (S_State => TCP_STATE_ESTABLISHED))))
+            and then
+            (if (Event_Mask and SOCKET_EVENT_CLOSED) /= 0 then
+               (if Event = SOCKET_EVENT_CLOSED then
+                  (if Sock.State'Old = TCP_STATE_SYN_SENT then
+                     -- Maybe here it's not the correct state returned
+                     -- @TODO investigate
+                     Model(Sock) = Model(Sock)'Old'Update
+                        (S_State => TCP_STATE_CLOSED))))
+            and then
+            (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
+               (if Event = SOCKET_EVENT_TX_READY then
+                  Model (Sock) = Model (Sock)'Old));
 
    procedure Tcp_Write_Tx_Buffer
       (Sock    :        Not_Null_Socket;
@@ -53,7 +56,8 @@ is
         Global => null,
         Import        => True,
         Convention    => C,
-        External_Name => "tcpWriteTxBuffer";
+        External_Name => "tcpWriteTxBuffer",
+        Post => Model(Sock) = Model(Sock)'Old;
 
    procedure Tcp_Delete_Control_Block
       (Sock : Not_Null_Socket)
