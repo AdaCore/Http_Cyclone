@@ -38,7 +38,7 @@
             "args": [
                 "-P",
                 "prove.gpr",
-                "--level=2",
+                "--level=3",
                 "-j0"
             ],
             "presentation": {

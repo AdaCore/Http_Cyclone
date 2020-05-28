@@ -251,7 +251,8 @@ is
                (Is_Initialized_Ip (Sock.synQueue.Src_Addr) and then
                Sock.synQueue.Next = null and then
                Is_Initialized_Ip (Sock.synQueue.Dest_Addr) and then
-               Sock.synQueue.Src_Port > 0)));
+               Sock.synQueue.Src_Port > 0)) and then
+             Queue_Item = null);
 
          -- The SYN queue is empty ?
          if Sock.synQueue = null then
@@ -412,7 +413,6 @@ is
          Mem_Pool_Free (Queue_Item);
 
          Client_Ip_Addr.length := 0;
-         Client_Socket := null;
 
          -- Wait for the next connection attempt
       end loop;
@@ -427,7 +427,7 @@ is
    ---------------
 
    procedure Tcp_Abort
-      (Sock  : in out Not_Null_Socket;
+      (Sock  : in out Socket;
        Error :    out Error_T)
    is
    begin
@@ -471,6 +471,14 @@ is
             -- No error to report
             Error := NO_ERROR;
       end case;
+
+      -- These conditions should always be true here
+      pragma Assert 
+         (Sock.S_Type = SOCKET_TYPE_UNUSED and then
+            Sock.State = TCP_STATE_CLOSED);
+
+      -- Fake function to simulate a Free(Sock)
+      Free_Socket(Sock);
    end Tcp_Abort;
 
 
@@ -529,7 +537,8 @@ is
          end case;
 
          pragma Loop_Invariant
-            (n = 0 and then Total_Length >= 0 and then
+            (n = 0 and then
+             Total_Length in 0 .. Data_Buffer'Length and then
              Data_Buffer'First <= Data_Buffer'Last and then
              Model(Sock) = Model(Sock)'Loop_Entry);
 
@@ -665,10 +674,15 @@ is
                if (Time - Aux_Sock.timeWaitTimer.startTime) >
                  (Time - Sock.timeWaitTimer.startTime)
                then
+                  Free_Socket (Sock);
                   Get_Socket_From_Table (I, Sock);
                end if;
             end if;
          end if;
+
+         -- Free Aux_Sock to solve memory leak problem
+         Free_Socket (Aux_Sock);
+         pragma Loop_Invariant (Aux_Sock = null);
       end loop;
 
       -- Any connection in the TIME-WAIT state?
@@ -709,7 +723,7 @@ is
    is
       Written : Integer;
       Event : Socket_Event;
-      Buf : char_array(0..0) := (others => nul); -- @TODO Buf should be NULL here
+      Buf : char_array(1..0) := (others => nul); -- @TODO Buf should be NULL here
    begin
 
       -- Disable transmission?

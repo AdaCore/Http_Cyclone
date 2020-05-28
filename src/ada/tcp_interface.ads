@@ -122,11 +122,11 @@ is
           (Sock    =>+ (Data, Flags),
            Written =>  (Sock, Data, Flags),
            Error   =>  (Sock, Data, Flags)),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
-               Data'First <= Data'Last,
+        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>
-          Model(Sock) = Model(Sock)'Old and then
-          (if Error = No_ERROR then Written > 0);
+          (if Error = No_ERROR then
+               Model(Sock) = Model(Sock)'Old and then
+               Written > 0);
 
     procedure Tcp_Receive
       (Sock     : in out Not_Null_Socket;
@@ -164,15 +164,14 @@ is
           Model(Sock) = Model(Sock)'Old;
 
     procedure Tcp_Abort
-      (Sock  : in out Not_Null_Socket;
+      (Sock  : in out Socket;
        Error :    out Error_T)
       with
         Depends => (Sock => Sock,
                     Error => Sock),
-        Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
-        Post =>
-            Sock.S_Type = SOCKET_TYPE_UNUSED and then
-            Sock.State = TCP_STATE_CLOSED;
+        Pre => Sock /= null and then
+               Sock.S_Type = SOCKET_TYPE_STREAM,
+        Post => Sock = null;
 
     procedure Tcp_Kill_Oldest_Connection
       (Sock : out Socket)

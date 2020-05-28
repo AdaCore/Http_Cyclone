@@ -48,4 +48,10 @@ is
              (System.Null_Address, Server_Name, Server_Ip_Addr, Flags));
    end Get_Host_By_Name_H;
 
+   procedure Free_Socket
+      (Sock : in out Socket)
+   is begin
+      null;
+   end Free_Socket;
+
 end Socket_Helper;

@@ -289,12 +289,14 @@ is
              Model(Sock) = Model(Sock)'Old);
 
    procedure Socket_Close
-      (Sock : in out Not_Null_Socket)
+      (Sock : in out Socket)
       with
         Global  => (Input => Net_Mutex),
         Depends => (Sock =>+ null,
                     null => Net_Mutex),
-        Post    => Sock.S_Type = SOCKET_TYPE_UNUSED;
+        Pre     => Sock /= null and then
+                   Sock.S_Type /= SOCKET_TYPE_UNUSED,
+        Post    => Sock = null;
 
    procedure Socket_Set_Tx_Buffer_Size
       (Sock : in out Not_Null_Socket;

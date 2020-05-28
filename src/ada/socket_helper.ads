@@ -26,4 +26,9 @@ is
          (if Error = NO_ERROR then
             Is_Initialized_Ip (Server_Ip_Addr));
 
+   procedure Free_Socket
+      (Sock : in out Socket)
+      with
+         Post => Sock = null;
+
 end Socket_Helper;

@@ -290,7 +290,7 @@ is
       Os_Release_Mutex (Net_Mutex);
    end Socket_Shutdown;
 
-   procedure Socket_Close (Sock : in out Not_Null_Socket) is
+   procedure Socket_Close (Sock : in out Socket) is
       Ignore_Error : Error_T;
    begin
       -- Get exclusive access
@@ -298,19 +298,15 @@ is
 
       if (Sock.S_Type = SOCKET_TYPE_STREAM) then
          Tcp_Abort (Sock, Ignore_Error);
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM
-        or else Sock.S_Type = SOCKET_TYPE_RAW_IP
-        or else Sock.S_Type = SOCKET_TYPE_RAW_ETH
-      then
+      else -- SOCKET_TYPE_DGRAM, SOCKET_TYPE_RAW_IP, SOCKET_TYPE_RAW_ETH
 
          -- @TODO : Purge the receive queue
 
          -- Mark the socket as closed
          Sock.S_Type := SOCKET_TYPE_UNUSED;
-      else
-         -- All others cases that need to be considered to be coherent with the
-         -- C code but that won't never appear.
-         Sock.S_Type := SOCKET_TYPE_UNUSED;
+         
+         -- Free the socket
+         Free_Socket (Sock);
       end if;
 
       -- Release exclusive access
