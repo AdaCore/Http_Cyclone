@@ -252,4 +252,22 @@ is
      ))
      with Ghost;
 
+
+   -- Basic Socket Model is here to model a socket after a procedure
+   -- call that fail et return an error.
+   -- It allows to model that we don't know everything about the TCP
+   -- state, but we still know what kind of protocol the socket is using
+
+   type Basic_Socket_Model is record
+      S_Type          : Socket_Type;
+      S_Protocol      : Socket_Protocol;
+   end record with Ghost;
+
+   function Basic_Model(Sock : Not_Null_Socket) return Basic_Socket_Model is
+      (Basic_Socket_Model'(
+         S_Type      => Sock.S_Type,
+         S_Protocol  => Sock.S_Protocol
+      ))
+      with Ghost;
+
 end Socket_Types;

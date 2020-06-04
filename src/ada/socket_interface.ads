@@ -142,7 +142,9 @@ is
                   -- Sock.S_Multicast_TTL = Sock.S_Multicast_TTL'Old and then
                   -- Sock.txBufferSize = Sock.txBufferSize'Old and then
                   -- Sock.rxBufferSize = Sock.rxBufferSize'Old and then
-                  Sock.State = TCP_STATE_ESTABLISHED),
+                  Sock.State = TCP_STATE_ESTABLISHED
+               else
+                  Basic_Model(Sock) = Basic_Model (Sock)'Old),
 
           Sock.S_Type = SOCKET_TYPE_DGRAM =>
                Error = NO_ERROR and then
@@ -179,7 +181,9 @@ is
         Post =>
           (if Error = NO_ERROR then
              Model(Sock) = Model(Sock)'Old and then
-             Written <= Data'Length);
+             Written <= Data'Length
+           else
+             Basic_Model (Sock) = Basic_Model (Sock));
 
    procedure Socket_Send
       (Sock    : in out Not_Null_Socket;
@@ -200,7 +204,9 @@ is
         Post =>
           (if Error = NO_ERROR then
              Model(Sock) = Model(Sock)'Old and then
-             Written <= Data'Length);
+             Written <= Data'Length
+           else
+             Basic_Model (Sock) = Basic_Model (Sock)'Old);
 
    procedure Socket_Receive_Ex
       (Sock         : in out Not_Null_Socket;
@@ -235,7 +241,9 @@ is
                   Received > 0
                 elsif Error = ERROR_END_OF_STREAM then
                   Model(Sock) = Model(Sock)'Old and then
-                  Received = 0),
+                  Received = 0
+                else
+                  Basic_Model (Sock) = Basic_Model (Sock)'Old),
            others =>
                Error = ERROR_INVALID_SOCKET and then
                Model(Sock) = Model(Sock)'Old and then
@@ -268,7 +276,9 @@ is
                 Received > 0
              elsif Error = ERROR_END_OF_STREAM then
                 Model(Sock) = Model(Sock)'Old and then
-                Received = 0),
+                Received = 0
+             else
+                Basic_Model (Sock) = Basic_Model (Sock)'Old),
            others =>
              Error = ERROR_INVALID_SOCKET and then
              Model(Sock) = Model(Sock)'Old and then
@@ -290,7 +300,9 @@ is
           Is_Initialized_Ip(Sock.S_remoteIpAddr),
         Post =>
           (if Error = NO_ERROR then
-             Model(Sock) = Model(Sock)'Old);
+             Model(Sock) = Model(Sock)'Old
+           else
+             Basic_Model (Sock) = Basic_Model (Sock)'Old);
 
    procedure Socket_Close
       (Sock : in out Socket)

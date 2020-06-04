@@ -33,7 +33,9 @@ is
                (if Event = SOCKET_EVENT_CONNECTED then
                      (if Sock.State'Old = TCP_STATE_SYN_SENT then
                         Model(Sock) = Model(Sock)'Old'Update
-                              (S_State => TCP_STATE_ESTABLISHED))))
+                              (S_State => TCP_STATE_ESTABLISHED))
+               else
+                  Basic_Model (Sock) = Basic_Model (Sock)'Old))
             and then
             (if (Event_Mask and SOCKET_EVENT_CLOSED) /= 0 then
                (if Event = SOCKET_EVENT_CLOSED then
@@ -41,19 +43,23 @@ is
                      -- Maybe here it's not the correct state returned
                      -- @TODO investigate
                      Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_CLOSED))))
+                        (S_State => TCP_STATE_CLOSED))
+               else Basic_Model (Sock) = Basic_Model (Sock)'Old))
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
                (if Event = SOCKET_EVENT_TX_READY then
-                  Model (Sock) = Model (Sock)'Old))
+                  Model (Sock) = Model (Sock)'Old
+               else Basic_Model (Sock) = Basic_Model (Sock)'Old))
             and then
             (if (Event_Mask and SOCKET_EVENT_RX_READY) /= 0 then
                (if Event = SOCKET_EVENT_RX_READY then
-                  Model(Sock) = Model(Sock)'Old))
+                  Model(Sock) = Model(Sock)'Old
+               else Basic_Model (Sock) = Basic_Model (Sock)'Old))
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
                (if Event = SOCKET_EVENT_TX_ACKED then
-                  Model(Sock) = Model(Sock)'Old));
+                  Model(Sock) = Model(Sock)'Old
+               else Basic_Model (Sock) = Basic_Model (Sock)'Old));
 
    procedure Tcp_Write_Tx_Buffer
       (Sock    : Not_Null_Socket;
@@ -108,10 +114,7 @@ is
             (if Error = NO_ERROR then
                Model (Sock) = Model(Sock)'Old
              else
-               -- If the send of the segment fail, we don't know anything
-               -- about the TCP state of the Socket. But we know that our
-               -- Socket still have the same type (Stream)
-               Sock.S_Type = SOCKET_TYPE_STREAM);
+               Basic_Model (Sock) = Basic_Model (Sock)'Old);
 
    procedure Tcp_Update_Events
       (Sock : Not_Null_Socket)
