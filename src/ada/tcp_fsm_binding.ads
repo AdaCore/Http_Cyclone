@@ -23,7 +23,7 @@ is
    procedure Tcp_Process_Segment(Sock : in out Not_Null_Socket)
    with
       Global => null,
-      Depends => (Sock =>+ Sock),
+      Depends => (Sock => Sock),
       Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
       Contract_Cases => (
          Sock.State = TCP_STATE_CLOSED =>

@@ -197,8 +197,8 @@ is
      (Sock         : in out Not_Null_Socket;
       Dest_Ip_Addr :        IpAddr;
       Dest_Port    :        Port;
-      Data         : in     char_array;
-      Written      :    out Integer;
+      Data         : in     Send_Buffer;
+      Written      :    out Natural;
       Flags        :        Socket_Flags;
       Error        :    out Error_T)
    is
@@ -216,8 +216,8 @@ is
 
    procedure Socket_Send
      (Sock    : in out Not_Null_Socket;
-      Data    : in     char_array;
-      Written :    out Integer;
+      Data    : in     Send_Buffer;
+      Written :    out Natural;
       Flags   :        Socket_Flags;
       Error   :    out Error_T)
    is
@@ -237,8 +237,8 @@ is
       Src_Ip_Addr  :    out IpAddr;
       Src_Port     :    out Port;
       Dest_Ip_Addr :    out IpAddr;
-      Data         :    out char_array;
-      Received     :    out unsigned;
+      Data         :    out Received_Buffer;
+      Received     :    out Natural;
       Flags        :        Socket_Flags;
       Error        :    out Error_T)
    is
@@ -266,8 +266,8 @@ is
 
    procedure Socket_Receive
      (Sock     : in out Not_Null_Socket;
-      Data     :    out char_array;
-      Received :    out unsigned;
+      Data     :    out Received_Buffer;
+      Received :    out Natural;
       Flags    :        Socket_Flags;
       Error    :    out Error_T)
    is

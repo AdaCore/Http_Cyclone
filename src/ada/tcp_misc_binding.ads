@@ -45,19 +45,42 @@ is
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
                (if Event = SOCKET_EVENT_TX_READY then
-                  Model (Sock) = Model (Sock)'Old));
+                  Model (Sock) = Model (Sock)'Old))
+            and then
+            (if (Event_Mask and SOCKET_EVENT_RX_READY) /= 0 then
+               (if Event = SOCKET_EVENT_RX_READY then
+                  Model(Sock) = Model(Sock)'Old))
+            and then
+            (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
+               (if Event = SOCKET_EVENT_TX_ACKED then
+                  Model(Sock) = Model(Sock)'Old));
 
    procedure Tcp_Write_Tx_Buffer
-      (Sock    :        Not_Null_Socket;
-       Seq_Num :        unsigned;
-       Data    :        char_array;
-       Length  :        unsigned)
+      (Sock    : Not_Null_Socket;
+       Seq_Num : unsigned;
+       Data    : Send_Buffer;
+       Length  : unsigned)
       with
         Global => null,
         Import        => True,
         Convention    => C,
         External_Name => "tcpWriteTxBuffer",
         Post => Model(Sock) = Model(Sock)'Old;
+
+   procedure Tcp_Read_Rx_Buffer
+      (Sock    :     Not_Null_Socket;
+       Seq_Num :     unsigned;
+       Data    : out Received_Buffer;
+       Length  :     unsigned)
+      with
+        Global => null,
+        Import => True,
+        Convention => C,
+        External_Name => "tcpReadRxBuffer",
+        Pre => Data'First <= Data'Last,
+        Post =>
+            Data(Data'First .. Data'Last)'Initialized and then
+            Model (Sock) = Model(Sock)'Old;
 
    procedure Tcp_Delete_Control_Block
       (Sock : Not_Null_Socket)
@@ -106,5 +129,14 @@ is
       with
          Global => null,
          Post => Model(Sock) = Model(Sock)'Old;
+
+   procedure Tcp_Update_Receive_Window
+      (Sock : Not_Null_Socket)
+      with
+         Import => True,
+         Convention => C,
+         External_Name => "tcpUpdateReceiveWindow",
+         Global => null,
+         Post => Model (Sock) = Model(Sock)'Old;
 
 end Tcp_Misc_Binding;

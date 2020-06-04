@@ -113,8 +113,8 @@ is
 
     procedure Tcp_Send
       (Sock    : in out Not_Null_Socket;
-       Data    :        Char_Array;
-       Written :    out Integer;
+       Data    :        Send_Buffer;
+       Written :    out Natural;
        Flags   :        Unsigned;
        Error   :    out Error_T)
       with
@@ -126,12 +126,12 @@ is
         Post =>
           (if Error = No_ERROR then
                Model(Sock) = Model(Sock)'Old and then
-               Written > 0);
+               Written <= Data'Length);
 
     procedure Tcp_Receive
       (Sock     : in out Not_Null_Socket;
-       Data     :    out Char_Array;
-       Received :    out Unsigned;
+       Data     :    out Received_Buffer;
+       Received :    out Natural;
        Flags    :        Unsigned;
        Error    :    out Error_T)
       with
@@ -142,13 +142,15 @@ is
            Received =>  (SoCk, Data, Flags)),
         Pre =>
           Sock.S_Type = SOCKET_TYPE_STREAM and then
+          Sock.State /= TCP_STATE_LISTEN and then
           Is_Initialized_Ip (Sock.S_RemoteIpAddr) and then
           Data'Last >= Data'First,
         Post =>
-          Model(Sock) = Model(Sock)'Old and then
           (if Error = NO_ERROR then
+             Model(Sock) = Model(Sock)'Old and then
              Received > 0
            elsif Error = ERROR_END_OF_STREAM then
+             Model(Sock) = Model(Sock)'Old and then
              Received = 0);
 
     procedure Tcp_Shutdown

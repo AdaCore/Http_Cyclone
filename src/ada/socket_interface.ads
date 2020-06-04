@@ -162,8 +162,8 @@ is
       (Sock         : in out Not_Null_Socket;
        Dest_Ip_Addr :        IpAddr;
        Dest_Port    :        Port;
-       Data         : in     char_array;
-       Written      :    out Integer;
+       Data         : in     Send_Buffer;
+       Written      :    out Natural;
        Flags        :        unsigned;
        Error        :    out Error_T)
       with
@@ -179,12 +179,12 @@ is
         Post =>
           (if Error = NO_ERROR then
              Model(Sock) = Model(Sock)'Old and then
-             Written > 0);
+             Written <= Data'Length);
 
    procedure Socket_Send
       (Sock    : in out Not_Null_Socket;
-       Data    : in     char_array;
-       Written :    out Integer;
+       Data    : in     Send_Buffer;
+       Written :    out Natural;
        Flags   :        Socket_Flags;
        Error   :    out Error_T)
       with
@@ -200,15 +200,15 @@ is
         Post =>
           (if Error = NO_ERROR then
              Model(Sock) = Model(Sock)'Old and then
-             Written > 0);
+             Written <= Data'Length);
 
    procedure Socket_Receive_Ex
       (Sock         : in out Not_Null_Socket;
        Src_Ip_Addr  :    out IpAddr;
        Src_Port     :    out Port;
        Dest_Ip_Addr :    out IpAddr;
-       Data         :    out char_array;
-       Received     :    out unsigned;
+       Data         :    out Received_Buffer;
+       Received     :    out Natural;
        Flags        :        Socket_Flags;
        Error        :    out Error_T)
       with
@@ -225,7 +225,9 @@ is
            null         =>  Net_Mutex),
         Pre =>
           Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
-          Data'Last >= Data'First,
+          Data'Last >= Data'First and then
+          (if Sock.S_Type = SOCKET_TYPE_STREAM then
+            Sock.State /= TCP_STATE_LISTEN),
         Contract_Cases =>
           (Sock.S_Type = SOCKET_TYPE_STREAM =>
                (if Error = NO_ERROR then
@@ -241,8 +243,8 @@ is
 
    procedure Socket_Receive
       (Sock     : in out Not_Null_Socket;
-       Data     :    out char_array;
-       Received :    out unsigned;
+       Data     :    out Received_Buffer;
+       Received :    out Natural;
        Flags    :        Socket_Flags;
        Error    :    out Error_T)
       with
@@ -256,7 +258,9 @@ is
            null     =>  Net_Mutex),
         Pre =>
           Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
-          Data'Last >= Data'First,
+          Data'Last >= Data'First and then
+          (if Sock.S_Type = SOCKET_TYPE_STREAM then
+            Sock.State /= TCP_STATE_LISTEN),
         Contract_Cases =>
           (Sock.S_Type = SOCKET_TYPE_STREAM =>
              (if Error = NO_ERROR then
@@ -379,15 +383,18 @@ is
               not Is_Initialized_Ip(Sock.S_remoteIpAddr) and then
               Sock.State = TCP_STATE_LISTEN and then
               Sock.S_Local_Port > 0,
-       Post => Model(Sock) = Model(Sock)'Old and then
-               Is_Initialized_Ip(Client_Ip_Addr) and then
+       Post =>
+            (if Sock.State = TCP_STATE_SYN_RECEIVED then
+               (Model(Sock) = Model(Sock)'Old'Update
+                        (S_State => TCP_STATE_SYN_RECEIVED) and then
+               Is_Initialized_Ip (Client_Ip_Addr) and then
                Client_Port > 0 and then
-               Client_Socket /= null and then
-               Client_Socket.S_Type = Sock.S_Type and then
-               Client_Socket.S_Protocol = Sock.S_Protocol and then
-               Client_Socket.S_Local_Port = Sock.S_Local_Port and then
-               Client_Socket.S_localIpAddr = Sock.S_localIpAddr and then
-               Client_Socket.S_remoteIpAddr = Client_Ip_Addr and then
-               Client_Socket.S_Remote_Port = Client_Port;
+               (if Client_Socket /= null then
+                  Client_Socket.S_Type = SOCKET_TYPE_STREAM and then
+                  Client_Socket.S_Protocol = SOCKET_IP_PROTO_TCP and then
+                  Is_Initialized_Ip(Client_Socket.S_localIpAddr) and then
+                  Client_Socket.S_Local_Port = Sock.S_Local_Port and then
+                  Client_Socket.S_RemoteIpAddr = Client_Ip_Addr and then
+                  Client_Socket.S_Remote_Port = Client_Port)));
 
 end Socket_Interface;

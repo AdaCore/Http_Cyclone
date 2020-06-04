@@ -488,16 +488,17 @@ is
 
    procedure Tcp_Send
       (Sock    : in out Not_Null_Socket;
-       Data    :        char_array;
-       Written :    out Integer;
+       Data    :        Send_Buffer;
+       Written :    out Natural;
        Flags   :        unsigned;
        Error   :    out Error_T)
    is
       -- Actual number of bytes written
-      n : unsigned := 0;
+      N : Natural := 0;
       Event : Socket_Event;
-      Data_Buffer : char_array := Data;
-      Total_Length : Integer := 0;
+      Data_Buffer : Send_Buffer := Data;
+      Total_Length : Natural := 0;
+      E, B : Buffer_Index;
    begin
       -- Initialize data
       Written := 0;
@@ -537,44 +538,44 @@ is
          end case;
 
          pragma Loop_Invariant
-            (n = 0 and then
+            (N = 0 and then
              Total_Length in 0 .. Data_Buffer'Length and then
-             Data_Buffer'First <= Data_Buffer'Last and then
              Model(Sock) = Model(Sock)'Loop_Entry);
 
-         -- Determine the actual number of bytes in the send buffer
-         n := unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna;
-
          -- Exit immediately if the transmission buffer is full (sanity check)
-         if n >= unsigned(Sock.txBufferSize) then
+         if unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna >= unsigned(Sock.txBufferSize) then
             Error := ERROR_FAILURE;
             return;
          end if;
 
-         pragma Assert (n in 0 .. unsigned(Sock.txBufferSize) - 1);
+         -- Determine the actual number of bytes in the send buffer
+         N := Natural(unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna);
+
+         pragma Assert (N in 0 .. Natural(Sock.txBufferSize) - 1);
 
          -- Number of bytes available for writing
-         n := unsigned(Sock.txBufferSize) - n;
-         pragma Assert (n in 0 .. unsigned(Sock.txBufferSize));
+         N := Natural(Sock.txBufferSize) - n;
+         pragma Assert (N in 1 .. Natural(Sock.txBufferSize));
 
          -- Calculate the number of bytes to copy at a time
-         n := unsigned'Min(n, unsigned(Data_Buffer'Length - Total_Length));
+         N := Natural'Min(N, Data_Buffer'Length - Total_Length);
 
-         pragma Assert (n <= unsigned(Sock.txBufferSize));
+         pragma Assert (N in 0 .. Natural(Sock.txBufferSize));
 
          -- Any Data to copy
          if n > 0 then
+
+            B := Buffer_Index(Natural(Data_Buffer'First) + Total_Length);
+            E := Buffer_Index(Natural(Data_Buffer'First) + Total_Length + N - 1);
             -- Copy user data to send buffer
-            Tcp_Write_Tx_Buffer(Sock, Sock.sndNxt + unsigned(Sock.sndUser), Data_Buffer, n);
+            Tcp_Write_Tx_Buffer
+               (Sock    => Sock,
+                Seq_Num => Sock.sndNxt + unsigned(Sock.sndUser),
+                Data    => Data_Buffer(B .. E),
+                Length  => unsigned(n));
 
             -- Update the number of data buffered but not yet sent
-            Sock.sndUser := Sock.sndUser + unsigned_short(n);
-
-            -- Recopy data from the end of the buffer to the beggining.
-            if Total_Length > Data_Buffer'Length then
-               Data_Buffer (Data_Buffer'First .. Data_Buffer'Last - size_t(n)) :=
-                  Data_Buffer(Data_Buffer'First + size_t(n) .. Data_Buffer'Last);
-            end if;
+            Sock.sndUser := Sock.sndUser + unsigned_short(N);
 
             -- Update TX events
             Tcp_Update_Events (Sock);
@@ -583,13 +584,13 @@ is
             -- transmission of data, overriding the SWS avoidance algorithm. In
             -- practice, this timeout should seldom occur (refer to RFC 1122,
             -- section 4.2.3.4)
-            if unsigned(Sock.sndUser) = n then
+            if Natural(Sock.sndUser) = N then
                Tcp_Timer_Start (Sock.overrideTimer, TCP_OVERRIDE_TIMEOUT);
             end if;
          end if;
 
          -- Update byte counter
-         Total_Length := Total_Length + Natural(n);
+         Total_Length := Total_Length + Natural(N);
 
          -- Total number of data that have been written
          Written := Total_Length;
@@ -604,7 +605,9 @@ is
          n := 0;
       end loop;
 
-      pragma Assert (Written = Total_Length);
+      pragma Assert 
+         (Written = Total_Length and then
+          Total_Length = Data_Buffer'Length);
 
       -- The SOCKET_FLAG_WAIT_ACK flag causes the function to
       -- wait for acknowledgment from the remote side
@@ -639,12 +642,175 @@ is
 
    procedure Tcp_Receive
       (Sock     : in out Not_Null_Socket;
-       Data     :    out char_array;
-       Received :    out unsigned;
+       Data     :    out Received_Buffer;
+       Received :    out Natural;
        Flags    :        unsigned;
        Error    :    out Error_T)
-   is begin
-      Tcp_Binding.Tcp_Receive (Sock, Data, Received, Flags, Error);
+   is --begin
+      -- Retrieve the break character code
+      C : constant char := char'Val(Flags and 16#FF#);
+      Timeout : Systime;
+      Event : Socket_Event;
+      Seq_Num : unsigned;
+      N : Natural;
+      B, E, M : Buffer_Index;
+   begin
+      -- No Data has been read yet
+      Received := 0;
+
+      -- Read as much data as possible
+      while Received < Data'Length loop
+         -- The SOCKET_FLAG_DONT_WAIT enables non-blocking operation
+         if (Flags and SOCKET_FLAG_DONT_WAIT) /= 0 then
+            Timeout := 0;
+         else
+            Timeout := Sock.S_Timeout;
+         end if;
+
+         -- Wait for data to be available for reading
+         Tcp_Wait_For_Events (Sock, SOCKET_EVENT_RX_READY, Timeout, Event);
+
+         -- A timeout exception occurred?
+         if Event /= SOCKET_EVENT_RX_READY then
+            Error := ERROR_TIMEOUT;
+            return;
+         end if;
+
+         -- Check current TCP state
+         case Sock.State is
+            -- ESTABLISHED, FIN-WAIT-1 or FIN-WAIT-2 state?
+            when TCP_STATE_ESTABLISHED
+               | TCP_STATE_FIN_WAIT_1
+               | TCP_STATE_FIN_WAIT_2 =>
+               -- Sequence number of the first byte to read
+               Seq_Num := Sock.rcvNxt - unsigned(Sock.rcvUser);
+               -- Data is available in the receive buffer
+            
+            -- CLOSE-WAIT, LAST-ACK, CLOSING or TIME-WAIT state?
+            when TCP_STATE_CLOSE_WAIT
+               | TCP_STATE_LAST_ACK
+               | TCP_STATE_CLOSING
+               | TCP_STATE_TIME_WAIT =>
+               -- The user must be satisfied with data already on hand
+               if Sock.rcvUser = 0 then
+                  if Received > 0 then
+                     Error := NO_ERROR;
+                  else
+                     Error := ERROR_END_OF_STREAM;
+                  end if;
+                  return;
+               end if;
+
+               -- Sequence number of the first byte to read
+               Seq_Num := (Sock.rcvNxt - 1) - unsigned(Sock.rcvUser);
+               -- Data is available in the receive buffer
+
+            -- CLOSED state?
+            when others =>
+               -- The connection was reset by remote side?
+               if Sock.reset_Flag then
+                  Error := ERROR_CONNECTION_RESET;
+                  return;
+               end if;
+               -- The connection has not yet been established?
+               if not Sock.closed_Flag then
+                  Error := ERROR_NOT_CONNECTED;
+                  return;
+               end if;
+
+               -- The user must be satisfied with data already on hand
+               if Sock.rcvUser = 0 then
+                  if Received > 0 then
+                     Error := NO_ERROR;
+                  else
+                     Error := ERROR_END_OF_STREAM;
+                  end if;
+                  return;
+               end if;
+
+               -- Sequence number of the first byte to read
+               Seq_Num := (Sock.rcvNxt - 1) - unsigned(Sock.rcvUser);
+               -- Data is available in the receive buffer
+         end case;
+
+         -- Sanity check
+         if Sock.rcvUser = 0 then
+            Error := ERROR_FAILURE;
+            return;
+         end if;
+
+
+         pragma Loop_Invariant
+            (Model(Sock) = Model(Sock)'Loop_Entry and then
+             Sock.rcvUser /= 0 and then
+             Received < Data'Length and then
+             (if Received > 0 then
+               Data(Data'First .. Buffer_Index(Natural(Data'First) + Received - 1))'Initialized));
+
+         -- Calculate the number of bytes to read at a time
+         N := Natural'Min(
+               Natural(Sock.rcvUser),
+               Data'Length - Received);
+         pragma Assert (N in 1 .. Data'Length - Received);
+
+         B := Buffer_Index(Natural(Data'First) + Received);
+         E := Buffer_Index(Natural(Data'First) + Received + N - 1);
+         pragma Assert (E >= B);
+
+         -- Copy data from circular buffer
+         Tcp_Read_Rx_Buffer
+            (Sock    => Sock,
+             Seq_Num => Seq_Num,
+             Data    => Data(B .. E),
+             Length  => unsigned(N));
+
+         -- Read Data until a break character is encountered?
+         if (Flags and SOCKET_FLAG_BREAK_CHAR) /= 0 then
+            -- Search for the specified break character
+            for I in B .. E loop
+               if Data(I) = C then
+                  -- Adjust the number of data to read
+                  N := Natural'Min(N, Natural(I) + 1);
+                  exit;
+               end if;
+            end loop;
+            -- Adjust the number of data to read
+         end if;
+         pragma Assert (N in 1 .. Data'Length - Received);
+
+         --Total number of data that have been read
+         Received := Received + N;
+         pragma Assert (Received in 1 .. Data'Length);
+
+         -- Remaining data still available in the receive buffer
+         Sock.rcvUser := Sock.rcvUser - unsigned_short(N);
+
+         -- Update the receive window
+         Tcp_Update_Receive_Window(Sock);
+         -- Update RX event state
+         Tcp_Update_Events (Sock);
+
+         -- The SOCKET_FLAG_BREAK_CHAR flag causes the function to stop reading
+         -- data as soon as the specified break character is encountered
+         if (Flags and SOCKET_FLAG_BREAK_CHAR) /= 0 then
+            -- Check wether a break character has been found
+            M := Buffer_Index(Natural(Data'First) + Received - 1);
+            pragma Assert (M in B .. E);
+            if (Data(M) = C) then
+               exit;
+            end if;
+         
+         -- The SOCKET_FLAG_WAIT_ALL flag causes the function to return
+         -- only when the requested number of bytes have been read
+         elsif (Flags and SOCKET_FLAG_WAIT_ALL) = 0 then
+            exit;
+         end if;
+      end loop;
+      
+      -- Successful read operation
+      Error := NO_ERROR;
+      
+      -- Tcp_Binding.Tcp_Receive (Sock, Data, Received, Flags, Error);
    end Tcp_Receive;
 
 
@@ -721,9 +887,9 @@ is
        How   :        Socket_Shutdown_Flags;
        Error :    out Error_T)
    is
-      Written : Integer;
+      Ignore_Written : Integer;
       Event : Socket_Event;
-      Buf : char_array(1..0) := (others => nul); -- @TODO Buf should be NULL here
+      Buf : Send_Buffer(1..0) := (others => nul); -- @TODO Buf should be NULL here
    begin
 
       -- Disable transmission?
@@ -737,7 +903,7 @@ is
 
             when TCP_STATE_SYN_RECEIVED | TCP_STATE_ESTABLISHED =>
                -- Flush the send buffer
-               Tcp_Send (Sock, Buf, Written, SOCKET_FLAG_NO_DELAY, Error);
+               Tcp_Send (Sock, Buf, Ignore_Written, SOCKET_FLAG_NO_DELAY, Error);
                if Error /= NO_ERROR then
                   return;
                end if;
@@ -791,7 +957,7 @@ is
 
             when TCP_STATE_CLOSE_WAIT =>
                -- Flush the send buffer
-               Tcp_Send (Sock, Buf, Written, SOCKET_FLAG_NO_DELAY, Error);
+               Tcp_Send (Sock, Buf, Ignore_Written, SOCKET_FLAG_NO_DELAY, Error);
                if Error /= NO_ERROR then
                   return;
                end if;

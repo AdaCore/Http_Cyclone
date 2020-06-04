@@ -15,21 +15,21 @@ is
     procedure HTTP_Client_Test is
         Sock : Socket;
         ServerAddr : IpAddr;
-        End_Of_Line : constant char_array(1 .. 2) :=
+        End_Of_Line : constant Send_Buffer(1 .. 2) :=
                   (1 => char'Val(13), 2 => char'Val(10));
-        End_Of_Request : constant char_array (1 .. 1) :=
+        End_Of_Request : constant Send_Buffer (1 .. 1) :=
                   (1 => char'Val(0));
-        Request : constant char_array :=
+        Request : constant Send_Buffer :=
                   "GET /anything HTTP/1.1" & End_Of_Line &
                   "Host: httpbin.org" & End_Of_Line &
                   "Connection: close" & End_Of_Line & End_Of_Line
                   & End_Of_Request;
-        Buf : char_array (1 .. 128);
+        Buf : Received_Buffer (1 .. 128);
         Error : Error_T;
         Written : Integer with Unreferenced;
-        Received : Unsigned;
+        Received : Natural;
 
-        procedure Print_String (str : char_array; length : int)
+        procedure Print_String (str : Received_Buffer; length : int)
         with
          Import => True,
          Convention => C,
@@ -68,7 +68,7 @@ is
             if Error /= NO_ERROR then
                goto End_Of_Loop;
             end if;
-            Print_String (Buf, int(Received));
+            Print_String (Buf, int(Received)); -- For debug purpose
       end loop;
       Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);
 
