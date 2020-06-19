@@ -1,4 +1,5 @@
 pragma Unevaluated_Use_Of_Old (Allow);
+pragma Ada_2020;
 
 with Ip_Binding;          use Ip_Binding;
 with Net_Mem_Interface;   use Net_Mem_Interface;
@@ -77,7 +78,6 @@ is
             return;
          end if;
 
-         pragma Assert (Is_Initialized_Ip (Sock.S_localIpAddr));
 
          -- Make sure the source address is valid
          if Ip_Is_Unspecified_Addr(Sock.S_localIpAddr) then
@@ -85,6 +85,7 @@ is
             return;
          end if;
 
+         pragma Assert (Is_Initialized_Ip (Sock.S_localIpAddr));
          -- The user owns the socket
          Sock.owned_Flag := True;
 
@@ -510,6 +511,8 @@ is
             Error := ERROR_TIMEOUT;
             return;
          end if;
+         pragma Assert (Sock.State = TCP_STATE_CLOSE_WAIT or else
+                        Sock.State = TCP_STATE_ESTABLISHED);
 
          -- Check current TCP state
          case Sock.State is
@@ -540,7 +543,14 @@ is
          pragma Loop_Invariant
             (N = 0 and then
              Total_Length in 0 .. Data_Buffer'Length and then
-             Model(Sock) = Model(Sock)'Loop_Entry);
+             (if Sock.State'Loop_Entry = TCP_STATE_CLOSE_WAIT then
+               Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                              S_State => TCP_STATE_CLOSE_WAIT)
+             else
+               -- Model(Sock) = (Model(Sock)'Loop_Entry with delta
+               --                   S_State => TCP_STATE_CLOSE_WAIT) or else
+               Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                                 S_State => TCP_STATE_ESTABLISHED)));
 
          -- Exit immediately if the transmission buffer is full (sanity check)
          if unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna >= unsigned(Sock.txBufferSize) then
@@ -741,7 +751,41 @@ is
 
 
          pragma Loop_Invariant
-            (Model(Sock) = Model(Sock)'Loop_Entry and then
+            ((if (Sock.State'Loop_Entry = TCP_STATE_ESTABLISHED or else
+                       Sock.State'Loop_Entry = TCP_STATE_SYN_RECEIVED or else
+                       Sock.State'Loop_Entry = TCP_STATE_SYN_SENT) then
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_ESTABLISHED) or else
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_CLOSE_WAIT)
+                  elsif Sock.State'Loop_Entry = TCP_STATE_CLOSE_WAIT then
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_CLOSE_WAIT)
+                  elsif Sock.State'Loop_Entry = TCP_STATE_FIN_WAIT_1 then
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_FIN_WAIT_1) or else
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_FIN_WAIT_2) or else
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_CLOSING) or else
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif Sock.State'Loop_Entry = TCP_STATE_FIN_WAIT_2 then
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_FIN_WAIT_2) or else
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif Sock.State'Loop_Entry = TCP_STATE_CLOSING then
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_CLOSING) or else
+                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif (Sock.State'Loop_Entry = TCP_STATE_TIME_WAIT or else
+                         Sock.State'Loop_Entry = TCP_STATE_LISTEN or else
+                         Sock.State'Loop_Entry = TCP_STATE_LAST_ACK) then
+                     Model(Sock) = Model(Sock)'Loop_Entry
+                  else Model(Sock) = Model(Sock)'Loop_Entry) and then
+                  
              Sock.rcvUser /= 0 and then
              Received < Data'Length and then
              (if Received > 0 then
@@ -889,19 +933,21 @@ is
    is
       Ignore_Written : Integer;
       Event : Socket_Event;
-      Buf : Send_Buffer(1..0) := (others => nul); -- @TODO Buf should be NULL here
+      Buf : Send_Buffer(1..0) := (others => nul);
    begin
 
       -- Disable transmission?
       if How = SOCKET_SD_SEND or How = SOCKET_SD_BOTH then
          -- Check current state
          case Sock.State is
-            when TCP_STATE_CLOSED | TCP_STATE_LISTEN =>
+            when TCP_STATE_CLOSED 
+               | TCP_STATE_LISTEN =>
                -- The connection does not exist
                Error := ERROR_NOT_CONNECTED;
                return;
 
-            when TCP_STATE_SYN_RECEIVED | TCP_STATE_ESTABLISHED =>
+            when TCP_STATE_SYN_RECEIVED 
+               | TCP_STATE_ESTABLISHED =>
                -- Flush the send buffer
                Tcp_Send (Sock, Buf, Ignore_Written, SOCKET_FLAG_NO_DELAY, Error);
                if Error /= NO_ERROR then
@@ -916,10 +962,11 @@ is
                    Event      => Event);
 
                -- Timeout error?
-               if event /= SOCKET_EVENT_TX_DONE then
+               if Event /= SOCKET_EVENT_TX_DONE then
                   Error := ERROR_TIMEOUT;
                   return;
                end if;
+
 
                -- Send a FIN segment
                Tcp_Send_Segment
@@ -949,11 +996,15 @@ is
                   Event      => Event);
 
                -- Timeout interval elapsed?
-               if event /= SOCKET_EVENT_TX_SHUTDOWN then
+               if Event /= SOCKET_EVENT_TX_SHUTDOWN then
                   Error := ERROR_TIMEOUT;
                   return;
                end if;
                -- Continue processing
+
+               pragma Assert 
+               (Sock.State = TCP_STATE_FIN_WAIT_2 or else
+                Sock.State = TCP_STATE_TIME_WAIT);
 
             when TCP_STATE_CLOSE_WAIT =>
                -- Flush the send buffer
@@ -961,6 +1012,8 @@ is
                if Error /= NO_ERROR then
                   return;
                end if;
+
+               pragma Assert (Sock.State = TCP_STATE_CLOSE_WAIT);
 
                -- Make sure all the data has been sent out
                Tcp_Wait_For_Events
@@ -1008,9 +1061,12 @@ is
                   return;
                end if;
                -- Continue processing
+            
+               pragma Assert (Sock.State = TCP_STATE_CLOSED);
 
-            when TCP_STATE_FIN_WAIT_1 | TCP_STATE_CLOSING
-                  | TCP_STATE_LAST_ACK =>
+            when TCP_STATE_FIN_WAIT_1 
+               | TCP_STATE_CLOSING
+               | TCP_STATE_LAST_ACK =>
                -- Wait for the FIN to be acknowledged
                Tcp_Wait_For_Events (
                   Sock       => Sock,
@@ -1022,6 +1078,12 @@ is
                   Error := ERROR_TIMEOUT;
                   return;
                end if;
+
+               pragma Assert(
+                  Sock.State = TCP_STATE_CLOSED or else
+                  Sock.State = TCP_STATE_TIME_WAIT or else
+                  Sock.State = TCP_STATE_FIN_WAIT_2
+               );
 
                -- Continue processing
 
@@ -1042,17 +1104,19 @@ is
                Error := ERROR_NOT_CONNECTED;
                return;
 
-            when TCP_STATE_SYN_SENT | TCP_STATE_SYN_RECEIVED
-                  | TCP_STATE_ESTABLISHED | TCP_STATE_FIN_WAIT_1
-                  | TCP_STATE_FIN_WAIT_2 =>
+            when TCP_STATE_SYN_SENT
+               | TCP_STATE_SYN_RECEIVED
+               | TCP_STATE_ESTABLISHED
+               | TCP_STATE_FIN_WAIT_1
+               | TCP_STATE_FIN_WAIT_2 =>
                -- Wait for the FIN to be acknowledged
                Tcp_Wait_For_Events (
                   Sock       => Sock,
-                  Event_Mask => SOCKET_EVENT_TX_SHUTDOWN,
+                  Event_Mask => SOCKET_EVENT_RX_SHUTDOWN,
                   Timeout    => Sock.S_Timeout,
                   Event      => Event);
                -- Timeout interval elapsed?
-               if Event /= SOCKET_EVENT_TX_SHUTDOWN then
+               if Event /= SOCKET_EVENT_RX_SHUTDOWN then
                   Error := ERROR_TIMEOUT;
                   return;
                end if;

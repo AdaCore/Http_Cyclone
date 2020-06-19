@@ -1,4 +1,5 @@
 pragma Unevaluated_Use_Of_Old (Allow);
+pragma Ada_2020;
 
 with Common_Type;  use Common_Type;
 with Error_H;      use Error_H;
@@ -27,39 +28,130 @@ is
          Depends =>
            (Sock  =>+ (Event_Mask, Timeout),
             Event =>  (Event_Mask, Timeout)),
-         Pre  => Event_Mask /= 0,
+         Pre  => -- Only one of the listed event in Event_Mask may complete the wait
+                  --@TODO It should be a precondition to avoid incorrect use of the function
+                  -- (Sock.S_Event_Flags and Event_Mask) = 2^k
+                  Event_Mask /= 0,
          Post =>
+            Basic_Model(Sock) = Basic_Model(Sock)'Old and then
+
+            -- If Event is SOCKET_EVENT_CONNECTED
             (if (Event_Mask and SOCKET_EVENT_CONNECTED) /= 0 then
                (if Event = SOCKET_EVENT_CONNECTED then
-                     (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                        Model(Sock) = Model(Sock)'Old'Update
-                              (S_State => TCP_STATE_ESTABLISHED))
-               else
-                  Basic_Model (Sock) = Basic_Model (Sock)'Old))
+                  (if Sock.State'Old = TCP_STATE_SYN_SENT then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                           S_State => TCP_STATE_ESTABLISHED))))
             and then
             (if (Event_Mask and SOCKET_EVENT_CLOSED) /= 0 then
                (if Event = SOCKET_EVENT_CLOSED then
                   (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                     -- Maybe here it's not the correct state returned
-                     -- @TODO investigate
                      Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_CLOSED))
-               else Basic_Model (Sock) = Basic_Model (Sock)'Old))
+                        (S_State => TCP_STATE_CLOSED))))
+
             and then
+            -- Only one step can be done, at most.
             (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
                (if Event = SOCKET_EVENT_TX_READY then
-                  Model (Sock) = Model (Sock)'Old
+                  (if Sock.State'Old = TCP_STATE_CLOSE_WAIT then
+                     Model (Sock) = Model (Sock)'Old
+                  else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_ESTABLISHED))
+                     -- Impossible because only one step can be done
+                     -- or else
+                     -- Model(Sock) = (Model(Sock)'Old with delta
+                     --  S_State => TCP_STATE_CLOSE_WAIT))
                else Basic_Model (Sock) = Basic_Model (Sock)'Old))
             and then
+
             (if (Event_Mask and SOCKET_EVENT_RX_READY) /= 0 then
                (if Event = SOCKET_EVENT_RX_READY then
-                  Model(Sock) = Model(Sock)'Old
-               else Basic_Model (Sock) = Basic_Model (Sock)'Old))
+                  (if (Sock.State'Old = TCP_STATE_ESTABLISHED or else
+                       Sock.State'Old = TCP_STATE_SYN_RECEIVED or else
+                       Sock.State'Old = TCP_STATE_SYN_SENT) then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_ESTABLISHED) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSE_WAIT)
+                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSE_WAIT)
+                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_FIN_WAIT_1) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_FIN_WAIT_2) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSING) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_FIN_WAIT_2) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif Sock.State'Old = TCP_STATE_CLOSING then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSING) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif (Sock.State'Old = TCP_STATE_TIME_WAIT or else
+                         Sock.State'Old = TCP_STATE_LISTEN or else
+                         Sock.State'Old = TCP_STATE_LAST_ACK) then
+                     Model(Sock) = Model(Sock)'Old)
+                  else -- Closed state ?
+                     Model(Sock)'Old = Model(Sock)'Old))
+
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
                (if Event = SOCKET_EVENT_TX_ACKED then
-                  Model(Sock) = Model(Sock)'Old
-               else Basic_Model (Sock) = Basic_Model (Sock)'Old));
+                  -- @TODO : To be continued
+                  (if Sock.State'Old = TCP_STATE_ESTABLISHED then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_ESTABLISHED) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSE_WAIT)) and then
+                  (if Sock.State'Old = TCP_STATE_CLOSE_WAIT then
+                     Model(Sock) = Model(Sock)'Old)
+               else Basic_Model (Sock) = Basic_Model (Sock)'Old))
+            
+            and then
+            (if (Event_Mask and SOCKET_EVENT_TX_DONE) /= 0 then
+               (if Event = SOCKET_EVENT_TX_DONE then
+                  Model(Sock) = Model(Sock)'Old))
+            
+            and then
+            (if (Event_Mask and SOCKET_EVENT_TX_SHUTDOWN) /= 0 then
+               (if Event = SOCKET_EVENT_TX_SHUTDOWN then
+                  (if Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_FIN_WAIT_2) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif Sock.State'Old = TCP_STATE_CLOSING then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif (Sock.State'Old = TCP_STATE_CLOSE_WAIT or else
+                         Sock.State'Old = TCP_STATE_LAST_ACK) then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSED))))
+            
+            and then
+            (if (Event_Mask and SOCKET_EVENT_RX_SHUTDOWN) /= 0 then
+               (if Event = SOCKET_EVENT_RX_SHUTDOWN then
+                  (if (Sock.State'Old = TCP_STATE_SYN_SENT or else
+                       Sock.State'Old = TCP_STATE_SYN_RECEIVED or else
+                       Sock.State'Old = TCP_STATE_ESTABLISHED) then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSE_WAIT)
+                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSING) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_TIME_WAIT)
+                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_TIME_WAIT))));
 
    procedure Tcp_Write_Tx_Buffer
       (Sock    : Not_Null_Socket;

@@ -60,8 +60,7 @@ is
 
       loop
             pragma Loop_Invariant 
-               (Sock.S_remoteIpAddr.length > 0 and then
-                Sock /= null and then
+               (Sock /= null and then
                 Model(Sock) = Model(Sock)'Loop_Entry);
             Socket_Receive (Sock, Buf, Received, 0, Error);
             exit when Error = ERROR_END_OF_STREAM;

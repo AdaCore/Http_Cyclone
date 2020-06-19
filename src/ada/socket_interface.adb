@@ -2,6 +2,7 @@ with Os;            use Os;
 with Os_Types;      use Os_Types;
 with Socket_Helper; use Socket_Helper;
 with System;
+with Tcp_Fsm_Binding; use Tcp_Fsm_Binding;
 
 package body Socket_interface
    with SPARK_Mode
@@ -207,6 +208,8 @@ is
       Os_Acquire_Mutex (Net_Mutex);
         --@TODO : finish
       if Sock.S_Type = SOCKET_TYPE_STREAM then
+         -- INTERFERENCES
+         Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
@@ -223,8 +226,11 @@ is
    is
    begin
       Written := 0;
+
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = SOCKET_TYPE_STREAM then
+         -- INTERFERENCES
+         Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
@@ -246,6 +252,8 @@ is
 
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = SOCKET_TYPE_STREAM then
+         -- INTERFERENCES
+         -- Tcp_Process_Segment (Sock);
          Tcp_Receive (Sock, Data, Received, Flags, Error);
          -- Save the source IP address
          Src_Ip_Addr  := Sock.S_remoteIpAddr;

@@ -20,6 +20,8 @@ is
 
    function Ip_Is_Unspecified_Addr (Ip_Addr : IpAddr)
    return Boolean
-     with Global => null;
+     with Global => null,
+          Post => (if Ip_Is_Unspecified_Addr'Result = False then
+                     Is_Initialized_Ip (Ip_Addr));
 
 end Ip_Binding;
