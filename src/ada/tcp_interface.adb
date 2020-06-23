@@ -511,8 +511,6 @@ is
             Error := ERROR_TIMEOUT;
             return;
          end if;
-         pragma Assert (Sock.State = TCP_STATE_CLOSE_WAIT or else
-                        Sock.State = TCP_STATE_ESTABLISHED);
 
          -- Check current TCP state
          case Sock.State is
@@ -540,15 +538,17 @@ is
                return;
          end case;
 
+         pragma Assert (Sock.State = TCP_STATE_CLOSE_WAIT or else
+                        Sock.State = TCP_STATE_ESTABLISHED);
+
          pragma Loop_Invariant
             (N = 0 and then
              Total_Length in 0 .. Data_Buffer'Length and then
              (if Sock.State'Loop_Entry = TCP_STATE_CLOSE_WAIT then
-               Model(Sock) = (Model(Sock)'Loop_Entry with delta
-                              S_State => TCP_STATE_CLOSE_WAIT)
+               Model(Sock) = Model(Sock)'Loop_Entry
              else
-               -- Model(Sock) = (Model(Sock)'Loop_Entry with delta
-               --                   S_State => TCP_STATE_CLOSE_WAIT) or else
+               Model(Sock) = (Model(Sock)'Loop_Entry with delta
+                                 S_State => TCP_STATE_CLOSE_WAIT) or else
                Model(Sock) = (Model(Sock)'Loop_Entry with delta
                                  S_State => TCP_STATE_ESTABLISHED)));
 
@@ -758,12 +758,8 @@ is
                         S_State => TCP_STATE_ESTABLISHED) or else
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
                         S_State => TCP_STATE_CLOSE_WAIT)
-                  elsif Sock.State'Loop_Entry = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
-                        S_State => TCP_STATE_CLOSE_WAIT)
                   elsif Sock.State'Loop_Entry = TCP_STATE_FIN_WAIT_1 then
-                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
-                        S_State => TCP_STATE_FIN_WAIT_1) or else
+                     Model(Sock) = Model(Sock)'Loop_Entry or else
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
                         S_State => TCP_STATE_FIN_WAIT_2) or else
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
@@ -771,21 +767,17 @@ is
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
                         S_State => TCP_STATE_TIME_WAIT)
                   elsif Sock.State'Loop_Entry = TCP_STATE_FIN_WAIT_2 then
-                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
-                        S_State => TCP_STATE_FIN_WAIT_2) or else
-                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
-                        S_State => TCP_STATE_TIME_WAIT)
-                  elsif Sock.State'Loop_Entry = TCP_STATE_CLOSING then
-                     Model(Sock) = (Model(Sock)'Loop_Entry with delta
-                        S_State => TCP_STATE_CLOSING) or else
+                     Model(Sock) = Model(Sock)'Loop_Entry or else
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
                         S_State => TCP_STATE_TIME_WAIT)
-                  elsif (Sock.State'Loop_Entry = TCP_STATE_TIME_WAIT or else
-                         Sock.State'Loop_Entry = TCP_STATE_LISTEN or else
+                  elsif (Sock.State'Loop_Entry = TCP_STATE_CLOSE_WAIT or else
+                         Sock.State'Loop_Entry = TCP_STATE_CLOSING or else
+                         Sock.State'Loop_Entry = TCP_STATE_TIME_WAIT or else
                          Sock.State'Loop_Entry = TCP_STATE_LAST_ACK) then
                      Model(Sock) = Model(Sock)'Loop_Entry
-                  else Model(Sock) = Model(Sock)'Loop_Entry) and then
-                  
+                  elsif Sock.State'Loop_Entry = TCP_STATE_CLOSED then
+                     Model(Sock) = Model(Sock)'Loop_Entry
+               ) and then
              Sock.rcvUser /= 0 and then
              Received < Data'Length and then
              (if Received > 0 then

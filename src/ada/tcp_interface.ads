@@ -131,7 +131,8 @@ is
                 Sock.State = TCP_STATE_CLOSE_WAIT or else
                 Sock.State = TCP_STATE_CLOSED),
         Post =>
-          (if Error = No_ERROR then
+          (if Sock.State'Old = TCP_STATE_CLOSED then Error /= NO_ERROR) and then
+          (if Error = NO_ERROR then
                (if Sock.State'Old = TCP_STATE_CLOSE_WAIT then
                   Model(Sock) = Model(Sock)'Old
                else --if Sock.State'Old = TCP_STATE_ESTABLISHED then
@@ -160,7 +161,7 @@ is
         Pre =>
           Sock.S_Type = SOCKET_TYPE_STREAM and then
           Sock.State /= TCP_STATE_LISTEN and then
-          Sock.State /= TCP_STATE_CLOSED and then
+          -- Sock.State /= TCP_STATE_CLOSED and then
           Is_Initialized_Ip (Sock.S_RemoteIpAddr) and then
           Data'Last >= Data'First,
         Post =>
@@ -173,29 +174,25 @@ is
                   S_State => TCP_STATE_ESTABLISHED) or else
                Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_CLOSE_WAIT)
-            elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-               Model(Sock) = (Model(Sock) with delta
-                  S_State => TCP_STATE_CLOSE_WAIT)
             elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
-               Model(Sock) = (Model(Sock) with delta
-                  S_State => TCP_STATE_FIN_WAIT_1) or else
-               Model(Sock) = (Model(Sock) with delta
+               Model(Sock) = Model(Sock)'Old or else
+               Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_FIN_WAIT_2) or else
-               Model(Sock) = (Model(Sock) with delta
+               Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_CLOSING) or else
-               Model(Sock) = (Model(Sock) with delta
+               Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_TIME_WAIT)
             elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
-               Model(Sock) = (Model(Sock) with delta
-                  S_State => TCP_STATE_FIN_WAIT_2) or else
-               Model(Sock) = (Model(Sock) with delta
-                  S_State => TCP_STATE_TIME_WAIT)
-            elsif Sock.State'Old = TCP_STATE_CLOSING then
-               Model(Sock) = (Model(Sock) with delta
-                  S_State => TCP_STATE_CLOSING) or else
+               Model(Sock) = Model(Sock)'Old or else
                Model(Sock) = (Model(Sock) with delta
                   S_State => TCP_STATE_TIME_WAIT)
-            elsif (Sock.State'Old = TCP_STATE_CLOSING) then
+            elsif (Sock.State'Old = TCP_STATE_CLOSE_WAIT or else
+                   Sock.State'Old = TCP_STATE_CLOSING or else
+                   Sock.State'Old = TCP_STATE_TIME_WAIT or else
+                   Sock.State'Old = TCP_STATE_LAST_ACK) then
+               -- Nothing happen. The result is the same.
+               Model(Sock) = Model(Sock)'Old
+            elsif (Sock.State'Old = TCP_STATE_CLOSED) then
                Model(Sock) = Model(Sock)'Old
                   ) and then
              Received > 0

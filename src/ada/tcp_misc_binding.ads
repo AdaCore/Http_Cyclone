@@ -52,15 +52,20 @@ is
             -- Only one step can be done, at most.
             (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
                (if Event = SOCKET_EVENT_TX_READY then
-                  (if Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model (Sock) = Model (Sock)'Old
+                  (if (Sock.State'Old = TCP_STATE_CLOSE_WAIT or else
+                       Sock.State'Old = TCP_STATE_CLOSED) then
+                     Model (Sock) = Model (Sock)'Old or else
+                     -- If a RST has been received
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSED)
                   else
                      Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED))
-                     -- Impossible because only one step can be done
-                     -- or else
-                     -- Model(Sock) = (Model(Sock)'Old with delta
-                     --  S_State => TCP_STATE_CLOSE_WAIT))
+                        S_State => TCP_STATE_ESTABLISHED) or else
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSE_WAIT) or else
+                     -- If a RST has been received
+                     Model(Sock) = (Model (Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSED))
                else Basic_Model (Sock) = Basic_Model (Sock)'Old))
             and then
 
@@ -72,10 +77,11 @@ is
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_ESTABLISHED) or else
                      Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT)
-                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT)
+                        S_State => TCP_STATE_CLOSE_WAIT) or else
+                     -- RST segment received
+                     (Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSED) and then
+                     Sock.reset_Flag = True)
                   elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_FIN_WAIT_1) or else
@@ -84,23 +90,28 @@ is
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_CLOSING) or else
                      Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT)
+                        S_State => TCP_STATE_TIME_WAIT) or else
+                     -- RST segment received
+                     (Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSED) and then
+                     Sock.reset_Flag = True)
                   elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_FIN_WAIT_2) or else
                      Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT)
-                  elsif Sock.State'Old = TCP_STATE_CLOSING then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSING) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT)
-                  elsif (Sock.State'Old = TCP_STATE_TIME_WAIT or else
-                         Sock.State'Old = TCP_STATE_LISTEN or else
+                        S_State => TCP_STATE_TIME_WAIT) or else
+                     -- RST segment received
+                     (Model(Sock) = (Model(Sock)'Old with delta
+                        S_State => TCP_STATE_CLOSED) and then
+                     Sock.reset_Flag = True)
+                  elsif (Sock.State'Old = TCP_STATE_CLOSE_WAIT or else
+                         Sock.State'Old = TCP_STATE_CLOSING or else
+                         Sock.State'Old = TCP_STATE_TIME_WAIT or else
                          Sock.State'Old = TCP_STATE_LAST_ACK) then
-                     Model(Sock) = Model(Sock)'Old)
-                  else -- Closed state ?
-                     Model(Sock)'Old = Model(Sock)'Old))
+                     -- Nothing happen. The result is the same.
+                     Model(Sock) = Model(Sock)'Old
+                  elsif Sock.State'Old = TCP_STATE_CLOSED then
+                     Model(Sock) = Model(Sock)'Old)))
 
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
@@ -187,7 +198,7 @@ is
         Convention    => C,
         External_Name => "tcpDeleteControlBlock",
         Global        => null,
-        Post => -- Change the Post condition to something more true
+        Post => -- Change the Post condition to consider the TCB
             Model (Sock) = Model (Sock)'Old;
 
    procedure Tcp_Send_Segment

@@ -45,60 +45,82 @@ is
 
          -- C:tcpStateSynSent
          Sock.State = TCP_STATE_SYN_SENT =>
+            -- Possibly unchanged if no message has been received
+            Model(Sock) = Model(Sock)'Old or else
+            -- Direct transitions
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_ESTABLISHED) or else
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_SYN_RECEIVED) or else
-            -- Possibly unchanged
+            -- Transitive closure
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_SYN_SENT),
+               S_State => TCP_STATE_CLOSE_WAIT) or else
+            -- A RST segment has been received
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateSynReceived
          Sock.State = TCP_STATE_SYN_RECEIVED =>
+            -- Possibly unchanged if no message has been received
+            Model(Sock) = Model(Sock)'Old or else
+            -- Direct transition
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_ESTABLISHED) or else
-            -- unchanged
+            -- Transitive closure
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_SYN_RECEIVED),
+               S_State => TCP_STATE_CLOSE_WAIT) or else
+            -- A RST segment has been received
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateEstablished
          Sock.State = TCP_STATE_ESTABLISHED =>
-            Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_ESTABLISHED) or else
+            -- Possibly unchanged if no message has been received
+            Model(Sock) = Model(Sock)'Old or else
+            -- Direct transition (if a FIN is received)
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_CLOSE_WAIT) or else
-            -- unchanged
+            -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_ESTABLISHED),
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateCloseWait
          Sock.State = TCP_STATE_CLOSE_WAIT =>
             -- Nothing happen. A call to close by the user is required
-            -- to change of state here.
-            Model(Sock) = Model(Sock)'Old,
+            -- to change of state here unless a RST hasn't been received.
+            Model(Sock) = Model(Sock)'Old or else
+            -- A RST segment has been received
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateLastAck
          Sock.State = TCP_STATE_LAST_ACK =>
-            -- Model(Sock) = (Model(Sock)'Old with delta
-            --    S_State => TCP_STATE_CLOSED) or else
-            -- unchanged
+            Model(Sock) = Model(Sock)'Old or else
+            -- A RST segment has been received
+            -- Or one transition
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_LAST_ACK),
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateFinWait1
          Sock.State = TCP_STATE_FIN_WAIT_1 =>
+            -- Possibly unchanged if no message has been received
+            Model(Sock) = Model(Sock)'Old or else
+            -- Direct transitions
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_FIN_WAIT_2) or else
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_TIME_WAIT) or else
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_CLOSING) or else
-            -- unchanged
+            -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_FIN_WAIT_1),
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateFinWait2
          Sock.State = TCP_STATE_FIN_WAIT_2 =>
+            -- Possibly unchanged if no message has been received
+            Model(Sock) = Model(Sock)'Old or else
+            -- Direct transition
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_TIME_WAIT) or else
             -- unchanged
@@ -109,15 +131,19 @@ is
          Sock.State = TCP_STATE_CLOSING =>
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_TIME_WAIT) or else
-            -- unchanged
+            -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSING),
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateTimeWait
          Sock.State = TCP_STATE_TIME_WAIT =>
             -- Nothing change. The 2MSL timer will close the connection
+            Model(Sock) = Model(Sock)'Old or else
+            -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_TIME_WAIT)
+               S_State => TCP_STATE_CLOSED)
       );
+
+
 
 end Tcp_Fsm_Binding;

@@ -253,7 +253,7 @@ is
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = SOCKET_TYPE_STREAM then
          -- INTERFERENCES
-         -- Tcp_Process_Segment (Sock);
+         Tcp_Process_Segment (Sock);
          Tcp_Receive (Sock, Data, Received, Flags, Error);
          -- Save the source IP address
          Src_Ip_Addr  := Sock.S_remoteIpAddr;
