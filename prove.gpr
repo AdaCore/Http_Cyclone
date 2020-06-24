@@ -1,3 +1,6 @@
 project Prove is
    for Source_Dirs use ("src/**");
+   Package Compiler is
+      for default_switches ("Ada") use ("-gnat2020");
+     end Compiler;
 end Prove;

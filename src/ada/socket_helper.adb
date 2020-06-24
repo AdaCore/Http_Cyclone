@@ -50,7 +50,9 @@ is
 
    procedure Free_Socket
       (Sock : in out Socket)
-   is begin
+   is
+      pragma Annotate (CodePeer, Skip_Analysis);
+   begin
       null;
    end Free_Socket;
 

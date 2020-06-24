@@ -165,7 +165,8 @@ is
           Data'Last >= Data'First,
         Post =>
           (if (Sock.State'Old = TCP_STATE_CLOSED and then
-               Sock.reset_Flag = True) then
+               Sock.reset_Flag'Old = True) then
+            Error /= ERROR_END_OF_STREAM and then
             Error /= NO_ERROR) and then
           -- If the function succeed
           (if Error = NO_ERROR then
@@ -186,7 +187,7 @@ is
                   S_State => TCP_STATE_CLOSING)
             elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
                Model(Sock) = Model(Sock)'Old or else
-               Model(Sock) = (Model(Sock) with delta
+               Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_TIME_WAIT)
             elsif (Sock.State'Old = TCP_STATE_CLOSE_WAIT or else
                    Sock.State'Old = TCP_STATE_CLOSING or else
@@ -209,9 +210,9 @@ is
                   S_State => TCP_STATE_CLOSE_WAIT)
              elsif (Sock.State'Old = TCP_STATE_FIN_WAIT_1 or else
                     Sock.State'Old = TCP_STATE_CLOSING) then
-               Model(Sock) = (Model(Sock) with delta
+               Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_CLOSING) or else
-               Model(Sock) = (Model(Sock) with delta
+               Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_TIME_WAIT)
              elsif (Sock.State'Old = TCP_STATE_FIN_WAIT_2 or else
                     Sock.State'Old = TCP_STATE_TIME_WAIT) then
