@@ -57,7 +57,8 @@ is
                S_State => TCP_STATE_CLOSE_WAIT) or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED),
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateSynReceived
          Sock.State = TCP_STATE_SYN_RECEIVED =>
@@ -71,7 +72,8 @@ is
                S_State => TCP_STATE_CLOSE_WAIT) or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED),
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateEstablished
          Sock.State = TCP_STATE_ESTABLISHED =>
@@ -82,7 +84,8 @@ is
                S_State => TCP_STATE_CLOSE_WAIT) or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED),
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateCloseWait
          Sock.State = TCP_STATE_CLOSE_WAIT =>
@@ -91,15 +94,19 @@ is
             Model(Sock) = Model(Sock)'Old or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED),
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateLastAck
          Sock.State = TCP_STATE_LAST_ACK =>
             Model(Sock) = Model(Sock)'Old or else
-            -- A RST segment has been received
-            -- Or one transition
+            -- One transition
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED),
+               S_State => TCP_STATE_CLOSED) or else
+            -- A RST segment has been received
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateFinWait1
          Sock.State = TCP_STATE_FIN_WAIT_1 =>
@@ -114,7 +121,8 @@ is
                S_State => TCP_STATE_CLOSING) or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED),
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateFinWait2
          Sock.State = TCP_STATE_FIN_WAIT_2 =>
@@ -123,9 +131,10 @@ is
             -- Direct transition
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_TIME_WAIT) or else
-            -- unchanged
+            -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_FIN_WAIT_2),
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateClosing
          Sock.State = TCP_STATE_CLOSING =>
@@ -133,7 +142,8 @@ is
                S_State => TCP_STATE_TIME_WAIT) or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED),
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True),
 
          -- C:tcpStateTimeWait
          Sock.State = TCP_STATE_TIME_WAIT =>
@@ -141,7 +151,8 @@ is
             Model(Sock) = Model(Sock)'Old or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED)
+               S_State => TCP_STATE_CLOSED,
+               S_Reset_Flag => True)
       );
 
 

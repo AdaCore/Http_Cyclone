@@ -161,10 +161,12 @@ is
         Pre =>
           Sock.S_Type = SOCKET_TYPE_STREAM and then
           Sock.State /= TCP_STATE_LISTEN and then
-          -- Sock.State /= TCP_STATE_CLOSED and then
           Is_Initialized_Ip (Sock.S_RemoteIpAddr) and then
           Data'Last >= Data'First,
         Post =>
+          (if (Sock.State'Old = TCP_STATE_CLOSED and then
+               Sock.reset_Flag = True) then
+            Error /= NO_ERROR) and then
           -- If the function succeed
           (if Error = NO_ERROR then
             (if (Sock.State'Old = TCP_STATE_ESTABLISHED or else
@@ -179,9 +181,9 @@ is
                Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_FIN_WAIT_2) or else
                Model(Sock) = (Model(Sock)'Old with delta
-                  S_State => TCP_STATE_CLOSING) or else
+                  S_State => TCP_STATE_TIME_WAIT) or else
                Model(Sock) = (Model(Sock)'Old with delta
-                  S_State => TCP_STATE_TIME_WAIT)
+                  S_State => TCP_STATE_CLOSING)
             elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
                Model(Sock) = Model(Sock)'Old or else
                Model(Sock) = (Model(Sock) with delta

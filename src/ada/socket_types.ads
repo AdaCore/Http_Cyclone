@@ -230,6 +230,7 @@ is
       S_State         : Tcp_State;
       -- S_Tx_Buffer_Size: Tx_Buffer_Size;
       -- S_Rx_Buffer_Size: Rx_Buffer_Size;
+      S_Reset_Flag    : Bool;
    end record
      with Ghost;
 
@@ -246,9 +247,10 @@ is
          -- S_Timeout        => Sock.S_Timeout,
          -- S_TTL            => Sock.S_TTL,
          -- S_Multicast_TTL  => Sock.S_Multicast_TTL,
-         S_State          => Sock.State --,
+         S_State          => Sock.State,
          -- S_Rx_Buffer_Size => Sock.rxBufferSize,
          -- S_Tx_Buffer_Size => Sock.txBufferSize
+         S_Reset_Flag     => Sock.reset_Flag
      ))
      with Ghost;
 
