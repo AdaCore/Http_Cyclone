@@ -9,7 +9,7 @@ package Ip is
    type fakeIP is array (1 .. 4) of unsigned_long;
 
    type IpAddr is record
-      length : unsigned_long;
+      Length : unsigned_long;
       Ip     : fakeIP;
    end record
      with
@@ -31,8 +31,6 @@ package Ip is
       Import        => True,
       Convention    => C,
       External_Name => "IP_ADDR_UNSPECIFIED";
-
-
 
    -----------------------------
    -- Functions for contracts --

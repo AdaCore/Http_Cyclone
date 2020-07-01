@@ -46,7 +46,6 @@ is
       end if;
    end Tcp_Get_Dynamic_Port;
 
-
    -----------------
    -- Tcp_Connect --
    -----------------
@@ -63,21 +62,20 @@ is
       -- Check current TCP state
       if Sock.State = TCP_STATE_CLOSED then
          -- Save port number and IP address of the remote host
-         Sock.S_remoteIpAddr := Remote_Ip_Addr;
+         Sock.S_Remote_Ip_Addr := Remote_Ip_Addr;
          Sock.S_Remote_Port  := Remote_Port;
 
          -- Select the source address and the relevant network interface
          -- to use when establishing the connection
          Ip_Select_Source_Addr (
                Net_Interface => Sock.S_Net_Interface,
-               Dest_Addr     => Sock.S_remoteIpAddr,
+               Dest_Addr     => Sock.S_Remote_Ip_Addr,
                Src_Addr      => Sock.S_localIpAddr,
                Error         => Error);
 
          if Error /= NO_ERROR then
             return;
          end if;
-
 
          -- Make sure the source address is valid
          if Ip_Is_Unspecified_Addr(Sock.S_localIpAddr) then
@@ -116,7 +114,6 @@ is
 
          -- An initial send sequence number is selected
          Sock.iss := netGetRand;
-
 
          Sock.sndUna := Sock.iss;
          Sock.sndNxt := Sock.iss + 1;
@@ -158,18 +155,17 @@ is
 
       -- Connection successfully established?
       if Event = SOCKET_EVENT_CONNECTED then
-         ERROR := NO_ERROR;
+         Error := NO_ERROR;
 
       -- Failed to establish connection?
       elsif Event = SOCKET_EVENT_CLOSED then
-         ERROR := ERROR_CONNECTION_FAILED;
+         Error := ERROR_CONNECTION_FAILED;
 
       -- Timeout exception?
       else
-         ERROR := ERROR_TIMEOUT;
+         Error := ERROR_TIMEOUT;
       end if;
    end Tcp_Connect;
-
 
    ----------------
    -- Tcp_Listen --
@@ -201,7 +197,6 @@ is
       -- Sucessful processing
       -- Error := NO_ERROR;
    end Tcp_Listen;
-
 
    ----------------
    -- Tcp_Accept --
@@ -336,12 +331,12 @@ is
                Client_Socket.S_localIpAddr := Queue_Item.Dest_Addr;
                Client_Socket.S_Local_Port := Sock.S_Local_Port;
                -- Save the port number and the IP address of the remote host
-               Client_Socket.S_remoteIpAddr := Queue_Item.Src_Addr;
+               Client_Socket.S_Remote_Ip_Addr := Queue_Item.Src_Addr;
                Client_Socket.S_Remote_Port := Queue_Item.Src_Port;
 
                -- The SMSS is the size of the largest segment that the sender
                -- can transmit
-               Client_Socket.smss := Queue_Item.mss;
+               Client_Socket.smss := Queue_Item.Mss;
 
                -- The RMSS is the size of the largest segment the receiver is
                -- willing to accept
@@ -413,7 +408,7 @@ is
          Queue_Item.Next := null;
          Mem_Pool_Free (Queue_Item);
 
-         Client_Ip_Addr.length := 0;
+         Client_Ip_Addr.Length := 0;
 
          -- Wait for the next connection attempt
       end loop;
@@ -421,7 +416,6 @@ is
       -- Release exclusive access
       Os_Release_Mutex (Net_Mutex);
    end Tcp_Accept;
-
 
    ---------------
    -- Tcp_Abord --
@@ -465,7 +459,7 @@ is
          when others =>
             -- Enter CLOSED state
             Tcp_Change_State (Sock, TCP_STATE_CLOSED);
-            --Delete TCB
+            -- Delete TCB
             Tcp_Delete_Control_Block (Sock);
             -- Mark the socket as closed
             Sock.S_Type := SOCKET_TYPE_UNUSED;
@@ -474,14 +468,13 @@ is
       end case;
 
       -- These conditions should always be true here
-      pragma Assert 
+      pragma Assert
          (Sock.S_Type = SOCKET_TYPE_UNUSED and then
             Sock.State = TCP_STATE_CLOSED);
 
       -- Fake function to simulate a Free(Sock)
       Free_Socket(Sock);
    end Tcp_Abort;
-
 
    --------------
    -- Tcp_Send --
@@ -564,7 +557,7 @@ is
          pragma Assert (N in 0 .. Natural(Sock.txBufferSize) - 1);
 
          -- Number of bytes available for writing
-         N := Natural(Sock.txBufferSize) - n;
+         N := Natural(Sock.txBufferSize) - N;
          pragma Assert (N in 1 .. Natural(Sock.txBufferSize));
 
          -- Calculate the number of bytes to copy at a time
@@ -573,7 +566,7 @@ is
          pragma Assert (N in 0 .. Natural(Sock.txBufferSize));
 
          -- Any Data to copy
-         if n > 0 then
+         if N > 0 then
 
             B := Buffer_Index(Natural(Data_Buffer'First) + Total_Length);
             E := Buffer_Index(Natural(Data_Buffer'First) + Total_Length + N - 1);
@@ -582,7 +575,7 @@ is
                (Sock    => Sock,
                 Seq_Num => Sock.sndNxt + unsigned(Sock.sndUser),
                 Data    => Data_Buffer(B .. E),
-                Length  => unsigned(n));
+                Length  => unsigned(N));
 
             -- Update the number of data buffered but not yet sent
             Sock.sndUser := Sock.sndUser + unsigned_short(N);
@@ -612,10 +605,10 @@ is
          -- Exit when all the data have been sent
          exit when Total_Length >= Data_Buffer'Length;
          -- Reset n to zero for the needs of verification
-         n := 0;
+         N := 0;
       end loop;
 
-      pragma Assert 
+      pragma Assert
          (Written = Total_Length and then
           Total_Length = Data_Buffer'Length);
 
@@ -633,7 +626,8 @@ is
 
          -- The connection was closed before an acknowledgement was received?
          if Sock.State /= TCP_STATE_ESTABLISHED and then
-            Sock.State /= TCP_STATE_CLOSE_WAIT then
+            Sock.State /= TCP_STATE_CLOSE_WAIT
+         then
             Error := ERROR_NOT_CONNECTED;
             return;
          end if;
@@ -645,7 +639,6 @@ is
       -- Tcp_Binding.Tcp_Send (Sock, Data, Written, Flags, Error);
    end Tcp_Send;
 
-
    -----------------
    -- Tcp_Receive --
    -----------------
@@ -656,7 +649,7 @@ is
        Received :    out Natural;
        Flags    :        unsigned;
        Error    :    out Error_T)
-   is --begin
+   is
       -- Retrieve the break character code
       C : constant char := char'Val(Flags and 16#FF#);
       Timeout : Systime;
@@ -695,7 +688,7 @@ is
                -- Sequence number of the first byte to read
                Seq_Num := Sock.rcvNxt - unsigned(Sock.rcvUser);
                -- Data is available in the receive buffer
-            
+
             -- CLOSE-WAIT, LAST-ACK, CLOSING or TIME-WAIT state?
             when TCP_STATE_CLOSE_WAIT
                | TCP_STATE_LAST_ACK
@@ -749,11 +742,10 @@ is
             return;
          end if;
 
-
          pragma Loop_Invariant
-            ((if (Sock.State'Loop_Entry = TCP_STATE_ESTABLISHED or else
+                  ((if Sock.State'Loop_Entry = TCP_STATE_ESTABLISHED or else
                        Sock.State'Loop_Entry = TCP_STATE_SYN_RECEIVED or else
-                       Sock.State'Loop_Entry = TCP_STATE_SYN_SENT) then
+                       Sock.State'Loop_Entry = TCP_STATE_SYN_SENT then
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
                         S_State => TCP_STATE_ESTABLISHED) or else
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
@@ -770,10 +762,10 @@ is
                      Model(Sock) = Model(Sock)'Loop_Entry or else
                      Model(Sock) = (Model(Sock)'Loop_Entry with delta
                         S_State => TCP_STATE_TIME_WAIT)
-                  elsif (Sock.State'Loop_Entry = TCP_STATE_CLOSE_WAIT or else
+                  elsif  Sock.State'Loop_Entry = TCP_STATE_CLOSE_WAIT or else
                          Sock.State'Loop_Entry = TCP_STATE_CLOSING or else
                          Sock.State'Loop_Entry = TCP_STATE_TIME_WAIT or else
-                         Sock.State'Loop_Entry = TCP_STATE_LAST_ACK) then
+                         Sock.State'Loop_Entry = TCP_STATE_LAST_ACK then
                      Model(Sock) = Model(Sock)'Loop_Entry
                   elsif Sock.State'Loop_Entry = TCP_STATE_CLOSED then
                      Model(Sock) = Model(Sock)'Loop_Entry
@@ -814,7 +806,7 @@ is
          end if;
          pragma Assert (N in 1 .. Data'Length - Received);
 
-         --Total number of data that have been read
+         -- Total number of data that have been read
          Received := Received + N;
          pragma Assert (Received in 1 .. Data'Length);
 
@@ -832,23 +824,22 @@ is
             -- Check wether a break character has been found
             M := Buffer_Index(Natural(Data'First) + Received - 1);
             pragma Assert (M in B .. E);
-            if (Data(M) = C) then
+            if Data(M) = C then
                exit;
             end if;
-         
+
          -- The SOCKET_FLAG_WAIT_ALL flag causes the function to return
          -- only when the requested number of bytes have been read
          elsif (Flags and SOCKET_FLAG_WAIT_ALL) = 0 then
             exit;
          end if;
       end loop;
-      
+
       -- Successful read operation
       Error := NO_ERROR;
-      
+
       -- Tcp_Binding.Tcp_Receive (Sock, Data, Received, Flags, Error);
    end Tcp_Receive;
-
 
    --------------------------------
    -- Tcp_Kill_Oldest_Connection --
@@ -898,7 +889,6 @@ is
       end if;
    end Tcp_Kill_Oldest_Connection;
 
-
    -------------------
    -- Tcp_Get_State --
    -------------------
@@ -912,7 +902,6 @@ is
       State := Sock.State;
       Os_Release_Mutex (Net_Mutex);
    end Tcp_Get_State;
-
 
    ------------------
    -- Tcp_Shutdown --
@@ -932,13 +921,13 @@ is
       if How = SOCKET_SD_SEND or How = SOCKET_SD_BOTH then
          -- Check current state
          case Sock.State is
-            when TCP_STATE_CLOSED 
+            when TCP_STATE_CLOSED
                | TCP_STATE_LISTEN =>
                -- The connection does not exist
                Error := ERROR_NOT_CONNECTED;
                return;
 
-            when TCP_STATE_SYN_RECEIVED 
+            when TCP_STATE_SYN_RECEIVED
                | TCP_STATE_ESTABLISHED =>
                -- Flush the send buffer
                Tcp_Send (Sock, Buf, Ignore_Written, SOCKET_FLAG_NO_DELAY, Error);
@@ -958,7 +947,6 @@ is
                   Error := ERROR_TIMEOUT;
                   return;
                end if;
-
 
                -- Send a FIN segment
                Tcp_Send_Segment
@@ -994,7 +982,7 @@ is
                end if;
                -- Continue processing
 
-               pragma Assert 
+               pragma Assert
                (Sock.State = TCP_STATE_FIN_WAIT_2 or else
                 Sock.State = TCP_STATE_TIME_WAIT);
 
@@ -1015,7 +1003,7 @@ is
                    Event      => Event);
 
                -- Timeout error?
-               if event /= SOCKET_EVENT_TX_DONE then
+               if Event /= SOCKET_EVENT_TX_DONE then
                   Error := ERROR_TIMEOUT;
                   return;
                end if;
@@ -1048,15 +1036,15 @@ is
                   Event      => Event);
 
                -- Timeout interval elapsed?
-               if event /= SOCKET_EVENT_TX_SHUTDOWN then
+               if Event /= SOCKET_EVENT_TX_SHUTDOWN then
                   Error := ERROR_TIMEOUT;
                   return;
                end if;
                -- Continue processing
-            
+
                pragma Assert (Sock.State = TCP_STATE_CLOSED);
 
-            when TCP_STATE_FIN_WAIT_1 
+            when TCP_STATE_FIN_WAIT_1
                | TCP_STATE_CLOSING
                | TCP_STATE_LAST_ACK =>
                -- Wait for the FIN to be acknowledged

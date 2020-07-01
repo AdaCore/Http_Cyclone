@@ -137,4 +137,36 @@ package Tcp_Type is
     end record
       with Convention => C;
 
+   -- type Tcp_Header is record
+   --    Src_Port       : Port;           -- 0-1
+   --    Dest_Port      : Port;           -- 2-3
+   --    Seq_Num        : unsigned;       -- 4-7
+   --    Ack_Num        : unsigned;       -- 8-11
+   --    Reserved1      : uint8;          -- 12
+   --    Data_Offset    : uint8;
+   --    Flags          : uint8;          -- 13
+   --    Reserved2      : uint8;
+   --    Window         : unsigned_short; -- 14-15
+   --    Checksum       : unsigned_short; -- 16-17
+   --    Urgent_Pointer : unsigned_short; -- 18-19
+   --    Options        : uint8;          -- 20
+   -- end record;
+
+   -- for Tcp_Header use record
+   --    Src_Port       at 0 range   0 .. 15;
+   --    Dest_Port      at 0 range  16 .. 31;
+   --    Seq_Num        at 0 range  32 .. 63;
+   --    Ack_Num        at 0 range  64 .. 95;
+   --    Reserved1      at 0 range  96 .. 99;
+   --    Data_Offset    at 0 range 100 .. 103;
+   --    Flags          at 0 range 104 .. 109;
+   --    Reserved2      at 0 range 110 .. 111;
+   --    Window         at 0 range 112 .. 127;
+   --    Checksum       at 0 range 128 .. 143;
+   --    Urgent_Pointer at 0 range 144 .. 159;
+   --    Options        at 0 range 160 .. 167;
+   -- end record;
+
+   -- for Tcp_Header'Scalar_Storage_Order use System.High_Order_First;
+
 end Tcp_Type;

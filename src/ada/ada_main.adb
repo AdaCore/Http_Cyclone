@@ -12,30 +12,33 @@ package body Ada_Main with
    SPARK_Mode
 is
 
-    procedure HTTP_Client_Test is
-        Sock : Socket;
-        ServerAddr : IpAddr;
-        End_Of_Line : constant Send_Buffer(1 .. 2) :=
-                  (1 => char'Val(13), 2 => char'Val(10));
-        End_Of_Request : constant Send_Buffer (1 .. 1) :=
-                  (1 => char'Val(0));
-        Request : constant Send_Buffer :=
-                  "GET /anything HTTP/1.1" & End_Of_Line &
-                  "Host: httpbin.org" & End_Of_Line &
-                  "Connection: close" & End_Of_Line & End_Of_Line
-                  & End_Of_Request;
-        Buf : Received_Buffer (1 .. 128);
-        Error : Error_T;
-        Written : Integer with Unreferenced;
-        Received : Natural;
+   procedure HTTP_Client_Test is
+      Sock : Socket;
+      ServerAddr : IpAddr;
+      End_Of_Line : constant Send_Buffer(1 .. 2) :=
+               (1 => char'Val(13), 2 => char'Val(10));
+      End_Of_Request : constant Send_Buffer (1 .. 1) :=
+               (1 => char'Val(0));
+      Request : constant Send_Buffer :=
+               "GET /anything HTTP/1.1" & End_Of_Line &
+               "Host: httpbin.org" & End_Of_Line &
+               "Connection: close" & End_Of_Line & End_Of_Line
+               & End_Of_Request;
+      Buf : Received_Buffer (1 .. 128);
+      Error : Error_T;
+      Written : Integer with Unreferenced;
+      Received : Natural;
 
-        procedure Print_String (str : Received_Buffer; length : int)
-        with
-         Import => True,
-         Convention => C,
-         External_Name => "debugString",
-         Global => null;
-    begin
+      procedure Print_String
+         (str : Received_Buffer;
+          length : int)
+         with
+            Import => True,
+            Convention => C,
+            External_Name => "debugString",
+            Global => null;
+
+   begin
       Get_Host_By_Name("httpbin.org", ServerAddr, HOST_NAME_RESOLVER_ANY, Error);
       if Error /= NO_ERROR then
          return;
@@ -59,7 +62,7 @@ is
       end if;
 
       loop
-            pragma Loop_Invariant 
+            pragma Loop_Invariant
                (Sock /= null and then
                 Model(Sock) = Model(Sock)'Loop_Entry);
             Socket_Receive (Sock, Buf, Received, 0, Error);

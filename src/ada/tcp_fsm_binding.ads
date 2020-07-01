@@ -6,13 +6,14 @@
 --                                               --
 ---------------------------------------------------
 
-
 pragma Unevaluated_Use_Of_Old (Allow);
 pragma Ada_2020;
 
 with Common_Type;    use Common_Type;
+with Interfaces.C;   use Interfaces.C;
 with Ip;             use Ip;
 with Socket_Types;   use Socket_Types;
+with System;
 with Tcp_Type;       use Tcp_Type;
 
 package Tcp_Fsm_Binding
@@ -21,9 +22,10 @@ is
 
    -- This function is used to model the transitions that can happen
    -- when a segment is received from the network.
-   -- @TODO The transition to the close state are not taken into
-   -- Account for now
-   -- Zero or one transition.
+   -- This function model zero, one or more transitions that can happen when
+   -- a message is received. (reprent →* = ∪_{n∈ℕ} →^n, n∈ℕ)
+   -- @TODO The timer that close the connection after the TIME-WAIT state
+   -- isn't considered in this function (2MLS timer). It should be added somewhere.
    procedure Tcp_Process_Segment(Sock : in out Not_Null_Socket)
    with
       Global => null,
@@ -102,11 +104,10 @@ is
             Model(Sock) = Model(Sock)'Old or else
             -- One transition
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED) or else
-            -- A RST segment has been received
-            Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_CLOSED,
                S_Reset_Flag => True),
+            -- The connection cannot be reset in the state
+            -- LAST_ACK
 
          -- C:tcpStateFinWait1
          Sock.State = TCP_STATE_FIN_WAIT_1 =>
@@ -155,6 +156,19 @@ is
                S_Reset_Flag => True)
       );
 
+   -- procedure Tcp_State_Closed
+   --    (Interface     : System.Address;
+   --     Pseudo_Header : System.Address;
+   --     Segment       : Tcp_Header;
+   --     Length        : size_t);
 
+   -- procedure Tcp_State_Syn_Received
+   --    (Sock    : in out Not_Null_Socket;
+   --     Segment : in     Tcp_Header;
+   --     Buffer  : in     System.Address;
+   --     Offset  : in     size_t;
+   --     Length  : in     size_t)
+   -- with
+   --    Post => ;
 
 end Tcp_Fsm_Binding;

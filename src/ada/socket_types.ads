@@ -11,7 +11,6 @@ is
 
    type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
 
-
    ------------------
    -- Socket_Event --
    ------------------
@@ -32,7 +31,6 @@ is
    SOCKET_EVENT_LINK_UP     : constant Socket_Event := 256;
    SOCKET_EVENT_LINK_DOWN   : constant Socket_Event := 512;
 
-
    ---------------------------
    -- Socket_Shutdown_Flags --
    ---------------------------
@@ -41,7 +39,6 @@ is
       (SOCKET_SD_RECEIVE,
        SOCKET_SD_SEND,
        SOCKET_SD_BOTH);
-
 
    -----------------
    -- Socket_Type --
@@ -63,7 +60,6 @@ is
       SOCKET_TYPE_RAW_IP  => 3,
       SOCKET_TYPE_RAW_ETH => 4);
 
-
    ----------------------
    -- Socket_Porotocol --
    ----------------------
@@ -84,7 +80,6 @@ is
       SOCKET_IP_PROTO_UDP    => 17,
       SOCKET_IP_PROTO_ICMPV6 => 58);
 
-
    -----------------------
    -- Socket Definition --
    -----------------------
@@ -96,7 +91,7 @@ is
       S_Net_Interface : System.Address;
       S_localIpAddr   : IpAddr;
       S_Local_Port    : Port;
-      S_remoteIpAddr  : IpAddr;
+      S_Remote_Ip_Addr  : IpAddr;
       S_Remote_Port   : Port;
       S_Timeout       : Systime;
       S_TTL           : unsigned_char;
@@ -172,7 +167,6 @@ is
    end record
      with Convention => C;
 
-
    -- @brief Flags used by I/O functions
 
    subtype Socket_Flags is unsigned;
@@ -203,15 +197,6 @@ is
    SOCKET_EPHEMERAL_PORT_MIN : constant Port := 49_152;
    SOCKET_EPHEMERAL_PORT_MAX : constant Port := 65_535;
 
-
-
-
-
-
-
-
-
-
    ------------------------------
    -- Ghost Sockets for Proofs --
    ------------------------------
@@ -222,7 +207,7 @@ is
       S_Protocol      : Socket_Protocol;
       S_localIpAddr   : IpAddr;
       S_Local_Port    : Port;
-      S_remoteIpAddr  : IpAddr;
+      S_Remote_Ip_Addr  : IpAddr;
       S_Remote_Port   : Port;
       -- S_Timeout       : Systime;
       -- S_TTL           : unsigned_char;
@@ -234,7 +219,6 @@ is
    end record
      with Ghost;
 
-
    function Model (Sock : Not_Null_Socket) return Socket_Model is
      (Socket_Model'(
          -- S_Descriptor     => Sock.S_Descriptor,
@@ -242,7 +226,7 @@ is
          S_Protocol       => Sock.S_Protocol,
          S_localIpAddr    => Sock.S_localIpAddr,
          S_Local_Port     => Sock.S_Local_Port,
-         S_remoteIpAddr   => Sock.S_remoteIpAddr,
+         S_Remote_Ip_Addr   => Sock.S_Remote_Ip_Addr,
          S_Remote_Port    => Sock.S_Remote_Port,
          -- S_Timeout        => Sock.S_Timeout,
          -- S_TTL            => Sock.S_TTL,
@@ -253,7 +237,6 @@ is
          S_Reset_Flag     => Sock.reset_Flag
      ))
      with Ghost;
-
 
    -- Basic Socket Model is here to model a socket after a procedure
    -- call that fail et return an error.

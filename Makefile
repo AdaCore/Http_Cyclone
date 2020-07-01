@@ -16,9 +16,7 @@ INCLUDES = \
 	-I./src/third_party/freertos/include \
 	-I./src/third_party/freertos/portable/gcc/arm_cm7/r0p1 \
 	-I./src/common \
-	-I./src/cyclone_tcp \
-	-I./src/cyclone_ssl \
-	-I./src/cyclone_crypto
+	-I./src/cyclone_tcp
 
 ASM_SOURCES = \
 	./src/startup_stm32f769xx.S
@@ -232,9 +230,6 @@ HEADERS = \
 	./src/cyclone_tcp/dhcp/dhcp_client.h \
 	./src/cyclone_tcp/dhcp/dhcp_common.h \
 	./src/cyclone_tcp/dhcp/dhcp_debug.h \
-	./src/cyclone_tcp/ftp/ftp_client.h \
-	./src/cyclone_tcp/ftp/ftp_client_transport.h \
-	./src/cyclone_tcp/ftp/ftp_client_misc.h \
 	./src/third_party/freertos/portable/gcc/arm_cm7/r0p1/portmacro.h \
 	./src/third_party/freertos/include/croutine.h \
 	./src/third_party/freertos/include/FreeRTOS.h \
@@ -354,7 +349,7 @@ ADAFLAGS += --RTS=/opt/GNAT/2019-arm-elf/arm-eabi/lib/gnat/ravenscar-sfp-stm32f4
 ADAFLAGS += -fno-common -Wall -Os -g3
 ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
-ADAFLAGS += -gnatA -gnatwa -gnatw_A -gnatQ -gnatw.X
+ADAFLAGS += -gnatwa -gnata -gnat2020 -gnatyg3C-Itm
 
 ADA_COMPILER = arm-eabi-gcc
 

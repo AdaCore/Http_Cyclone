@@ -4,7 +4,7 @@ with Socket_Helper; use Socket_Helper;
 with System;
 with Tcp_Fsm_Binding; use Tcp_Fsm_Binding;
 
-package body Socket_interface
+package body Socket_Interface
    with SPARK_Mode
 is
 
@@ -38,7 +38,7 @@ is
             Tcp_Get_Dynamic_Port (P);
             Error := NO_ERROR;
          when SOCKET_TYPE_DGRAM =>
-            --Always use UDP as underlying transport protocol
+            -- Always use UDP as underlying transport protocol
             Protocol := SOCKET_IP_PROTO_UDP;
             -- Get an ephemeral port number
             P     := Udp_Get_Dynamic_Port;
@@ -76,8 +76,8 @@ is
             Sock.S_Protocol            := Protocol;
             Sock.S_Local_Port          := P;
             Sock.S_Timeout             := Systime'Last;
-            Sock.S_remoteIpAddr.length := 0;
-            Sock.S_localIpAddr.length  := 0;
+            Sock.S_Remote_Ip_Addr.Length := 0;
+            Sock.S_localIpAddr.Length  := 0;
             Sock.S_Remote_Port         := 0;
             Sock.S_Net_Interface       := System.Null_Address;
             Sock.S_TTL                 := 0;
@@ -181,13 +181,13 @@ is
 
          -- Connectionless socket?
       elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         Sock.S_remoteIpAddr := Remote_Ip_Addr;
+         Sock.S_Remote_Ip_Addr := Remote_Ip_Addr;
          Sock.S_Remote_Port  := Remote_Port;
          Error               := NO_ERROR;
 
          -- Raw Socket?
       elsif Sock.S_Type = SOCKET_TYPE_RAW_IP then
-         Sock.S_remoteIpAddr := Remote_Ip_Addr;
+         Sock.S_Remote_Ip_Addr := Remote_Ip_Addr;
          Error               := NO_ERROR;
       else
          Error := ERROR_INVALID_SOCKET;
@@ -206,7 +206,7 @@ is
    begin
       Written := 0;
       Os_Acquire_Mutex (Net_Mutex);
-        --@TODO : finish
+      -- @TODO : finish
       if Sock.S_Type = SOCKET_TYPE_STREAM then
          -- INTERFERENCES
          Tcp_Process_Segment (Sock);
@@ -256,13 +256,13 @@ is
          Tcp_Process_Segment (Sock);
          Tcp_Receive (Sock, Data, Received, Flags, Error);
          -- Save the source IP address
-         Src_Ip_Addr  := Sock.S_remoteIpAddr;
+         Src_Ip_Addr  := Sock.S_Remote_Ip_Addr;
          -- Save the source port number
          Src_Port     := Sock.S_Remote_Port;
          -- Save the destination IP address
          Dest_Ip_Addr := Sock.S_localIpAddr;
       else
-         Src_Ip_Addr  := Sock.S_remoteIpAddr;
+         Src_Ip_Addr  := Sock.S_Remote_Ip_Addr;
          Src_Port     := Sock.S_Remote_Port;
          Dest_Ip_Addr := Sock.S_localIpAddr;
          Error        := ERROR_INVALID_SOCKET;
@@ -304,7 +304,7 @@ is
       -- Get exclusive access
       Os_Acquire_Mutex (Net_Mutex);
 
-      if (Sock.S_Type = SOCKET_TYPE_STREAM) then
+      if Sock.S_Type = SOCKET_TYPE_STREAM then
          Tcp_Abort (Sock, Ignore_Error);
       else -- SOCKET_TYPE_DGRAM, SOCKET_TYPE_RAW_IP, SOCKET_TYPE_RAW_ETH
 
@@ -312,7 +312,7 @@ is
 
          -- Mark the socket as closed
          Sock.S_Type := SOCKET_TYPE_UNUSED;
-         
+
          -- Free the socket
          Free_Socket (Sock);
       end if;
@@ -368,4 +368,4 @@ is
       Tcp_Accept (Sock, Client_Ip_Addr, Client_Port, Client_Socket);
    end Socket_Accept;
 
-end Socket_interface;
+end Socket_Interface;

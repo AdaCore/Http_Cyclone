@@ -33,5 +33,3 @@ is
        Timer_Delay : in     Systime);
 
 end Tcp_Timer_Interface;
-
-

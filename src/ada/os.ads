@@ -27,7 +27,6 @@ is
       (Event   : Os_Event;
        Timeout : Systime);
 
-
    -- We need to use a procedure that takes the socket as an argument
    -- and modify it as wanted for the verification.
    -- Indeed the data process is done in another file, and only an event
@@ -48,6 +47,5 @@ is
                   Is_Initialized_Ip (Sock.synQueue.Dest_Addr) and then
                   Sock.synQueue.Next = null),
          others => Model(Sock) = Model(Sock)'Old);
-
 
 end Os;
