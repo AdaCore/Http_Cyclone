@@ -1,5 +1,3 @@
-with System;
-
 package body Tcp_Misc_Binding with
    SPARK_Mode => Off
 is
@@ -48,7 +46,11 @@ is
          Convention    => C,
          External_Name => "tcpWaitForEvents";
    begin
-      Event := Socket_Event(tcpWaitForEvents (Sock, unsigned(Event_Mask), Timeout));
+      Event := Socket_Event(
+                  tcpWaitForEvents (
+                     Sock      => Sock,
+                     eventMask => unsigned(Event_Mask),
+                     timeout   => Timeout));
    end Tcp_Wait_For_Events;
 
    procedure Tcp_Send_Segment

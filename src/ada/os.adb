@@ -1,3 +1,5 @@
+with System;
+
 package body Os
    with SPARK_Mode => Off
 is

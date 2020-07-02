@@ -10,10 +10,8 @@ pragma Unevaluated_Use_Of_Old (Allow);
 pragma Ada_2020;
 
 with Common_Type;    use Common_Type;
-with Interfaces.C;   use Interfaces.C;
 with Ip;             use Ip;
 with Socket_Types;   use Socket_Types;
-with System;
 with Tcp_Type;       use Tcp_Type;
 
 package Tcp_Fsm_Binding

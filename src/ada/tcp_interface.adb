@@ -7,7 +7,6 @@ with Os;                  use Os;
 with Socket_Helper;       use Socket_Helper;
 with Socket_Interface;    use Socket_Interface;
 with System;              use System;
-with Tcp_Binding;
 with Tcp_Fsm_Binding;     use Tcp_Fsm_Binding;
 with Tcp_Misc_Binding;    use Tcp_Misc_Binding;
 with Tcp_Timer_Interface; use Tcp_Timer_Interface;
@@ -593,7 +592,7 @@ is
          end if;
 
          -- Update byte counter
-         Total_Length := Total_Length + Natural(N);
+         Total_Length := Total_Length + N;
 
          -- Total number of data that have been written
          Written := Total_Length;

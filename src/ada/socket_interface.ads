@@ -1,15 +1,14 @@
 pragma Unevaluated_Use_Of_Old (Allow);
 pragma Ada_2020;
 
-with Interfaces.C; use Interfaces.C;
-with Ip;           use Ip;
-with Error_H;      use Error_H;
-with Common_Type;  use Common_Type;
-with Socket_Types; use Socket_Types;
-with Net;          use Net;
-with Tcp_Interface, Udp_Binding;
-use Tcp_Interface, Udp_Binding;
-with Tcp_Type;     use Tcp_Type;
+with Interfaces.C;  use Interfaces.C;
+with Ip;            use Ip;
+with Error_H;       use Error_H;
+with Common_Type;   use Common_Type;
+with Socket_Types;  use Socket_Types;
+with Net;           use Net;
+with Tcp_Interface; use Tcp_Interface;
+with Tcp_Type;      use Tcp_Type;
 
 package Socket_Interface with
    SPARK_Mode
@@ -54,7 +53,6 @@ is
             null             => Net_Mutex),
          Post =>
            (if Sock /= null then
-              Sock.S_Descriptor >= 0 and then
               Sock.S_Type = S_Type and then
               not Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
               not Is_Initialized_Ip(Sock.S_localIpAddr)),

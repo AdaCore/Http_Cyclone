@@ -10,3 +10,4 @@ gnatprove/
 *.cgpr
 libs/
 prove-loc.xml
+codepeer/

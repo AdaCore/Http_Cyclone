@@ -1,8 +1,8 @@
-with Os;            use Os;
-with Os_Types;      use Os_Types;
-with Socket_Helper; use Socket_Helper;
+with Os;              use Os;
+with Socket_Helper;   use Socket_Helper;
 with System;
 with Tcp_Fsm_Binding; use Tcp_Fsm_Binding;
+with Udp_Binding;     use Udp_Binding;
 
 package body Socket_Interface
    with SPARK_Mode
