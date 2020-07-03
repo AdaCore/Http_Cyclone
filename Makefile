@@ -346,10 +346,10 @@ CFLAGS += $(INCLUDES)
 
 
 ADAFLAGS += --RTS=/opt/GNAT/2019-arm-elf/arm-eabi/lib/gnat/ravenscar-sfp-stm32f429disco/
-ADAFLAGS += -fno-common -Wall -Os -g3
+ADAFLAGS += -fno-common -Wall -Os -g3 -ggdb
 ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
-ADAFLAGS += -gnatwa -gnata -gnat2020 -gnatyg3C-Itm
+ADAFLAGS += -gnat2020 -gnata # -gnatyg3C-Itm -gnatwa 
 
 ADA_COMPILER = arm-eabi-gcc
 
