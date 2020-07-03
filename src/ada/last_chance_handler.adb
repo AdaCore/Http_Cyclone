@@ -64,9 +64,21 @@ package body Last_Chance_Handler is
       end loop;
    end Last_Chance_Handler;
 
-   procedure Raise_Assert_Failure (Msg : String) is 
+   procedure Raise_Assert_Failure is 
+   procedure Busy_loop is
+      begin
+         for Cnt in 1 .. 10_000_000 loop
+            null;
+         end loop;
+      end Busy_loop;
    begin
-      Ada.Exceptions.Raise_Exception (Assert_Failure'Identity, Msg);
+
+      Busy_loop;
+
+      --  No-return procedure...
+      loop
+         null;
+      end loop;
    end Raise_Assert_Failure;
 
 end Last_Chance_Handler;

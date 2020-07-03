@@ -592,7 +592,7 @@ int_t main(void)
 #endif
 
    //Create user task
-   task = osCreateTask("User", userTask, NULL, 500, OS_TASK_PRIORITY_NORMAL);
+   task = osCreateTask("User", userTask, NULL, 5000, OS_TASK_PRIORITY_NORMAL);
    //Failed to create the task?
    if(task == OS_INVALID_HANDLE)
    {

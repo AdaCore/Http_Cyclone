@@ -44,7 +44,7 @@ package Last_Chance_Handler is
    Assert_Failure : exception; 
    --  Exception raised when assertion fails
 
-   procedure Raise_Assert_Failure (Msg : String);
+   procedure Raise_Assert_Failure;
    pragma Export (C, Raise_Assert_Failure, "system__assertions__raise_assert_failure");
    pragma No_Return (Raise_Assert_Failure);
 
