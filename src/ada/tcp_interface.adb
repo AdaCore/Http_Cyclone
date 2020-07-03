@@ -542,7 +542,8 @@ is
                Model(Sock) = (Model(Sock)'Loop_Entry with delta
                                  S_State => TCP_STATE_CLOSE_WAIT) or else
                Model(Sock) = (Model(Sock)'Loop_Entry with delta
-                                 S_State => TCP_STATE_ESTABLISHED)));
+                                 S_State => TCP_STATE_ESTABLISHED))
+            );
 
          -- Exit immediately if the transmission buffer is full (sanity check)
          if unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna >= unsigned(Sock.txBufferSize) then
@@ -596,6 +597,8 @@ is
 
          -- Total number of data that have been written
          Written := Total_Length;
+
+         pragma Assert(Sock /= null);
 
          -- The Nagle algorithm should be implemented to coalesce
          -- short segments (refer to RFC 1122 4.2.3.4)
