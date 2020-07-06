@@ -502,11 +502,13 @@ is
        Local_Ip_Addr :        IpAddr;
        Local_Port    :        Port)
       with
+       Global => (Proof_In => IP_ADDR_ANY),
        Depends => (Sock => (Sock, Local_Ip_Addr, Local_Port)),
        Pre =>
          not Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
          not Is_Initialized_Ip(Sock.S_localIpAddr) and then
-         Is_Initialized_Ip(Local_Ip_Addr) and then
+         (Is_Initialized_Ip(Local_Ip_Addr) or else
+          Local_Ip_Addr = IP_ADDR_ANY) and then
          (Sock.S_Type = SOCKET_TYPE_STREAM or else
           Sock.S_Type = SOCKET_TYPE_DGRAM),
        Post =>
@@ -519,13 +521,15 @@ is
        Backlog :        Natural)
        -- Error   :    out Error_T)
       with
-        Global => Net_Mutex,
+        Global => (Input    => Net_Mutex,
+                   Proof_In => IP_ADDR_ANY),
         Depends =>
           (Sock  =>+ Backlog,
            null => Net_Mutex),
         Pre =>
           Sock.S_Type = SOCKET_TYPE_STREAM and then
-          Is_Initialized_Ip(Sock.S_localIpAddr) and then
+          (Is_Initialized_Ip(Sock.S_localIpAddr) or else
+           Sock.S_localIpAddr = IP_ADDR_ANY) and then
           not Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
           Sock.State = TCP_STATE_CLOSED,
         Post =>
@@ -539,8 +543,9 @@ is
        Client_Socket  :    out Socket)
       with
        Global =>
-         (Input  => (Net_Mutex, Socket_Table),
-          In_Out => Tcp_Dynamic_Port),
+         (Input    => (Net_Mutex, Socket_Table),
+          In_Out   => Tcp_Dynamic_Port,
+          Proof_In => IP_ADDR_ANY),
        Depends =>
           (Sock             => (Sock, Tcp_Dynamic_Port, Socket_Table),
            Client_Ip_Addr   => (Sock, Tcp_Dynamic_Port, Socket_Table),
@@ -549,7 +554,8 @@ is
            Tcp_Dynamic_Port =>+ (Sock, Socket_Table),
            null             => Net_Mutex),
        Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
-              Is_Initialized_Ip(Sock.S_localIpAddr) and then
+              (Is_Initialized_Ip(Sock.S_localIpAddr) or else
+               Sock.S_localIpAddr = IP_ADDR_ANY) and then
               not Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
               Sock.State = TCP_STATE_LISTEN and then
               Sock.S_Local_Port > 0,

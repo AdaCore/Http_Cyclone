@@ -53,7 +53,7 @@ is
    is
       pragma Annotate (CodePeer, Skip_Analysis);
    begin
-      null;
+      Sock := null;
    end Free_Socket;
 
 end Socket_Helper;

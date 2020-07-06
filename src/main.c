@@ -82,6 +82,7 @@ SlaacContext slaacContext;
 FtpClientContext ftpClientContext;
 
 extern void http_client_test(void);
+extern void http_server_test(void);
 
 
 /**
@@ -363,6 +364,7 @@ void userTask(void *param)
       if(BSP_PB_GetState(BUTTON_WAKEUP))
       {
          http_client_test(); //"httpbin.org", "/anything");
+         // http_server_test();
 
          //Wait for the user button to be released
          while(BSP_PB_GetState(BUTTON_WAKEUP));
