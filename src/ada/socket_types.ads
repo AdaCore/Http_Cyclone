@@ -244,15 +244,113 @@ is
    -- state, but we still know what kind of protocol the socket is using
 
    type Basic_Socket_Model is record
-      S_Type          : Socket_Type;
-      S_Protocol      : Socket_Protocol;
+      S_Type           : Socket_Type;
+      S_Protocol       : Socket_Protocol;
+      S_localIpAddr    : IpAddr;
+      S_Local_Port     : Port;
+      S_Remote_Ip_Addr : IpAddr;
+      S_Remote_Port    : Port;
    end record with Ghost;
 
    function Basic_Model(Sock : Not_Null_Socket) return Basic_Socket_Model is
       (Basic_Socket_Model'(
-         S_Type      => Sock.S_Type,
-         S_Protocol  => Sock.S_Protocol
+         S_Type           => Sock.S_Type,
+         S_Protocol       => Sock.S_Protocol,
+         S_localIpAddr    => Sock.S_localIpAddr,
+         S_Local_Port     => Sock.S_Local_Port,
+         S_Remote_Ip_Addr => Sock.S_Remote_Ip_Addr,
+         S_Remote_Port    => Sock.S_Remote_Port
       ))
       with Ghost;
+   
+
+   -- The transition relation function is used to compute all the transitions
+   -- that can happen when a message is received.
+   -- This function can be used (for example) in loop invariant to compute
+   -- all the transition that can happen while receiving data
+   -- or in a loop that sends data.
+
+   -- This function represents only the direct transitions and the
+   -- transition to closed when a RST segment is received isn't
+   -- considered because this case must always be filtered by checking the returned
+   -- code of the function, and thus, may not appear in a loop invariant
+   function TCP_Rel
+      (Model_Before : Socket_Model;
+       Model_After  : Socket_Model)
+   return Boolean is
+      (-- Basic attributes of the socket are kept
+      Model_Before.S_Type = Model_After.S_Type and then
+      Model_Before.S_Protocol = Model_After.S_Protocol and then
+      Model_Before.S_localIpAddr = Model_After.S_localIpAddr and then
+      Model_Before.S_Local_Port = Model_After.S_Local_Port and then
+      Model_Before.S_Remote_Ip_Addr = Model_After.S_Remote_Ip_Addr and then
+      Model_Before.S_Remote_Port = Model_After.S_Remote_Port and then
+      -- Only the TCP State is changed
+      (Model_Before.S_State = Model_After.S_State or else
+      (if Model_Before.S_State = TCP_STATE_SYN_SENT then
+         Model_After.S_State = TCP_STATE_SYN_RECEIVED or else
+         Model_After.S_State = TCP_STATE_ESTABLISHED
+      elsif Model_Before.S_State = TCP_STATE_SYN_RECEIVED then
+         Model_After.S_State = TCP_STATE_ESTABLISHED
+      elsif Model_Before.S_State = TCP_STATE_ESTABLISHED then
+         Model_After.S_State = TCP_STATE_CLOSE_WAIT
+      elsif Model_Before.S_State = TCP_STATE_LAST_ACK then
+         Model_After.S_State = TCP_STATE_CLOSED
+      elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_1 then
+         Model_After.S_State = TCP_STATE_FIN_WAIT_2 or else
+         Model_After.S_State = TCP_STATE_TIME_WAIT or else
+         Model_After.S_State = TCP_STATE_CLOSING
+      elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_2 then
+         Model_After.S_State = TCP_STATE_TIME_WAIT
+      elsif Model_Before.S_State = TCP_STATE_CLOSING then
+         Model_After.S_State = TCP_STATE_TIME_WAIT
+      elsif Model_Before.S_State = TCP_STATE_TIME_WAIT then
+         Model_After.S_State = TCP_STATE_CLOSED)
+      ))
+   with Ghost;
+
+   -- Transitive closure of the function TCP_Rel
+   function TCP_Rel_Iter
+      (Model_Before : Socket_Model;
+       Model_After  : Socket_Model)
+   return Boolean is
+      (-- Basic attributes of the socket are kept
+      Model_After.S_Type = Model_Before.S_Type and then
+      Model_After.S_Protocol = Model_Before.S_Protocol and then
+      Model_After.S_localIpAddr = Model_Before.S_localIpAddr and then
+      Model_After.S_Local_Port = Model_Before.S_Local_Port and then
+      Model_After.S_Remote_Ip_Addr = Model_Before.S_Remote_Ip_Addr and then
+      Model_After.S_Remote_Port = Model_Before.S_Remote_Port and then
+      -- Only the TCP State is changed
+      (
+         Model_After.S_State = Model_Before.S_State or else
+         (if Model_Before.S_State = TCP_STATE_SYN_SENT then
+            Model_After.S_State = TCP_STATE_SYN_RECEIVED or else
+            Model_After.S_State = TCP_STATE_ESTABLISHED or else
+            Model_After.S_State = TCP_STATE_CLOSE_WAIT
+         elsif Model_Before.S_State = TCP_STATE_SYN_RECEIVED then
+            Model_After.S_State = TCP_STATE_ESTABLISHED or else
+            Model_After.S_State = TCP_STATE_CLOSE_WAIT
+         elsif Model_Before.S_State = TCP_STATE_ESTABLISHED then
+            Model_After.S_State = TCP_STATE_CLOSE_WAIT
+         elsif Model_Before.S_State = TCP_STATE_LAST_ACK then
+            Model_After.S_State = TCP_STATE_CLOSED
+         elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_1 then
+            Model_After.S_State = TCP_STATE_FIN_WAIT_2 or else
+            Model_After.S_State = TCP_STATE_TIME_WAIT or else
+            Model_After.S_State = TCP_STATE_CLOSING or else
+            Model_After.S_State = TCP_STATE_CLOSED
+         elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_2 then
+            Model_After.S_State = TCP_STATE_TIME_WAIT or else
+            Model_After.S_State = TCP_STATE_CLOSED
+         elsif Model_Before.S_State = TCP_STATE_CLOSING then
+            Model_After.S_State = TCP_STATE_TIME_WAIT or else
+            Model_After.S_State = TCP_STATE_CLOSED
+         elsif Model_Before.S_State = TCP_STATE_TIME_WAIT then
+            Model_After.S_State = TCP_STATE_CLOSED
+         else
+            Model_After.S_State = Model_Before.S_State
+         )))
+   with Ghost;
 
 end Socket_Types;

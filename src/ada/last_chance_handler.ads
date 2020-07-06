@@ -41,8 +41,8 @@ package Last_Chance_Handler is
    pragma Export (C, Last_Chance_Handler, "__gnat_last_chance_handler");
    pragma No_Return (Last_Chance_Handler);
 
-   Assert_Failure : exception; 
-   --  Exception raised when assertion fails
+   Assert_Failure : exception;
+   -- Exception raised when assertion fails
 
    procedure Raise_Assert_Failure;
    pragma Export (C, Raise_Assert_Failure, "system__assertions__raise_assert_failure");

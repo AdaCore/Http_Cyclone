@@ -17,8 +17,20 @@ is
       with
         Depends => (Sock =>+ New_State),
         Post =>
-            Model(Sock) = (Model(Sock)'Old with delta
-                              S_State => New_State);
+            (if New_State = TCP_STATE_CLOSED then
+               (if Sock.State'Old = TCP_STATE_LAST_ACK or else
+                   Sock.State'Old = TCP_STATE_TIME_WAIT
+               then
+                  Model(Sock) = (Model(Sock)'Old with delta
+                              S_State => TCP_STATE_CLOSED)
+               else
+                  Model(Sock) = (Model(Sock)'Old with delta
+                              S_State => TCP_STATE_CLOSED,
+                              S_Reset_Flag => True)
+               )
+            else
+               Model(Sock) = (Model(Sock)'Old with delta
+                           S_State => New_State));
 
    procedure Tcp_Wait_For_Events
       (Sock       : in out Not_Null_Socket;
@@ -115,7 +127,8 @@ is
                      -- Nothing happen. The result is the same.
                      Model(Sock) = Model(Sock)'Old
                   elsif Sock.State'Old = TCP_STATE_CLOSED then
-                     Model(Sock) = Model(Sock)'Old)))
+                     Model(Sock) = (Model(Sock)'Old with delta
+                        S_Reset_Flag => Sock.reset_Flag'Old))))
 
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then

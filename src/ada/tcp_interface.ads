@@ -64,7 +64,8 @@ is
                -- Sock.rxBufferSize = Sock.rxBufferSize'Old and then
                Sock.State = TCP_STATE_ESTABLISHED
             else
-               Basic_Model (Sock) = Basic_Model (Sock)'Old);
+               Sock.S_Type = Sock.S_Type'Old and then
+               Sock.S_Protocol = Sock.S_Protocol'Old);
 
    procedure Tcp_Listen
       (Sock    : in out Not_Null_Socket;
@@ -163,6 +164,7 @@ is
           Is_Initialized_Ip (Sock.S_Remote_Ip_Addr) and then
           Data'Last >= Data'First,
         Post =>
+          Basic_Model(Sock) = Basic_Model(Sock)'Old and then
           (if Sock.State'Old = TCP_STATE_CLOSED and then
               Sock.reset_Flag'Old = True then
             Error /= ERROR_END_OF_STREAM and then

@@ -104,8 +104,6 @@ is
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_CLOSED,
                S_Reset_Flag => True),
-            -- The connection cannot be reset in the state
-            -- LAST_ACK
 
          -- C:tcpStateFinWait1
          Sock.State = TCP_STATE_FIN_WAIT_1 =>

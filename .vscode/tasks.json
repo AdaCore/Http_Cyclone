@@ -32,7 +32,7 @@
             }
         },
         {
-            "label": "prove",
+            "label": "prove all",
             "type": "shell",
             "command": "gnatprove",
             "args": [
@@ -40,6 +40,45 @@
                 "prove.gpr",
                 "--level=3",
                 "-j0"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                {
+                    "base": "$ada",
+                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
+                    "pattern": [
+                        {
+                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|)(?:[:]\\s+)?(.*)$",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3,
+                            "severity": 4,
+                            "message": 5
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "prove function",
+            "type": "shell",
+            "command": "gnatprove",
+            "args": [
+                "-P",
+                "prove.gpr",
+                "--level=3",
+                "-j0",
+                "--limit-subp=ada_main.adb:16"
             ],
             "presentation": {
                 "echo": true,

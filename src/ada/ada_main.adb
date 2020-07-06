@@ -7,6 +7,7 @@ with Interfaces.C;     use Interfaces.C;
 with Common_Type;      use Common_Type;
 with Socket_Types;     use Socket_Types;
 with Socket_Interface; use Socket_Interface;
+with Tcp_Type;         use Tcp_Type;
 
 package body Ada_Main with
    SPARK_Mode
@@ -64,7 +65,7 @@ is
       loop
             pragma Loop_Invariant
                (Sock /= null and then
-                Model(Sock) = Model(Sock)'Loop_Entry);
+                TCP_Rel_Iter (Model(Sock)'Loop_Entry, Model(Sock)));
             Socket_Receive (Sock, Buf, Received, 0, Error);
             exit when Error = ERROR_END_OF_STREAM;
             if Error /= NO_ERROR then
