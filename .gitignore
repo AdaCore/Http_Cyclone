@@ -11,3 +11,5 @@ gnatprove/
 libs/
 prove-loc.xml
 codepeer/
+*.bc
+klee-*
