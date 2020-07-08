@@ -4,7 +4,7 @@ with Ip;           use Ip;
 with Net_Mem;      use Net_Mem;
 with System;       use System;
 
-package Tcp_Type is
+package Tcp_Type with SPARK_Mode is
 
    TCP_MAX_SYN_QUEUE_SIZE     : constant unsigned := 16;
    TCP_DEFAULT_SYN_QUEUE_SIZE : constant unsigned := 4;
@@ -136,6 +136,15 @@ package Tcp_Type is
       Mss           : unsigned_short;
     end record
       with Convention => C;
+
+   function Tcp_Syn_Queue_Item_Model
+      (Queue : Tcp_Syn_Queue_Item_Acc) return Boolean is
+      (Queue = null or else
+         (Is_Initialized_Ip (Queue.Src_Addr) and then
+          Queue.Src_Port > 0 and then
+          Is_Initialized_Ip (Queue.Dest_Addr) and then
+          Tcp_Syn_Queue_Item_Model (Queue.Next)))
+      with Ghost;
 
    -- type Tcp_Header is record
    --    Src_Port       : Port;           -- 0-1

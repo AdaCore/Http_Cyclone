@@ -331,8 +331,10 @@ ASM_OBJECTS = $(patsubst %.S, %.o, $(ASM_SOURCES))
 C_OBJECTS = $(patsubst %.c, %.o, $(C_SOURCES))
 
 ADA_SOURCES = $(wildcard ./src/ada/*.adb)
+ADA_HEADERS = tcp_type.ads
 
 ADA_OBJECTS = $(patsubst %.adb, %.o, $(ADA_SOURCES))
+ADA_OBJECTS += $(patsubst %.ads, %.o, $(ADA_HEADERS))
 
 OBJ_DIR = obj
 
@@ -390,6 +392,9 @@ $(OBJ_DIR):
 	$(CC) $(CFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
 
 %.o: %.adb $(THIS_MAKEFILE) $()
+	$(ADA_COMPILER) $(ADAFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
+
+%.o: %.ads $(THIS_MAKEFILE)
 	$(ADA_COMPILER) $(ADAFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
 
 %.lst: %.elf

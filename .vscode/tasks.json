@@ -78,7 +78,8 @@
                 "prove.gpr",
                 "--level=3",
                 "-j0",
-                "--limit-subp=ada_main.adb:16"
+                // "--report=all",
+                "--limit-subp=tcp_fsm_binding.ads:27"
             ],
             "presentation": {
                 "echo": true,
@@ -97,7 +98,7 @@
                     "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
                     "pattern": [
                         {
-                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|)(?:[:]\\s+)?(.*)$",
+                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|info|)(?:[:]\\s+)?(.*)$",
                             "file": 1,
                             "line": 2,
                             "column": 3,
