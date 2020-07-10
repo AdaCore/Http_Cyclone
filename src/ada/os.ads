@@ -22,6 +22,10 @@ is
 
    procedure Os_Reset_Event (Event : Os_Event);
 
+   procedure Os_Set_Event (Event : Os_Event);
+
+   procedure Os_Set_Event (Event : access Os_Event);
+
    procedure Os_Wait_For_Event
       (Event   : Os_Event;
        Timeout : Systime);
@@ -40,11 +44,7 @@ is
       Contract_Cases =>
          (Sock.State = TCP_STATE_LISTEN =>
                Model (Sock) = Model (Sock)'Old and then
-               (if Sock.synQueue /= null then
-                  Is_Initialized_Ip (Sock.synQueue.Src_Addr) and then
-                  Sock.synQueue.Src_Port > 0 and then
-                  Is_Initialized_Ip (Sock.synQueue.Dest_Addr) and then
-                  Sock.synQueue.Next = null),
+               Tcp_Syn_Queue_Item_Model(Sock.synQueue),
          others => Model(Sock) = Model(Sock)'Old);
 
 end Os;

@@ -85,7 +85,7 @@ is
             Sock.S_Errno_Code          := 0;
             Sock.S_Event_Mask          := 0;
             Sock.S_Event_Flags         := 0;
-            Sock.userEvent             := System.Null_Address;
+            Sock.S_User_Event          := null;
             Sock.State                 := TCP_STATE_CLOSED;
             Sock.owned_Flag            := False;
             Sock.closed_Flag           := False;

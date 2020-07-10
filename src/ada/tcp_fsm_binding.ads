@@ -102,8 +102,7 @@ is
             Model(Sock) = Model(Sock)'Old or else
             -- One transition
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED,
-               S_Reset_Flag => True),
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateFinWait1
          Sock.State = TCP_STATE_FIN_WAIT_1 =>
@@ -170,14 +169,14 @@ is
    -- with
    --    Post => ;
 
-private
-
    procedure Tcp_Process_One_Segment(Sock : in out Not_Null_Socket)
    with
       Global => null,
       Depends => (Sock => Sock),
       Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
-      Post => Basic_Model(Sock) = Basic_Model(Sock)'Old,
+      Post => Basic_Model(Sock) = Basic_Model(Sock)'Old and then
+              Sock.S_Event_Flags = Sock.S_Event_Flags'Old and then
+              Sock.S_Event_Mask = Sock.S_Event_Mask'Old,
       Contract_Cases => (
          Sock.State = TCP_STATE_CLOSED =>
             Model(Sock) = Model(Sock)'Old,
@@ -240,8 +239,7 @@ private
             Model(Sock) = Model(Sock)'Old or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED,
-               S_Reset_Flag => True),
+               S_State => TCP_STATE_CLOSED),
 
          Sock.State = TCP_STATE_FIN_WAIT_1 =>
             -- Possibly unchanged if no message has been received

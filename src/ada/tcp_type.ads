@@ -138,7 +138,7 @@ package Tcp_Type with SPARK_Mode is
       with Convention => C;
 
    function Tcp_Syn_Queue_Item_Model
-      (Queue : Tcp_Syn_Queue_Item_Acc) return Boolean is
+      (Queue : access constant Tcp_Syn_Queue_Item) return Boolean is
       (Queue = null or else
          (Is_Initialized_Ip (Queue.Src_Addr) and then
           Queue.Src_Port > 0 and then

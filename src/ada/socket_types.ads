@@ -100,7 +100,7 @@ is
       S_Event         : Os_Event;
       S_Event_Mask    : Socket_Event;
       S_Event_Flags   : Socket_Event;
-      userEvent       : System.Address;
+      S_User_Event    : Os_Event_Acc;
 
       -- TCP specific variables
       State       : Tcp_State;
@@ -165,7 +165,19 @@ is
 
       receiveQueue : System.Address;
    end record
-     with Convention => C;
+     with 
+      Convention => C,
+      Predicate =>
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_TIMEOUT or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_CONNECTED or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_CLOSED or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_TX_READY or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_TX_DONE or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_TX_ACKED or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_TX_SHUTDOWN or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_RX_READY or else
+         Socket_Struct.S_Event_Mask = SOCKET_EVENT_RX_SHUTDOWN or else
+         Socket_Struct.S_Event_Mask = (SOCKET_EVENT_CONNECTED or SOCKET_EVENT_CLOSED);
 
    -- @brief Flags used by I/O functions
 

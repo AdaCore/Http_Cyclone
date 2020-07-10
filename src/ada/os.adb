@@ -38,6 +38,26 @@ is
       osResetEvent (Event'Address);
    end Os_Reset_Event;
 
+   procedure Os_Set_Event (Event : Os_Event) is
+      procedure osSetEvent (Event : System.Address)
+        with
+         Import        => True,
+         Convention    => C,
+         External_Name => "osSetEvent";
+   begin
+      osSetEvent (Event'Address);
+   end Os_Set_Event;
+
+   procedure Os_Set_Event (Event : access Os_Event) is
+      procedure osSetEvent (Event : access Os_Event)
+        with
+         Import        => True,
+         Convention    => C,
+         External_Name => "osSetEvent";
+   begin
+      osSetEvent (Event);
+   end Os_Set_Event;
+
    procedure Os_Wait_For_Event
       (Event   : Os_Event;
        Timeout : Systime)
