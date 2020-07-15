@@ -66,6 +66,228 @@ is
                Model(Sock) = (Model(Sock)'Old with delta
                            S_State => New_State));
 
+   -- This function si intended to keep the coherence between the function
+   -- Tcp_Wait_For_Events_Proof and Tcp_Wait_For_Events
+   function Tcp_Wait_For_Event_Post
+      (Model_Before : Socket_Model;
+         Model_After  : Socket_Model;
+         Event_Mask   : Socket_Event;
+         Event        : Socket_Event)
+      return Boolean is
+      -- If Event is SOCKET_EVENT_CONNECTED
+         ((if (Event_Mask and SOCKET_EVENT_CONNECTED) /= 0 then
+            (if Event = SOCKET_EVENT_CONNECTED then
+               (if Model_Before.S_State = TCP_STATE_SYN_SENT then
+                  Model_After = (Model_Before with delta
+                        S_State => TCP_STATE_ESTABLISHED) or else
+                  Model_After = (Model_Before with delta
+                        S_State => TCP_STATE_CLOSE_WAIT))))
+
+         and then
+         (if (Event_Mask and SOCKET_EVENT_CLOSED) /= 0 then
+            (if Event = SOCKET_EVENT_CLOSED then
+               (if Model_Before.S_State = TCP_STATE_SYN_SENT then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True))))
+
+         and then
+         (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
+            (if Model_Before.S_State = TCP_STATE_CLOSED then
+               Event = SOCKET_EVENT_TX_READY and then
+               Model_After = Model_Before) and then
+            (if Event = SOCKET_EVENT_TX_READY then
+               (if Model_Before.S_State = TCP_STATE_CLOSE_WAIT then
+                  Model_After = Model_Before or else
+                  -- If a RST has been received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_CLOSED then
+                  Model_After = Model_Before
+               elsif Model_Before.S_State in TCP_STATE_SYN_SENT
+                                       | TCP_STATE_SYN_RECEIVED
+                                       | TCP_STATE_ESTABLISHED
+               then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_ESTABLISHED) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSE_WAIT) or else
+                  -- If a RST has been received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True))))
+
+         and then
+         (if (Event_Mask and SOCKET_EVENT_RX_READY) /= 0 then
+            (if Event = SOCKET_EVENT_RX_READY then
+               (if Model_Before.S_State in TCP_STATE_ESTABLISHED
+                                    | TCP_STATE_SYN_RECEIVED
+                                    | TCP_STATE_SYN_SENT
+               then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_ESTABLISHED) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSE_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_1 then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_FIN_WAIT_1) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_FIN_WAIT_2) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSING) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_TIME_WAIT) or else
+                  -- RST segment received or the connection has been
+                  -- properly closed
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_2 then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_FIN_WAIT_2) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_TIME_WAIT) or else
+                  -- RST segment received or the connection has been
+                  -- properly closed
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif  Model_Before.S_State in TCP_STATE_CLOSE_WAIT
+                                       | TCP_STATE_CLOSING
+                                       | TCP_STATE_TIME_WAIT
+                                       | TCP_STATE_LAST_ACK
+                                       | TCP_STATE_CLOSED
+               then
+                  -- Nothing happen. The result is the same.
+                  Model_After = Model_Before)))
+
+         and then
+         (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
+            (if Event = SOCKET_EVENT_TX_ACKED then
+               -- @TODO : To be continued if needed
+               (if Model_Before.S_State = TCP_STATE_ESTABLISHED then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_ESTABLISHED) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSE_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_CLOSE_WAIT then
+                  Model_After = Model_Before or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True))))
+
+         and then
+         (if (Event_Mask and SOCKET_EVENT_TX_DONE) /= 0 then
+            (if Event = SOCKET_EVENT_TX_DONE then
+               (if Model_Before.S_State in TCP_STATE_CLOSED
+                                    | TCP_STATE_SYN_SENT
+                                    | TCP_STATE_SYN_RECEIVED
+                                    | TCP_STATE_FIN_WAIT_1
+                                    | TCP_STATE_FIN_WAIT_2
+                                    | TCP_STATE_TIME_WAIT
+               then
+                  Model_After = Model_Before
+               elsif Model_Before.S_State = TCP_STATE_CLOSING then
+                  Model_After = Model_Before or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_TIME_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_LAST_ACK then
+                  Model_After = Model_Before or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED)
+               elsif Model_Before.S_State = TCP_STATE_CLOSE_WAIT then
+                  Model_After = Model_Before or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_ESTABLISHED then
+                  Model_After = Model_Before or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSE_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True))))
+
+         and then
+         (if (Event_Mask and SOCKET_EVENT_TX_SHUTDOWN) /= 0 then
+            (if Event = SOCKET_EVENT_TX_SHUTDOWN then
+               (if Model_Before.S_State = TCP_STATE_FIN_WAIT_1 then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_FIN_WAIT_2) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_TIME_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_CLOSING then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_TIME_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_CLOSE_WAIT then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_LAST_ACK then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED))))
+
+         and then
+         (if (Event_Mask and SOCKET_EVENT_RX_SHUTDOWN) /= 0 then
+            (if Event = SOCKET_EVENT_RX_SHUTDOWN then
+               (if Model_Before.S_State in TCP_STATE_SYN_RECEIVED
+                                    | TCP_STATE_SYN_SENT
+                                    | TCP_STATE_ESTABLISHED
+               then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_ESTABLISHED) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSE_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_LAST_ACK then
+                  Model_After = Model_Before
+               elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_1 then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSING) or else
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_TIME_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_FIN_WAIT_2 then
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_TIME_WAIT) or else
+                  -- RST segment received
+                  Model_After = (Model_Before with delta
+                     S_State => TCP_STATE_CLOSED,
+                     S_Reset_Flag => True)
+               elsif Model_Before.S_State = TCP_STATE_CLOSED then
+                  Model_After = Model_Before))))
+      with Ghost;
+
    procedure Tcp_Wait_For_Events
       (Sock       : in out Not_Null_Socket;
        Event_Mask : in     Socket_Event;
@@ -81,219 +303,12 @@ is
                  Event_Mask /= 0,
          Post =>
             Basic_Model(Sock) = Basic_Model(Sock)'Old and then
-
-            -- If Event is SOCKET_EVENT_CONNECTED
-            (if (Event_Mask and SOCKET_EVENT_CONNECTED) /= 0 then
-               (if Event = SOCKET_EVENT_CONNECTED then
-                  (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                           S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                           S_State => TCP_STATE_CLOSE_WAIT))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_CLOSED) /= 0 then
-               (if Event = SOCKET_EVENT_CLOSED then
-                  (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                     Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_CLOSED,
-                         S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
-               (if Sock.State'Old = TCP_STATE_CLOSED then
-                  Event = SOCKET_EVENT_TX_READY and then
-                  Model(Sock) = Model(Sock)'Old) and then
-               (if Event = SOCKET_EVENT_TX_READY then
-                  (if Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model (Sock) = Model (Sock)'Old or else
-                     -- If a RST has been received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSED then
-                     Model (Sock) = Model (Sock)'Old
-                  elsif Sock.State'Old in TCP_STATE_SYN_SENT
-                                        | TCP_STATE_SYN_RECEIVED
-                                        | TCP_STATE_ESTABLISHED
-                  then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- If a RST has been received
-                     Model(Sock) = (Model (Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_RX_READY) /= 0 then
-               (if Event = SOCKET_EVENT_RX_READY then
-                  (if Sock.State'Old in TCP_STATE_ESTABLISHED
-                                       | TCP_STATE_SYN_RECEIVED
-                                       | TCP_STATE_SYN_SENT
-                  then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_1) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_2) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSING) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received or the connection has been
-                     -- properly closed
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_2) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received or the connection has been
-                     -- properly closed
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif  Sock.State'Old in TCP_STATE_CLOSE_WAIT
-                                         | TCP_STATE_CLOSING
-                                         | TCP_STATE_TIME_WAIT
-                                         | TCP_STATE_LAST_ACK
-                                         | TCP_STATE_CLOSED
-                  then
-                     -- Nothing happen. The result is the same.
-                     Model(Sock) = Model(Sock)'Old)))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
-               (if Event = SOCKET_EVENT_TX_ACKED then
-                  -- @TODO : To be continued if needed
-                  (if Sock.State'Old = TCP_STATE_ESTABLISHED then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = Model(Sock)'Old or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_DONE) /= 0 then
-               (if Event = SOCKET_EVENT_TX_DONE then
-                  (if Sock.State'Old in TCP_STATE_CLOSED
-                                      | TCP_STATE_SYN_SENT
-                                      | TCP_STATE_SYN_RECEIVED
-                                      | TCP_STATE_FIN_WAIT_1
-                                      | TCP_STATE_FIN_WAIT_2
-                                      | TCP_STATE_TIME_WAIT
-                  then
-                     Model(Sock) = Model(Sock)'Old
-                  elsif Sock.State'Old = TCP_STATE_CLOSING then
-                     Model(Sock) = Model(Sock)'Old or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_LAST_ACK then
-                     Model(Sock) = Model(Sock)'Old or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED)
-                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = Model(Sock)'Old or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_ESTABLISHED then
-                     Model(Sock) = Model(Sock)'Old or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_SHUTDOWN) /= 0 then
-               (if Event = SOCKET_EVENT_TX_SHUTDOWN then
-                  (if Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_2) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSING then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_LAST_ACK then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_RX_SHUTDOWN) /= 0 then
-               (if Event = SOCKET_EVENT_RX_SHUTDOWN then
-                  (if Sock.State'Old in TCP_STATE_SYN_RECEIVED
-                                      | TCP_STATE_SYN_SENT
-                                      | TCP_STATE_ESTABLISHED
-                  then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_LAST_ACK then
-                     Model(Sock) = Model(Sock)'Old
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSING) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSED then
-                     Model(Sock) = Model(Sock)'Old)));
+            Tcp_Wait_For_Event_Post(
+               Model(Sock)'Old,
+               Model(Sock),
+               Event_Mask,
+               Event
+            );
 
    procedure Tcp_Write_Tx_Buffer
       (Sock    : Not_Null_Socket;
@@ -543,217 +558,11 @@ private
             Event_Mask = SOCKET_EVENT_RX_SHUTDOWN or else
             Event_Mask = (SOCKET_EVENT_CONNECTED or SOCKET_EVENT_CLOSED)),
          Post =>
-            -- If Event is SOCKET_EVENT_CONNECTED
-            (if (Event_Mask and SOCKET_EVENT_CONNECTED) /= 0 then
-               (if Event = SOCKET_EVENT_CONNECTED then
-                  (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                           S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                           S_State => TCP_STATE_CLOSE_WAIT))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_CLOSED) /= 0 then
-               (if Event = SOCKET_EVENT_CLOSED then
-                  (if Sock.State'Old = TCP_STATE_SYN_SENT then
-                     Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_CLOSED,
-                         S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_READY) /=0 then
-               (if Sock.State'Old = TCP_STATE_CLOSED then
-                  Event = SOCKET_EVENT_TX_READY and then
-                  Model(Sock) = Model(Sock)'Old) and then
-               (if Event = SOCKET_EVENT_TX_READY then
-                  (if Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model (Sock) = Model (Sock)'Old or else
-                     -- If a RST has been received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSED then
-                     Model (Sock) = Model (Sock)'Old
-                  elsif Sock.State'Old in TCP_STATE_SYN_SENT
-                                        | TCP_STATE_SYN_RECEIVED
-                                        | TCP_STATE_ESTABLISHED
-                  then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- If a RST has been received
-                     Model(Sock) = (Model (Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_RX_READY) /= 0 then
-               (if Event = SOCKET_EVENT_RX_READY then
-                  (if Sock.State'Old in TCP_STATE_ESTABLISHED
-                                       | TCP_STATE_SYN_RECEIVED
-                                       | TCP_STATE_SYN_SENT
-                  then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_1) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_2) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSING) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received or the connection has been
-                     -- properly closed
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_2) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received or the connection has been
-                     -- properly closed
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif  Sock.State'Old in TCP_STATE_CLOSE_WAIT
-                                         | TCP_STATE_CLOSING
-                                         | TCP_STATE_TIME_WAIT
-                                         | TCP_STATE_LAST_ACK
-                                         | TCP_STATE_CLOSED
-                  then
-                     -- Nothing happen. The result is the same.
-                     Model(Sock) = Model(Sock)'Old)))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
-               (if Event = SOCKET_EVENT_TX_ACKED then
-                  -- @TODO : To be continued if needed
-                  (if Sock.State'Old = TCP_STATE_ESTABLISHED then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = Model(Sock)'Old or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_DONE) /= 0 then
-               (if Event = SOCKET_EVENT_TX_DONE then
-                  (if Sock.State'Old in TCP_STATE_CLOSED
-                                      | TCP_STATE_SYN_SENT
-                                      | TCP_STATE_SYN_RECEIVED
-                                      | TCP_STATE_FIN_WAIT_1
-                                      | TCP_STATE_FIN_WAIT_2
-                                      | TCP_STATE_TIME_WAIT
-                  then
-                     Model(Sock) = Model(Sock)'Old
-                  elsif Sock.State'Old = TCP_STATE_CLOSING then
-                     Model(Sock) = Model(Sock)'Old or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_LAST_ACK then
-                     Model(Sock) = Model(Sock)'Old or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED)
-                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = Model(Sock)'Old or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_ESTABLISHED then
-                     Model(Sock) = Model(Sock)'Old or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_TX_SHUTDOWN) /= 0 then
-               (if Event = SOCKET_EVENT_TX_SHUTDOWN then
-                  (if Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_FIN_WAIT_2) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSING then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSE_WAIT then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_LAST_ACK then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED))))
-
-            and then
-            (if (Event_Mask and SOCKET_EVENT_RX_SHUTDOWN) /= 0 then
-               (if Event = SOCKET_EVENT_RX_SHUTDOWN then
-                  (if Sock.State'Old in TCP_STATE_SYN_RECEIVED
-                                      | TCP_STATE_SYN_SENT
-                                      | TCP_STATE_ESTABLISHED
-                  then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_ESTABLISHED) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSE_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_LAST_ACK then
-                     Model(Sock) = Model(Sock)'Old
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_1 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSING) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_TIME_WAIT) or else
-                     -- RST segment received
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True)
-                  elsif Sock.State'Old = TCP_STATE_CLOSED then
-                     Model(Sock) = Model(Sock)'Old)));
+            Tcp_Wait_For_Event_Post(
+               Model(Sock)'Old,
+               Model(Sock),
+               Event_Mask,
+               Event
+            );
 
 end Tcp_Misc_Binding;
