@@ -16,6 +16,40 @@ is
        New_State : in     Tcp_State)
       with
         Depends => (Sock =>+ New_State),
+        Pre =>
+            -- Ensure the transition is allowed
+            (if New_State = TCP_STATE_LISTEN then
+               Sock.State = TCP_STATE_CLOSED
+            elsif New_State = TCP_STATE_SYN_SENT then
+               Sock.State in TCP_STATE_CLOSED
+                           | TCP_STATE_LISTEN
+            elsif New_State = TCP_STATE_SYN_RECEIVED then
+               Sock.State in TCP_STATE_CLOSED
+                           | TCP_STATE_LISTEN
+                           | TCP_STATE_SYN_SENT
+            elsif New_State = TCP_STATE_ESTABLISHED then
+               Sock.State in TCP_STATE_LISTEN
+                           | TCP_STATE_SYN_SENT
+                           | TCP_STATE_SYN_RECEIVED
+            elsif New_State = TCP_STATE_CLOSE_WAIT then
+               Sock.State in TCP_STATE_LISTEN
+                           | TCP_STATE_SYN_SENT
+                           | TCP_STATE_SYN_RECEIVED
+                           | TCP_STATE_ESTABLISHED
+            elsif New_State = TCP_STATE_LAST_ACK then
+               Sock.State = TCP_STATE_CLOSE_WAIT
+            elsif New_State = TCP_STATE_FIN_WAIT_1 then
+               Sock.State in TCP_STATE_SYN_SENT
+                           | TCP_STATE_SYN_RECEIVED
+                           | TCP_STATE_ESTABLISHED
+            elsif New_State = TCP_STATE_FIN_WAIT_2 then
+               Sock.State = TCP_STATE_FIN_WAIT_1
+            elsif New_State = TCP_STATE_CLOSING then
+               Sock.State = TCP_STATE_FIN_WAIT_1
+            elsif New_State = TCP_STATE_TIME_WAIT then
+               Sock.State in TCP_STATE_CLOSING
+                           | TCP_STATE_FIN_WAIT_2
+                           | TCP_STATE_FIN_WAIT_1),
         Post =>
             (if New_State = TCP_STATE_CLOSED then
                (if Sock.State'Old = TCP_STATE_LAST_ACK or else
@@ -120,10 +154,7 @@ is
                      -- properly closed
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => False)
+                        S_Reset_Flag => True)
                   elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_FIN_WAIT_2) or else
@@ -133,20 +164,15 @@ is
                      -- properly closed
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => False)
+                        S_Reset_Flag => True)
                   elsif  Sock.State'Old in TCP_STATE_CLOSE_WAIT
                                          | TCP_STATE_CLOSING
                                          | TCP_STATE_TIME_WAIT
                                          | TCP_STATE_LAST_ACK
+                                         | TCP_STATE_CLOSED
                   then
                      -- Nothing happen. The result is the same.
-                     Model(Sock) = Model(Sock)'Old
-                  elsif Sock.State'Old = TCP_STATE_CLOSED then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_Reset_Flag => Sock.reset_Flag'Old))))
+                     Model(Sock) = Model(Sock)'Old)))
 
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
@@ -319,6 +345,8 @@ is
             (Sock  =>+ (Flags, Seq_Num, Ack_Num, Length, Add_To_Queue),
              Error =>  (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue)),
         Post =>
+            (if Sock.State'Old = TCP_STATE_CLOSED then
+               Error /= NO_ERROR) and then
             (if Error = NO_ERROR then
                Model (Sock) = Model(Sock)'Old
              else
@@ -587,10 +615,7 @@ private
                      -- properly closed
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => False)
+                        S_Reset_Flag => True)
                   elsif Sock.State'Old = TCP_STATE_FIN_WAIT_2 then
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_FIN_WAIT_2) or else
@@ -600,20 +625,15 @@ private
                      -- properly closed
                      Model(Sock) = (Model(Sock)'Old with delta
                         S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => True) or else
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_State => TCP_STATE_CLOSED,
-                        S_Reset_Flag => False)
+                        S_Reset_Flag => True)
                   elsif  Sock.State'Old in TCP_STATE_CLOSE_WAIT
                                          | TCP_STATE_CLOSING
                                          | TCP_STATE_TIME_WAIT
                                          | TCP_STATE_LAST_ACK
+                                         | TCP_STATE_CLOSED
                   then
                      -- Nothing happen. The result is the same.
-                     Model(Sock) = Model(Sock)'Old
-                  elsif Sock.State'Old = TCP_STATE_CLOSED then
-                     Model(Sock) = (Model(Sock)'Old with delta
-                        S_Reset_Flag => Sock.reset_Flag'Old))))
+                     Model(Sock) = Model(Sock)'Old)))
 
             and then
             (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then

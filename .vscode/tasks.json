@@ -78,8 +78,11 @@
                 "prove.gpr",
                 "--level=3",
                 "-j0",
+                "--info",
                 // "--report=all",
-                "--limit-subp=tcp_fsm_binding.ads:27"
+                "--limit-subp=socket_interface.ads:241",
+                //"--limit-line=tcp_interface.adb:242"
+                // "--prover=coq"
             ],
             "presentation": {
                 "echo": true,

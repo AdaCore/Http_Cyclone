@@ -144,7 +144,13 @@ package Tcp_Type with SPARK_Mode is
           Queue.Src_Port > 0 and then
           Is_Initialized_Ip (Queue.Dest_Addr) and then
           Tcp_Syn_Queue_Item_Model (Queue.Next)))
-      with Ghost;
+      with
+         Ghost,
+         Annotate => (GNATprove, Terminating);
+   pragma Annotate
+     (GNATprove, False_Positive,
+      "subprogram ""Tcp_Syn_Queue_Item_Model"" might not terminate",
+      "Recursive calls occur on strictly smaller structure");
 
    -- type Tcp_Header is record
    --    Src_Port       : Port;           -- 0-1
