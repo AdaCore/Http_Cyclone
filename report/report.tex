@@ -23,10 +23,14 @@
 
 \usepackage{hyperref}
 
+\usepackage[ruled]{algorithm2e}
+
 
 \begin{document}
 
     \maketitle
+
+    \tableofcontents
 
     \section{Introduction}
 
@@ -524,7 +528,7 @@ procedure Socket_Send
     to guarantee the safety of the whole library. The functions of interest are located in
     the file \texttt{tcp\_interface.ad(b|s)}.
 
-    \subsubsection{Concurrency: asynchronous mechanism}
+    \subsubsection{Overview of the concurrency challenge}
 
     To ensure the safety of our library, we need to consider all what can happen everywhere in
     the library. All our functions are protected by mutex, which means that only one operation
@@ -564,7 +568,8 @@ procedure Socket_Send
     final states can be obtain.
 
     Finally, all the result found by klee has been reported in the function \lstinline[language=Ada]{Tcp_Process_One_Segment}.
-    This function is essential for all the verification of concurrent parts.
+    This function is essential for all the verification of concurrent parts and is reused everywhere
+    the concurrency is involved to compute the results.
 
     % The functions used to process the segments are written in C and we have not changed
     % them. We have just extracted some information, like the changes of state that can be
@@ -577,30 +582,103 @@ procedure Socket_Send
     
     % A goal to achieve would be to rewrite this part in SPARK to have more guaranties.
     % However, Klee is a tool that helps to find errors.
-    
-    \subsubsection{User functions}
 
-    Code written in SPARK to check if the transitions are coherent inside the user functions.
+    \subsubsection{Concurrency: asynchronous changes of state}
 
-    \subsubsection{Concurrency}
+    Between the user functions calls, segment can be received and these receptions can drive to
+    change of state of the socket. Between two function calls, an infinite number of segments
+    can be potentially receive. The reception of one or zero segment is modeled by the function
+    \lstinline[language=Ada]{Tcp_Process_One_Segment} in term of change of states. Then we have
+    to consider the iteration of \lstinline[language=Ada]{Tcp_Process_One_Segment} in order to
+    compute the result of the reception of multiple message.
 
-    Modeling the concurrency and the interleaving semantic has been the hardest work.
-    The held solution is to have "ghost" code that model the different transition that
-    might have happened when the mutex is released.
+    \begin{algorithm}[t]
+        \SetKwFunction{ProcessSegm}{\lstinline[language=Ada]{Tcp\_Process\_Segment}}
+        \SetKwProg{Fn}{function}{}{end}
+        \Fn{\ProcessSegm{Socket}}{
+            $S_{last} := \text{\textit{Socket}}$\;
+            $S := S_{last}$\;
+            \For{$i=1$ \KwTo $3$}{
+                $S_{last} :=$ \lstinline[language=Ada]{Tcp_Process_One_Segment}($S_{last}$) \;
+                $S := S \cup S_{last}$\;
+            }
+            \KwRet{$S$}\;
+        }
+        \caption{Reflexive and transitive closure of \lstinline[language=Ada]{Tcp_Process_One_Segment}}
+        \label{algo:tcpProcessSegment}
+    \end{algorithm}
 
-    The interleaving semantic is also considered for synchronous events, when the code
-    wait for a particular event.
-
-    If we consider the state transition given by the code that receive the message, we
-    are driven to consider a transition relation, denotes as $\rightarrow$. This relation
-    is reflexive because a received message can be drop if it doesn't contain useful
-    information. Then, for all TCP state $S$, $S \rightarrow S$. As multiples messages
-    can be received, the transitive closure of $\rightarrow$ is considered:
-    $\rightarrow^* = \bigcup_{n\in\mathbb{N}^*} \rightarrow^n$ which can be simplified to:
+    Let $\rightarrow$ be the transition function in the TCP automaton restrited to the transitions
+    that can be performed by the reception of a message and its automatic response mechanism.
+    Then we have $\rightarrow = \text{\lstinline[language=Ada]{Tcp_Process_One_Segment}}$ and
+    we need to consider the reflexive transitive closure $\rightarrow^*$ of $\rightarrow$, with
+    \[\rightarrow^* = \bigcup_{n\in\mathbb{N}} \rightarrow^n\]
+    Now, by examining the TCP automaton in figure \ref{fig:TCPAutomaton}, we see that all state is
+    only reachable by a state at a distance less than 3 (the maximum path is between SYN-SENT and
+    CLOSE-WAIT if we pass by state SYN-RECEIVED and ESTABLISHED) without action by the user. Since
+    we only consider the transitive closure in term of states, we can significantly reduce the number
+    of iteration of $\rightarrow$ to compute $\rightarrow^*$ and finally we get:
     \[\rightarrow^* = \bigcup_{n=1}^3 \rightarrow^n\]
-    since every state is only reachable by a state at a distance at most of 3, which make
-    the calculation of the transition closure easier by SPARK once we have $\rightarrow$ by
-    unrolling loops.
+    It follows that algorithm \ref{algo:tcpProcessSegment} is enough good to compute the transitive closure of the function
+    \lstinline[language=Ada]{Tcp_Process_One_Segment} by taking advantage of the fact that SPARK can unroll
+    small loops to obtain more precise results.
+
+    In the user functions, we have added a call to \lstinline[language=Ada]{Tcp_Process_Segment} everywhere
+    there is a call to \lstinline{Os_Acquire_Mutex (Net_Mutex)}. Doing that helps to ensure that all the
+    possible that all the possible input states are have been considered.
+
+    \subsubsection{Concurrency: Synchronous exchange}
+
+    The other mechanism to deal with concurrency is probably more difficult to apprehend and the
+    use of the function \lstinline[language=Ada]{Tcp_Process_One_Segment} is even more noticeable.
+    
+    The C code contains a function \lstinline[language=C]{tcpWaitForEvents} in the file \texttt{tcp\_misc.c}
+    that checks if the event is true when the function is called, by calling the function
+    \lstinline[language=C]{tcpUpdateEvents}. If the wait is not completed at the time the function is
+    called, then the mutex that was previously locked is released until the event become waited happen.
+    Then, everything can happen meanwhile.
+    
+    In the code, the function \lstinline[language=C]{tcpUpdateEvents} is called at different locations
+    and can raise the desired event. In particular this function is called each time the state of
+    the socket is changed. This is sufficient for our purpose since we are only interested in the state
+    changes.
+
+    When a segment is received, the function \lstinline[language=C]{tcpUpdateEvents} is called if a
+    change of state happens. Then, we can consider the algorithm \ref{algo:waitForEvents} to compute the set of possible
+    final states after the wait. \textit{(This is done in the function \lstinline[language=Ada]{Tcp_Wait_For_Events_Proof},
+    the function dedicated to proof in file \texttt{tcp\_misc\_binding.adb}.)}
+
+    \begin{algorithm}[t]
+        \SetKwFunction{ProcessSegm}{\lstinline[language=Ada]{Tcp\_Wait\_For\_Events}}
+        \SetKwProg{Fn}{function}{}{end}
+        \Fn{\ProcessSegm{Socket, Event, Event\_Mask}}{
+            $S_{last} := \text{\textit{Socket}}$\;
+            $S := S_{last}$\;
+            $E :=$ \lstinline[language=Ada]{Tcp_Process_One_Segment}($S_{last}$)\;
+            \If{$E \wedge \text{Event\_Mask} \neq 0$}{
+                \KwRet{$S$}\;
+            }
+            \For{$i=1$ \KwTo $3$}{
+                $S_{last} :=$ \lstinline[language=Ada]{Tcp_Process_One_Segment}($S_{last}$) \;
+                $S := S \cup S_{last}$\;
+                $E :=$ \lstinline[language=Ada]{Tcp_Process_One_Segment}($S_{last}$)\;
+                \If{$E \wedge \text{Event\_Mask} \neq 0$}{
+                    \KwRet{$S$}\;
+                }
+            }
+            \KwRet{$\emptyset$}\;
+        }
+        \caption{Function to compute the possible state after when waiting for a particular event.}
+        \label{algo:waitForEvents}
+    \end{algorithm}
+
+    We can compute precisely the state reach for each event waited thanks to the fact that SPARK
+    unroll loops.
+
+    \textcolor{red}{\paragraph{Weakness} If two threads want to lock the same mutex at the same time, which one win?}
+
+
+    \section{Future work}
 
     
 \end{document}
