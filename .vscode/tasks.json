@@ -8,20 +8,6 @@
             "type": "shell",
             "command": "make -j",
             "problemMatcher": [
-                {
-                    "base": "$ada",
-                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
-                    "pattern": [
-                        {
-                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|note|)(?:[:]\\s+)?(.*)$",
-                            "file": 1,
-                            "line": 2,
-                            "column": 3,
-                            "severity": 4,
-                            "message": 5
-                        }
-                    ]
-                },
                 "$gcc"
             ],
             "group": "build",
@@ -76,11 +62,11 @@
             "args": [
                 "-P",
                 "prove.gpr",
-                "--level=3",
+                "--level=4",
                 "-j0",
                 "--info",
                 // "--report=all",
-                "--limit-subp=socket_interface.ads:241",
+                "--limit-subp=tcp_interface.adb:477",
                 //"--limit-line=tcp_interface.adb:242"
                 // "--prover=coq"
             ],

@@ -1,3 +1,5 @@
+-- @gnaprove Tcp_Sent & Tcp_Received require --level=4
+
 pragma Unevaluated_Use_Of_Old (Allow);
 pragma Ada_2020;
 
@@ -629,7 +631,6 @@ is
          (Written = Total_Length and then
           Total_Length = Data_Buffer'Length);
 
-
       -- The SOCKET_FLAG_WAIT_ACK flag causes the function to
       -- wait for acknowledgment from the remote side
       if (Flags and SOCKET_FLAG_WAIT_ACK) /= 0 then
@@ -700,7 +701,7 @@ is
          pragma Assert
             (if Sock.State /= TCP_STATE_CLOSED and Sock.State /= TCP_STATE_LISTEN then
                Sock.reset_Flag = Sock.reset_Flag'Loop_Entry);
-         
+
          pragma Assert (Sock.State /= TCP_STATE_SYN_RECEIVED);
 
          -- Check current TCP state
@@ -868,8 +869,6 @@ is
 
       -- Successful read operation
       Error := NO_ERROR;
-
-      -- Tcp_Binding.Tcp_Receive (Sock, Data, Received, Flags, Error);
    end Tcp_Receive;
 
    --------------------------------
@@ -1103,9 +1102,11 @@ is
 
                -- Continue processing
 
+            -- SYN-SENT, FIN-WAIT-2 or TIME-WAIT state?
             when others =>
                -- Nothing to do
                -- Continue processing
+               -- @Clément dans le cas de SYN-SENT, pourquoi ne fait-on rien ?
                null;
          end case;
       end if;
@@ -1137,6 +1138,7 @@ is
                   return;
                end if;
 
+            -- CLOSING, TIME-WAIT, CLOSE-WAIT, LAST-ACK or CLOSED state?
             when others =>
                -- A FIN segment has already been received
                null;

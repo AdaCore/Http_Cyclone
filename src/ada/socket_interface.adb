@@ -175,6 +175,7 @@ is
       -- Connection oriented socket?
       if Sock.S_Type = SOCKET_TYPE_STREAM then
          Os_Acquire_Mutex (Net_Mutex);
+         Tcp_Process_Segment (Sock);
          -- Establish TCP connection
          Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
          Os_Release_Mutex (Net_Mutex);
@@ -294,6 +295,7 @@ is
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
+      Tcp_Process_Segment (Sock);
       Tcp_Shutdown (Sock, How, Error);
       Os_Release_Mutex (Net_Mutex);
    end Socket_Shutdown;
@@ -305,6 +307,7 @@ is
       Os_Acquire_Mutex (Net_Mutex);
 
       if Sock.S_Type = SOCKET_TYPE_STREAM then
+         Tcp_Process_Segment (Sock);
          Tcp_Abort (Sock, Ignore_Error);
       else -- SOCKET_TYPE_DGRAM, SOCKET_TYPE_RAW_IP, SOCKET_TYPE_RAW_ETH
 

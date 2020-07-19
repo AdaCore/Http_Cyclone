@@ -101,18 +101,17 @@ is
                Sock.State = TCP_STATE_LISTEN and then
                Sock.S_Local_Port > 0,
         Post =>
-            (if Sock.State = TCP_STATE_SYN_RECEIVED then
-               (Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_SYN_RECEIVED) and then
-               Is_Initialized_Ip (Client_Ip_Addr) and then
+            Model(Sock) = Model(Sock)'Old and then
+            (if Client_Socket /= null then
                Client_Port > 0 and then
-               (if Client_Socket /= null then
-                  Client_Socket.S_Type = SOCKET_TYPE_STREAM and then
-                  Client_Socket.S_Protocol = SOCKET_IP_PROTO_TCP and then
-                  Is_Initialized_Ip(Client_Socket.S_localIpAddr) and then
-                  Client_Socket.S_Local_Port = Sock.S_Local_Port and then
-                  Client_Socket.S_Remote_Ip_Addr = Client_Ip_Addr and then
-                  Client_Socket.S_Remote_Port = Client_Port)));
+               Is_Initialized_Ip (Client_Ip_Addr) and then
+               Client_Socket.S_Type = SOCKET_TYPE_STREAM and then
+               Client_Socket.S_Protocol = SOCKET_IP_PROTO_TCP and then
+               Is_Initialized_Ip(Client_Socket.S_localIpAddr) and then
+               Client_Socket.S_Local_Port = Sock.S_Local_Port and then
+               Client_Socket.S_Remote_Ip_Addr = Client_Ip_Addr and then
+               Client_Socket.S_Remote_Port = Client_Port and then
+               Client_Socket.State = TCP_STATE_SYN_RECEIVED);
 
    procedure Tcp_Send
       (Sock    : in out Not_Null_Socket;
@@ -239,7 +238,6 @@ is
           (Sock  =>+ How,
            Error =>  (Sock, How)),
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
-               Sock.State /= TCP_STATE_CLOSED and then
                Sock.State /= TCP_STATE_LISTEN,
         Post =>
          (if Error = NO_ERROR then

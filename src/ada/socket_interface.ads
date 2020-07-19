@@ -178,7 +178,7 @@ is
           (if Sock.S_Type = SOCKET_TYPE_STREAM then
             Sock.State = TCP_STATE_ESTABLISHED or else
             Sock.State = TCP_STATE_CLOSE_WAIT),
-        Post => 
+        Post =>
             Basic_Model(Sock) = Basic_Model(Sock)'Old and then
             (if Error = NO_ERROR then
                Written <= Data'Length),
@@ -219,7 +219,7 @@ is
             Sock.State = TCP_STATE_SYN_SENT or else
             Sock.State = TCP_STATE_SYN_RECEIVED or else
             Sock.State = TCP_STATE_CLOSED),
-        Post => 
+        Post =>
             Basic_Model(Sock) = Basic_Model(Sock)'Old and then
             (if Error = NO_ERROR then
                Written <= Data'Length),
@@ -444,8 +444,7 @@ is
         Pre =>
           Sock.S_Type = SOCKET_TYPE_STREAM and then
           Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
-          Sock.State /= TCP_STATE_LISTEN and then
-          Sock.State /= TCP_STATE_CLOSED,
+          Sock.State /= TCP_STATE_LISTEN,
         Post =>
           (if Error = NO_ERROR then
              (if How = SOCKET_SD_SEND then
@@ -583,17 +582,16 @@ is
               Sock.State = TCP_STATE_LISTEN and then
               Sock.S_Local_Port > 0,
        Post =>
-            (if Sock.State = TCP_STATE_SYN_RECEIVED then
-               (Model(Sock) = Model(Sock)'Old'Update
-                        (S_State => TCP_STATE_SYN_RECEIVED) and then
-               Is_Initialized_Ip (Client_Ip_Addr) and then
+            Model(Sock) = Model(Sock)'Old and then
+            (if Client_Socket /= null then
                Client_Port > 0 and then
-               (if Client_Socket /= null then
-                  Client_Socket.S_Type = SOCKET_TYPE_STREAM and then
-                  Client_Socket.S_Protocol = SOCKET_IP_PROTO_TCP and then
-                  Is_Initialized_Ip(Client_Socket.S_localIpAddr) and then
-                  Client_Socket.S_Local_Port = Sock.S_Local_Port and then
-                  Client_Socket.S_Remote_Ip_Addr = Client_Ip_Addr and then
-                  Client_Socket.S_Remote_Port = Client_Port)));
+               Is_Initialized_Ip (Client_Ip_Addr) and then
+               Client_Socket.S_Type = SOCKET_TYPE_STREAM and then
+               Client_Socket.S_Protocol = SOCKET_IP_PROTO_TCP and then
+               Is_Initialized_Ip(Client_Socket.S_localIpAddr) and then
+               Client_Socket.S_Local_Port = Sock.S_Local_Port and then
+               Client_Socket.S_Remote_Ip_Addr = Client_Ip_Addr and then
+               Client_Socket.S_Remote_Port = Client_Port and then
+               Client_Socket.State = TCP_STATE_SYN_RECEIVED);
 
 end Socket_Interface;

@@ -80,7 +80,7 @@ is
 
    procedure HTTP_Server_Test is
       Sock              : Socket;
-      Sock_Client       : Socket with Unreferenced;
+      Sock_Client       : Socket;
       IPAddr_Client     : IpAddr with Unreferenced;
       Port_Client       : Port with Unreferenced;
    begin
@@ -94,6 +94,11 @@ is
       Socket_Listen (Sock, 0);
 
       Socket_Accept (Sock, IPAddr_Client, Port_Client, Sock_Client);
+
+      Socket_Close (Sock);
+      if Sock_Client /= null then
+         Socket_Close (Sock_Client);
+      end if;
 
    end HTTP_Server_Test;
 
