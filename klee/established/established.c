@@ -1,10 +1,9 @@
 #include "core/socket.h"
 #include "klee/klee.h"
 #include "core/tcp_misc.h"
-#include <assert.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "model.h"
-
 
 void tcpStateEstablished(Socket *socket, TcpHeader *segment,
    const NetBuffer *buffer, size_t offset, size_t length)
@@ -70,65 +69,6 @@ void tcpStateEstablished(Socket *socket, TcpHeader *segment,
    tcpNagleAlgo(socket, flags);
 }
 
-void tcpStateSynReceived(Socket *socket, TcpHeader *segment,
-                         const NetBuffer *buffer, size_t offset, size_t length)
-{
-    //Debug message
-    // TRACE_DEBUG("TCP FSM: SYN-RECEIVED state\r\n");
-
-    //First check sequence number
-    if (tcpCheckSequenceNumber(socket, segment, length))
-        return;
-
-    //Check the RST bit
-    if (segment->flags & TCP_FLAG_RST)
-    {
-        //Return to CLOSED state
-        tcpChangeState(socket, TCP_STATE_CLOSED);
-
-        //Number of times TCP connections have made a direct transition to the
-        //CLOSED state from either the SYN-SENT state or the SYN-RECEIVED state
-        //MIB2_INC_COUNTER32(tcpGroup.tcpAttemptFails, 1);
-        //TCP_MIB_INC_COUNTER32(tcpAttemptFails, 1);
-
-        //Return immediately
-        return;
-    }
-
-    //Check the SYN bit
-    if (tcpCheckSyn(socket, segment, length))
-        return;
-
-    //If the ACK bit is off drop the segment and return
-    if (!(segment->flags & TCP_FLAG_ACK))
-        return;
-
-    //Make sure the acknowledgment number is valid
-    if (segment->ackNum != socket->sndNxt)
-    {
-        //If the segment acknowledgment is not acceptable, form a reset
-        //segment and send it
-        tcpSendSegment(socket, TCP_FLAG_RST, segment->ackNum, 0, 0, FALSE);
-
-        //Drop the segment and return
-        return;
-    }
-
-    //Update the send window before entering ESTABLISHED state (refer to
-    //RFC 1122, section 4.2.2.20)
-    socket->sndWnd = segment->window;
-    socket->sndWl1 = segment->seqNum;
-    socket->sndWl2 = segment->ackNum;
-
-    //Maximum send window it has seen so far on the connection
-    socket->maxSndWnd = segment->window;
-
-    //Enter ESTABLISHED state
-    tcpChangeState(socket, TCP_STATE_ESTABLISHED);
-    //And continue processing...
-    tcpStateEstablished(socket, segment, buffer, offset, length);
-}
-
 int main()
 {
     // Initialisation
@@ -152,7 +92,7 @@ int main()
     // TODO: See if it is the correct way to process.
     // Maybe open the connection by following the real call of the function
     // is a better way to do.
-    tcpChangeState(socket, TCP_STATE_SYN_RECEIVED);
+    tcpChangeState(socket, TCP_STATE_ESTABLISHED);
 
     // Creation of a "random" incomming package
     // We assume the pseudo header is filled with ipv4 addresses
@@ -187,13 +127,12 @@ int main()
     // changed after the call to the function
     sModel = toSockModel(socket);
 
-    klee_assert(socket->state == TCP_STATE_SYN_RECEIVED);
+    klee_assert(socket->state == TCP_STATE_ESTABLISHED);
 
-    tcpStateSynReceived(socket, segment, NULL, 0, length);
+    tcpStateEstablished(socket, segment, NULL, 0, length);
 
     klee_assert(equalSocketModel(socket, sModel) &&
-                (socket->state == TCP_STATE_SYN_RECEIVED ||
-                 socket->state == TCP_STATE_ESTABLISHED ||
+                (socket->state == TCP_STATE_ESTABLISHED ||
                  socket->state == TCP_STATE_CLOSE_WAIT ||
                  (socket->state == TCP_STATE_CLOSED &&
                   socket->resetFlag)));
