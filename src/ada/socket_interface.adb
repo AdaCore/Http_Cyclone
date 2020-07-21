@@ -1,8 +1,9 @@
-with Os;              use Os;
-with Socket_Helper;   use Socket_Helper;
+with Net_Mem_Interface; use Net_Mem_Interface;
+with Os;                use Os;
+with Socket_Helper;     use Socket_Helper;
 with System;
-with Tcp_Fsm_Binding; use Tcp_Fsm_Binding;
-with Udp_Binding;     use Udp_Binding;
+with Tcp_Fsm_Binding;   use Tcp_Fsm_Binding;
+with Udp_Binding;       use Udp_Binding;
 
 package body Socket_Interface
    with SPARK_Mode
@@ -128,7 +129,7 @@ is
             Sock.wndProbeInterval      := 0;
             Sock.sackPermitted         := False;
             Sock.sackBlockCount        := 0;
-            Sock.receiveQueue          := System.Null_Address;
+            Sock.receiveQueue          := null;
          end if;
       end if;
 
@@ -206,12 +207,14 @@ is
    is
    begin
       Written := 0;
+
       Os_Acquire_Mutex (Net_Mutex);
-      -- @TODO : finish
       if Sock.S_Type = SOCKET_TYPE_STREAM then
          -- INTERFERENCES
          Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
+      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
+         Udp_Send_Datagram (Sock, Dest_Ip_Addr, Dest_Port, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
       end if;
@@ -233,6 +236,17 @@ is
          -- INTERFERENCES
          Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
+      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
+         -- @TODO : See how to improve this part without using .all
+         Udp_Send_Datagram
+            (Sock => Sock,
+             Dest_Ip_Addr => IpAddr'(Length => Sock.S_Remote_Ip_Addr.Length,
+                                     Ip     => Sock.S_Remote_Ip_Addr.Ip),
+             Dest_Port => Sock.S_Remote_Port,
+             Data => Data,
+             Written => Written,
+             Flags => Flags,
+             Error => Error);
       else
          Error := ERROR_INVALID_SOCKET;
       end if;
@@ -262,6 +276,16 @@ is
          Src_Port     := Sock.S_Remote_Port;
          -- Save the destination IP address
          Dest_Ip_Addr := Sock.S_localIpAddr;
+      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
+         Udp_Receive_Datagram
+            (Sock         => Sock,
+             Src_Ip_Addr  => Src_Ip_Addr,
+             Src_Port     => Src_Port,
+             Dest_Ip_Addr => Dest_Ip_Addr,
+             Data         => Data,
+             Received     => Received,
+             Flags        => Flags,
+             Error        => Error);
       else
          Src_Ip_Addr  := Sock.S_Remote_Ip_Addr;
          Src_Port     := Sock.S_Remote_Port;
@@ -309,15 +333,39 @@ is
       if Sock.S_Type = SOCKET_TYPE_STREAM then
          Tcp_Process_Segment (Sock);
          Tcp_Abort (Sock, Ignore_Error);
-      else -- SOCKET_TYPE_DGRAM, SOCKET_TYPE_RAW_IP, SOCKET_TYPE_RAW_ETH
+      elsif Sock.S_Type in SOCKET_TYPE_DGRAM
+                         | SOCKET_TYPE_RAW_IP
+                         | SOCKET_TYPE_RAW_ETH
+      then
+         -- @TODO Have a look at this section to see if the code is
+         -- valid, in particular in what is done with pointers.
+         declare
+            -- Point to the first item in the receive queue
+            Queue_Item : Socket_Queue_Item_Acc := Sock.receiveQueue;
+            Next_Queue_Item : Socket_Queue_Item_Acc;
+         begin
+            -- Purge the receive queue
+            while Queue_Item /= null loop
+               -- Keep track of the next item in the queue
+               Next_Queue_Item := Queue_Item.Next;
+               Queue_Item.Next := null;
+               -- Free previously allocated memory
+               memPoolFree (Queue_Item.Buffer);
+               -- Point to the next item
+               if Next_Queue_Item = null then
+                  exit;
+               end if;
+               Queue_Item := Next_Queue_Item;
+               Next_Queue_Item := null;
+            end loop;
+            Sock.receiveQueue := null;
+         end;
 
-         -- @TODO : Purge the receive queue
+            -- Mark the socket as closed
+            Sock.S_Type := SOCKET_TYPE_UNUSED;
 
-         -- Mark the socket as closed
-         Sock.S_Type := SOCKET_TYPE_UNUSED;
-
-         -- Free the socket
-         Free_Socket (Sock);
+            -- Fake free the socket
+            Free_Socket (Sock);
       end if;
 
       -- Release exclusive access

@@ -210,7 +210,7 @@ is
        Client_Socket  :    out Socket)
    is
       procedure Mem_Pool_Free
-         (Queue_Item : in out Tcp_Syn_Queue_Item_Acc)
+         (Queue_Item : Tcp_Syn_Queue_Item_Acc)
          with
             Import => True,
             Convention => C,

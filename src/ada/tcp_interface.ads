@@ -50,18 +50,13 @@ is
                Sock.State = TCP_STATE_CLOSED,
         Post =>
             (if Error = NO_ERROR then
-               -- Sock.S_Descriptor = Sock.S_Descriptor'Old and then
                Sock.S_Type = Sock.S_Type'Old and then
                Sock.S_Protocol = Sock.S_Protocol'Old and then
                Is_Initialized_Ip (Sock.S_localIpAddr) and then
                Sock.S_Local_Port = Sock.S_Local_Port'Old and then
                Sock.S_Remote_Ip_Addr = Remote_Ip_Addr and then
                Sock.S_Remote_Port = Remote_Port and then
-               -- Sock.S_Timeout = Sock.S_Timeout'Old and then
-               -- Sock.S_TTL = Sock.S_TTL'Old and then
-               -- Sock.S_Multicast_TTL = Sock.S_Multicast_TTL'Old and then
-               -- Sock.txBufferSize = Sock.txBufferSize'Old and then
-               -- Sock.rxBufferSize = Sock.rxBufferSize'Old and then
+               Sock.owned_Flag = True and then
                (Sock.State = TCP_STATE_ESTABLISHED or else
                Sock.State = TCP_STATE_CLOSE_WAIT)
             else
@@ -77,8 +72,8 @@ is
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM and then
                Sock.State = TCP_STATE_CLOSED,
         Post =>
-          Model(Sock) = Model(Sock)'Old'Update
-                  (S_State => TCP_STATE_LISTEN);
+          Model(Sock) = (Model(Sock)'Old with delta
+            S_State => TCP_STATE_LISTEN);
 
    procedure Tcp_Accept
       (Sock           : in out Not_Null_Socket;
@@ -111,6 +106,7 @@ is
                Client_Socket.S_Local_Port = Sock.S_Local_Port and then
                Client_Socket.S_Remote_Ip_Addr = Client_Ip_Addr and then
                Client_Socket.S_Remote_Port = Client_Port and then
+               Client_Socket.owned_Flag = True and then
                Client_Socket.State = TCP_STATE_SYN_RECEIVED);
 
    procedure Tcp_Send
@@ -226,6 +222,8 @@ is
             elsif Sock.State'Old = TCP_STATE_TIME_WAIT then
                Model(Sock) = (Model(Sock)'Old with delta
                   S_State => TCP_STATE_TIME_WAIT)
+            elsif Sock.State'Old = TCP_STATE_CLOSED then
+               Model(Sock) = Model(Sock)'Old
             ) and then
              Received = 0);
 

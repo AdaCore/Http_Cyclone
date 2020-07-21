@@ -8,13 +8,13 @@
             "type": "shell",
             "command": "make -j",
             "problemMatcher": [
-                "$gcc"
+                "$ada"
             ],
             "group": "build",
             "presentation": {
                 "reveal": "never",
                 "clear": true,
-                "showReuseMessage": false,
+                "showReuseMessage": false
             }
         },
         {
@@ -25,7 +25,11 @@
                 "-P",
                 "prove.gpr",
                 "--level=3",
-                "-j0"
+                "--no-counterexample",
+                "-j0",
+                "--info",
+                "-cargs",
+                "-gnatef",
             ],
             "presentation": {
                 "echo": true,
@@ -40,11 +44,10 @@
             },
             "problemMatcher": [
                 {
-                    "base": "$ada",
-                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
+                    "fileLocation": "absolute",
                     "pattern": [
                         {
-                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|)(?:[:]\\s+)?(.*)$",
+                            "regexp": "^([^:]:?[^:]*):(\\d+):(\\d+):\\s+(warning|info|)(?:[:]\\s+)?(.*)$",
                             "file": 1,
                             "line": 2,
                             "column": 3,
@@ -65,10 +68,15 @@
                 "--level=4",
                 "-j0",
                 "--info",
+                "--no-counterexample",
                 // "--report=all",
-                "--limit-subp=tcp_interface.adb:477",
-                //"--limit-line=tcp_interface.adb:242"
+                // "--limit-subp=socket_interface.ads:347",
+                "--limit-line=tcp_interface.ads:147",
                 // "--prover=coq"
+                // "-u",
+                // "socket_types.ads",
+                "-cargs",
+                "-gnatef"
             ],
             "presentation": {
                 "echo": true,
@@ -83,11 +91,10 @@
             },
             "problemMatcher": [
                 {
-                    "base": "$ada",
-                    "fileLocation": ["relative", "${workspaceRoot}/src/ada"],
+                    "fileLocation": "absolute",
                     "pattern": [
                         {
-                            "regexp": "^([^:]:?.*\\.ad[bs]):(\\d+):(\\d+):\\s+(warning|info|)(?:[:]\\s+)?(.*)$",
+                            "regexp": "^([^:]:?[^:]*):(\\d+):(\\d+):\\s+(warning|info|)(?:[:]\\s+)?(.*)$",
                             "file": 1,
                             "line": 2,
                             "column": 3,

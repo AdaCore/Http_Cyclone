@@ -23,8 +23,9 @@ is
          Sock.State /= TCP_STATE_CLOSED,
       Contract_Cases => (
          Sock.State = TCP_STATE_TIME_WAIT =>
-            (Sock.S_Type = SOCKET_TYPE_UNUSED and then
-             Sock.State  = TCP_STATE_CLOSED),
+            (if Sock.owned_Flag'Old = False then
+               Sock.S_Type = SOCKET_TYPE_UNUSED and then
+               Sock.State  = TCP_STATE_CLOSED),
          others => True
       );
 

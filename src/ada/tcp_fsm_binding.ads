@@ -118,7 +118,11 @@ is
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_CLOSED,
-               S_Reset_Flag => True),
+               S_Reset_Flag => True) or else
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED) or else
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateFinWait2
          Sock.State = TCP_STATE_FIN_WAIT_2 =>
@@ -130,7 +134,9 @@ is
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_CLOSED,
-               S_Reset_Flag => True),
+               S_Reset_Flag => True) or else
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateClosing
          Sock.State = TCP_STATE_CLOSING =>
@@ -142,7 +148,9 @@ is
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
                S_State => TCP_STATE_CLOSED,
-               S_Reset_Flag => True),
+               S_Reset_Flag => True) or else
+            Model(Sock) = (Model(Sock)'Old with delta
+               S_State => TCP_STATE_CLOSED),
 
          -- C:tcpStateTimeWait
          Sock.State = TCP_STATE_TIME_WAIT =>
@@ -150,24 +158,13 @@ is
             Model(Sock) = Model(Sock)'Old or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED,
-               S_Reset_Flag => True)
+               S_State => TCP_STATE_CLOSED)
+            -- The case where a reset bit is received and the socket is
+            -- closed and S_Type = SOCKET_TYPE_UNUSED can only happen
+            -- once a Tcp_Abort has been called. For the purpose of the
+            -- verification we consider that the Timer is directly called
+            -- Then this case must be forgotten here without any impact
       );
-
-   -- procedure Tcp_State_Closed
-   --    (Interface     : System.Address;
-   --     Pseudo_Header : System.Address;
-   --     Segment       : Tcp_Header;
-   --     Length        : size_t);
-
-   -- procedure Tcp_State_Syn_Received
-   --    (Sock    : in out Not_Null_Socket;
-   --     Segment : in     Tcp_Header;
-   --     Buffer  : in     System.Address;
-   --     Offset  : in     size_t;
-   --     Length  : in     size_t)
-   -- with
-   --    Post => ;
 
    procedure Tcp_Process_One_Segment(Sock : in out Not_Null_Socket)
    with
@@ -283,8 +280,7 @@ is
             Model(Sock) = Model(Sock)'Old or else
             -- A RST segment has been received
             Model(Sock) = (Model(Sock)'Old with delta
-               S_State => TCP_STATE_CLOSED,
-               S_Reset_Flag => True)
+               S_State => TCP_STATE_CLOSED)
       );
 
 end Tcp_Fsm_Binding;

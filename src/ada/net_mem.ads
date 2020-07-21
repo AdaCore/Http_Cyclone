@@ -10,5 +10,4 @@ package Net_Mem is
    end record
      with
       Convention => C;
-
 end Net_Mem;

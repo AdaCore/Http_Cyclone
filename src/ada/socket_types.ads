@@ -1,6 +1,7 @@
 with Common_Type;  use Common_Type;
 with Interfaces.C; use Interfaces.C;
 with Ip;           use Ip;
+with Net_Misc;     use Net_Misc;
 with Os_Types;     use Os_Types;
 with System;
 with Tcp_Type;     use Tcp_Type;
@@ -79,6 +80,22 @@ is
       SOCKET_IP_PROTO_TCP    => 6,
       SOCKET_IP_PROTO_UDP    => 17,
       SOCKET_IP_PROTO_ICMPV6 => 58);
+   
+   ------------------------
+   -- Receive queue item --
+   ------------------------
+
+   type Socket_Queue_Item;
+   type Socket_Queue_Item_Acc is access Socket_Queue_Item;
+   type Socket_Queue_Item is record
+      Next           : Socket_Queue_Item_Acc;
+      Src_Ip_Addr    : IpAddr;
+      Src_Port       : Port;
+      Dest_Ip_Addr   : IpAddr;
+      Buffer         : System.Address;
+      Offset         : size_t;
+      Ancillary      : Net_Ancillary_Data;
+   end record;
 
    -----------------------
    -- Socket Definition --
@@ -163,7 +180,8 @@ is
       sackBlock      : SackBlockArray;
       sackBlockCount : unsigned;
 
-      receiveQueue : System.Address;
+      -- UDP specific variables
+      receiveQueue : Socket_Queue_Item_Acc;
    end record
      with 
       Convention => C,
@@ -228,6 +246,7 @@ is
       -- S_Tx_Buffer_Size: Tx_Buffer_Size;
       -- S_Rx_Buffer_Size: Rx_Buffer_Size;
       S_Reset_Flag    : Bool;
+      S_Owned_Flag    : Bool;
    end record
      with Ghost;
 
@@ -238,7 +257,7 @@ is
          S_Protocol       => Sock.S_Protocol,
          S_localIpAddr    => Sock.S_localIpAddr,
          S_Local_Port     => Sock.S_Local_Port,
-         S_Remote_Ip_Addr   => Sock.S_Remote_Ip_Addr,
+         S_Remote_Ip_Addr => Sock.S_Remote_Ip_Addr,
          S_Remote_Port    => Sock.S_Remote_Port,
          -- S_Timeout        => Sock.S_Timeout,
          -- S_TTL            => Sock.S_TTL,
@@ -246,7 +265,8 @@ is
          S_State          => Sock.State,
          -- S_Rx_Buffer_Size => Sock.rxBufferSize,
          -- S_Tx_Buffer_Size => Sock.txBufferSize
-         S_Reset_Flag     => Sock.reset_Flag
+         S_Reset_Flag     => Sock.reset_Flag,
+         S_Owned_Flag     => Sock.owned_Flag
      ))
      with Ghost;
 
