@@ -14,6 +14,7 @@
 \usepackage{tikz}
 \usetikzlibrary{calc,backgrounds,shapes}
 \usetikzlibrary{arrows.meta, shapes.callouts}
+\usetikzlibrary{decorations.pathreplacing}
 
 \tikzset{global scale/.style={
     scale=#1,
@@ -24,6 +25,12 @@
 \usepackage{hyperref}
 
 \usepackage[ruled]{algorithm2e}
+
+\usepackage[backend=biber]{biblatex}
+\addbibresource{biblio.bib}
+
+\DeclareMathOperator{\Pre}{Pre}
+\DeclareMathOperator{\Post}{Post}
 
 
 \begin{document}
@@ -39,16 +46,17 @@
     Ensuring the safety of the TCP/IP stack is essential for the safety of
     a lot of machines. While a lot of work has been done on higher level
     protocols, such as SSL/TLS which is built on top of TCP and designed
-    to provide a security layer to TCP that have been the subject of lots of
-    works like miTLS \cite{}, nothing has been done to make a secure TCP
-    implementation. Nonetheless, TLS security can only be ensured if the underlying
-    TCP implementation is free of bugs.
+    to provide a security layer to TCP with for example the work done in
+    miTLS~\cite{bhargavan2013implementing}, or in lower level with the work
+    on RecordFlux to safely parse data segment~\cite{Reiher_2020}, nothing has
+    been done to make a secure TCP implementation. Nonetheless, TLS security
+    can only be ensured if the underlying TCP implementation is free of bugs.
 
     CycloneTCP is a library developped by Oryx Embedded for embedded platforms.
     A large number of platforms are supported, and the library can be used
     with a dozen of OS. The code of the library is written in C and contains
-    plenty protocols from low-level network layers like IPv4/IPv6, to transport layer
-    and application layer like DHCP or HTTP. In particular an implementation of
+    plenty protocols from low-level network layers like IPv4/IPv6, to transport layers
+    and application layers like DHCP or HTTP. In particular an implementation of
     the TCP protocol is provided.
 
     SPARK 2014 is a programming language designed as a subset of Ada that helps in
@@ -58,12 +66,12 @@
     but also, based on SMT-solver, functionnal behavior can be specified for every
     functions and mathematically proved.
 
-    The aim of this work was to translate some parts of the CycloneTCP stack
+    The aim of this work was to translate some parts of the CycloneTCP TCP/IP stack
     in Ada/SPARK to improve the safety of the code. In particular we focused
-    on the TCP protocol to ensure that the norm is respected in this work.
+    on the TCP protocol to ensure that the norm is respected in the code.
 
     This report is a synthesis of the challenge of verifying a such protocol
-    and the solution I found to go toward a secure protocol.
+    and the solution we found during the internship to go toward a secure protocol.
 
 
     \section{The TCP protocol}
@@ -71,15 +79,19 @@
     \subsection{Why verifying a TCP stack?}
 
     As mentionned in the introduction, TCP protocol is the base of a lot of other protocols,
-    in particular SSL/TLS.
+    in particular SSL/TLS. These higher protocols cannot be secure if the underlying TCP protocol
+    has bugs. An incorrect implementation of the TCP protocol can lead to a crash
+    in the communication if two machines cannot communicate together, error in
+    retransmissions, or even security failures. CycloneTCP is designed for embedded
+    code, and a failure in the code can be critical.
 
 
     \subsection{Sockets}
 
     A socket is nothing more than a data structures that contains the connection
     information, like for example the local or the remote IP address as well as
-    the state of the connection. In Ada, a socket will be represented by a pointer
-    to a record type:
+    the state of the connection and other information require by the TCP protocol.
+    In Ada, a socket will be represented by a pointer to a record type:
 
     \begin{lstlisting}[language=Ada]
 type Socket_Struct is record
@@ -98,13 +110,13 @@ end record;
 type Socket is access Socket_Struct;
     \end{lstlisting}
 
-    A socket is also the structure that is manipulated by the user as an opaque structure,
-    through an interface to perform operations on it and perform operations on the
+    A socket is also the structure that is manipulated by the users as an opaque structure,
+    through an API to perform operations on the socket itself and on the
     global environment by sending messages in the network for example.
 
     \subsection{Presentation of the protocol}
 
-    TCP is defined by the norm RFC 793 \cite{} in a high level language.
+    TCP is defined by the norm RFC 793 \cite{rfc793} in a high level language.
     TCP is a realiable, ordered and error-checked connection oriented protocol.
     It means that two computers have to open a connection first before sending data.
     The connection is closed once all the data has been transmitted.
@@ -254,16 +266,18 @@ type Socket is access Socket_Struct;
         \label{fig:TCPAutomaton}
     \end{figure}
 
-    As it can be seen in the state machine, there exists different states that are
-    subject to change when a message is segment is sent or received or when an action
-    is done by the user. A label $A/B$ on an edge refers to a stimuli performed on the socket
-    (the receiption of a message, a user action...) for $A$ and a flag sent for $B$.
-    More precisely, for $A$, a text in italic shape refers to an action perform by
-    the user (a call of a user function) or when it's a timeout, by a timer and a ACK,
-    SYN or FIN refers to a flag contained in a received message. The flags in $B$ refer
-    to the flags sent in response of the stimuli $A$.  Without giving
-    unnecessary details on the format of a TCP header, we can describe the different
-    flags that can be contained in a TCP header:
+    As it can be seen in the state machine diagram in figure \ref{fig:TCPAutomaton},
+    a socket can take different states that are
+    subject to change when a message (or a segment) is sent or received or when an action
+    is performed by the user. A label $A/B$ on an edge in the graph refers to a stimuli performed on the socket
+    (the reception of a message, a user action...) for $A$ and a flag sent for $B$.
+    More precisely, for $A$, a text in italic shape refers to an action performed by
+    the user (a call of a user function) or when it's a timeout the action is automatically
+    performed by a timer, and a ACK, SYN or FIN refers to a flag contained in a received message.
+    The flags in $B$ refers to the flags sent in response of the stimuli $A$.
+    Without giving unnecessary details on the format of a TCP header, we can
+    describe some flags that can be contained in a TCP header in order to help the understanding
+    of the figure \ref{fig:TCPAutomaton}:
     \begin{description}
         \item[ACK] Acknowledgment field significant. The last message received by the sender
         is acknowledge. A field of the header contains the number of this segment.
@@ -274,8 +288,8 @@ type Socket is access Socket_Struct;
     \end{description}
     
     Different states can be taken by a socket during its lifetime depending on the state
-    of the connection, and also depending on the state of the remote TCP state. Each
-    state has its own signification:
+    of the connection. The state also gives information about the state of the remote TCP.
+    Each state has its own signification:
     \begin{description}
         \item[CLOSED] represents no connection state at all.
         \item[LISTEN] represents waiting for a connection request from any remote
@@ -306,7 +320,7 @@ type Socket is access Socket_Struct;
         termination request.
     \end{description}
 
-    For more details on how two TCP can establish a connection, the reader can refer
+    For more details on how two TCP can establish or close a connection, the reader can refer
     to the TCP norm where pleinty of scenario are described and explained, and more
     details are given on the state and segments that can be sent.
 
@@ -315,7 +329,7 @@ type Socket is access Socket_Struct;
 
     Different threads can interact with a socket. The TCP norm gives an example with
     three threads: one for the \emph{user calls}, one for the \emph{arriving segments}
-    and one for the \emph{timers}. This design has been adopted in CycloneTCP.
+    and one for the \emph{timers}. This design has also been adopted in CycloneTCP.
     
     \paragraph{User calls}
     User calls refers to functions that can be called by the user to control the connection,
@@ -325,17 +339,18 @@ type Socket is access Socket_Struct;
 
     \paragraph{Arriving segments}
     In this threads, the received segments are processed. The corresponding messages are sent back.
-    Transition between state can happen here. For example, this is the case when a message containing
-    a SYN is received when the socket is in the LISTEN state. It will automatically send a SYN + ACK in
-    response, and change its state for SYN-RECEIVED.
+    Transitions between states can happen here when a message is received. For example,
+    this is the case when a message containing a SYN is received when the socket is in
+    the LISTEN state. It will automatically send a SYN + ACK in response, and change
+    its state for SYN-RECEIVED.
 
     \paragraph{Timers}
     The timers control the timeouts like the retransmission timeout to retransmit a message, or
-    the time-wait timeout to close the connection after an amont of time. Then, transition can also
+    the time-wait timeout to close the connection after an amont of time. Then, transitions can also
     happen in this threads.
 
     To sum up, a single socket can be seen as a shared structure over multiples threads, that can all
-    manipulate it and change its fields. The schema illustrates that.
+    manipulate it and change the value of its fields. The schema in figure \ref{fig:TCPConcurrency} illustrates that.
     
     Only one thread can perform an operation on the socket at the same time. The access to the fields of
     the socket are protected by mutex.
@@ -343,25 +358,32 @@ type Socket is access Socket_Struct;
     Two threads can communicate synchronously or asynchronously together. The synchronous communications are based on
     the interface provided by the OS, in particular with events.
 
-    \begin{tikzpicture}
-        \node [draw, ellipse] (S) at (2, 2) {Socket};
-        \node [draw, text width=2.5cm, anchor=north] (T1) at (-2,0) {\textbf{TIMER TASK} \\
-                                                Timeout when need};
-        \node [draw, text width=2.5cm, anchor=north] (T2) at (2,0) {\textbf{USER TASK} \\
-                                                Controling the connection on the user side};
-        \node [draw, text width=2.5cm, anchor=north] (T3) at (6, 0) {\textbf{RECEIVED TASK} \\
-                                                Processing received messages};
-        \draw[->] (T1) -- (S);
-        \draw[->] (T2) -- (S);
-        \draw[->] (T3) -- (S);
-        \draw[<->, dashed] (T1) -- (T2);
-        \draw[<->, dashed] (T2) -- (T3);
-        
-        \draw [->] (4.3,2) -- (4.9,2);
-        \node [anchor=west] at (5,2) {Operation};
-        \draw[<->, dashed] (4.3,1.3) -- (4.9,1.3);
-        \node [anchor=west, text width=2.7cm] at (5, 1.3) {Synchronous communications};
-    \end{tikzpicture}
+    \begin{figure}
+        \begin{tikzpicture}
+            \node [draw, ellipse] (S) at (2, 2) {Socket};
+            \node [draw, text width=2.5cm, anchor=north] (T1) at (-2,0) {\textbf{TIMER TASK} \\
+                                                    Timeout when need};
+            \node [draw, text width=2.5cm, anchor=north] (T2) at (2,0) {\textbf{USER TASK} \\
+                                                    Controling the connection on the user side};
+            \node [draw, text width=2.5cm, anchor=north] (T3) at (6, 0) {\textbf{RECEIVED TASK} \\
+                                                    Processing received messages};
+            \draw[->] (T1) -- (S);
+            \draw[->] (T2) -- (S);
+            \draw[->] (T3) -- (S);
+            \draw[<->, dashed] (T1) -- (T2);
+            \draw[<->, dashed] (T2) -- (T3);
+
+            \draw[decorate, decoration={brace, amplitude=10pt}] (7.5, 0) -- (7.5, -1.8)
+                node [black,midway,xshift=0.55cm, rotate=-90] {\textit{Threads}};
+
+            \draw [->] (4.3,2.12) -- (4.9,2.12);
+            \node [anchor=west, text width=2.7cm] at (5,2.2) {Operations on the socket};
+            \draw[<->, dashed] (4.3,1.3) -- (4.9,1.3);
+            \node [anchor=west, text width=2.7cm] at (5, 1.3) {Synchronous communications};
+        \end{tikzpicture}
+        \caption{Concurrency in the TCP protocol.}
+        \label{fig:TCPConcurrency}
+    \end{figure}
 
 
     \section{Challenges}
@@ -379,8 +401,8 @@ type Socket is access Socket_Struct;
         \item Functionnal correctness of the user functions in regard to their specifications.
     \end{itemize}
 
-    Some choices have had to be done in regard the short time devolved to the internship, and
-    not every aspect of the TCP norm has been prooved. However, some aspects have been selected
+    Some choices have had to be done in regard to the short time devolved to the internship, and
+    not every aspect of the TCP norm has been proved yet. However, some aspects have been selected
     for the challenge or the importance they represent. A list of these aspects is presented
     here and the choices will be motivated in the next subsections. First of all, we have wanted
     to improve the interface of the functions. The other point was to improved the safety of the
@@ -389,7 +411,7 @@ type Socket is access Socket_Struct;
     \subsubsection{Improve functions interface}
 
     One of the main problems pointed by the main writter of the CycloneTCP library is that users
-    do not correctly used the API supplied. As a result, some calls of
+    do not correctly use the API supplied. As a result, some calls of
     functions can be incorrect, either because the arguments are incorrect, or because the
     return code of the previous functions has not been checked, which drive to an
     incorrect code.
@@ -398,10 +420,10 @@ type Socket is access Socket_Struct;
 
     To ensure the safety of the library, it is necessary to ensure that the functions really
     do what they are supposed to do. It is a part of the job that has been done. More
-    especially we have wanted to checked if the transition machine is respected by all the
-    user functions. We have also tried to ensure the correctness of the function called
-    regarding to the TCP state of the socket before the call to respect the specifications
-    given in the norm.
+    especially we have wanted to check if the state machine is respected by all the
+    user functions in the transition they do. We have also tried to ensure the correctness
+    of the function called regarding to the TCP state of the socket before the call
+    to respect the specifications given in the norm.
 
 
     \subsection{Technical problems encountered}
@@ -433,11 +455,11 @@ type Socket is access Socket_Struct;
     Then, we want post- and pre-conditions to model a partial order on the calls of the function.
     If two functions $f_1$ and $f_2$ are ordered such that $f_1 \preceq f_2$ where $\preceq$ is
     a relation over the oder of which functions have to be called, then we want that the
-    post-condition of $f_1$ implies the precondition of $f_2$.
+    post-condition of $f_1$ implies the precondition of $f_2$, \textit{i.e.} $\Pre(f_2) \subseteq \Post(f_1)$.
     
     We will give an example over functions \lstinline[language=Ada]{Socket_Connect} and
     \lstinline[language=Ada]{Socket_Send}. The function \lstinline[language=Ada]{Socket_Connect}
-    try to connect to a distant TCP. If the connection succeed, the remote IP address of the distant
+    try to connect to a distant TCP. If the connection succeeds, the remote IP address of the distant
     TCP is set in the field \lstinline[language=Ada]{S_Remote_Ip_Addr} of the \lstinline[language=Ada]{Sock}
     structure. When a user call the function \lstinline[language=Ada]{Socket_Send}, we want to ensure that
     the connection has already been established. This is why a precondition of this function is
@@ -491,7 +513,7 @@ procedure Socket_Send
     The post-conditions as we have written them in SPARK, ensure that the return code is checked
     before continuating processing. Figure \ref{code:FunOrdered} shows this mechanism for the
     procedure \lstinline[language=Ada]{Socket_Connect}. The post-condition filters the cases
-    where \lstinline{Error} is \lstinline{NO_ERROR} and if \lstinline{Error} takes another value.
+    where \lstinline{Error} is \lstinline{NO_ERROR} and where \lstinline{Error} takes another value.
     As a result, a user who would write an incorrect code such as
     \begin{lstlisting}[language=Ada]
     Socket_Connect (Sock, Remote_Ip_Addr, Port, Error);
@@ -528,16 +550,25 @@ procedure Socket_Send
     to guarantee the safety of the whole library. The functions of interest are located in
     the file \texttt{tcp\_interface.ad(b|s)}.
 
+    In order to verify the transitions we have read the norm to extract informations about
+    the allowed transitions, and we have added contracts in the function
+    \lstinline[language=Ada]{tcpChangeState}. Since all the transitions are made through
+    this function, an incorrect transition will be warned by SPARK.
+
+    As mentionned, since most of transitions are done outside the user functions, a big part
+    of this work was to consider other transitions in other threads and we present how we have
+    done it in the following sections.
+
     \subsubsection{Overview of the concurrency challenge}
 
     To ensure the safety of our library, we need to consider all what can happen everywhere in
-    the library. All our functions are protected by mutex, which means that only one operation
+    the library. All the functions are protected by mutex, which means that only one operation
     can be performed at the same time on a socket. Interractions must be considered at two
     locations: between the function calls, when the mutex is released and during the function
-    call, when the program waits for an event. We will explore in the two next sections how we
-    have dealt with this two different concurrent mechanisms.
+    call, when the program waits for an event. We will explore in the sections \ref{section:asynchronous}
+    and \ref{section:synchronous} how we have dealt with this two different concurrent mechanisms.
 
-    Before everything else, let's see where the interference mainly comes from, and how we have
+    Before everything else, let's see where the interferences mainly come from, and how we have
     done to ensure that all have been considered.
 
     \subsubsection{Process segments functions}
@@ -549,48 +580,53 @@ procedure Socket_Send
 
     The file \texttt{tcp\_fsm.c} is in charge of processing the incoming segments. The reader is
     strongly encouraged to have a look at this file. The main function of this file
-    \texttt{tcpProcessSegment} look for the socket corresponding to the received segment, and then
+    \texttt{tcpProcessSegment} looks for the socket corresponding to the received segment, and then
     according to the TCP state of the socket, process the segment as expected by calling one of
     the function \texttt{tcpState<StateName>}. The functions familly \texttt{tcpState<StateName>}
-    check the information contained in the segment and can perform change of state in the socket
+    check the information contained in the segment and can perform a change of state in the socket
     struct depending on the flags received.
 
-    In these functions, change of state can be performed as mentionned, through the function
+    In these functions, a change of state can be performed, as mentioned, thanks to the function
     \texttt{tcpChangeState}. To summarize what is done when a message is received, rather than
     reading the code and locate all the calls to functions \texttt{tcpChangeState}, we have used
-    Klee\footnote{\url{https://klee.github.io}}. It helped to find behavior that had not been
-    imagined at first. Anyway, we cannot state that all the work done with klee is complete, and
+    Klee\footnote{\url{https://klee.github.io}}. It helped to find behaviors that had not been
+    imagined at first. Anyway, we cannot state that all the work done with Klee is complete, and
     we would need to rewrite this part in SPARK to have a code formally proved.
 
-    All what is related to klee is present in the folder \texttt{klee/} and can be compiled and run
+    All what is related to Klee is present in the folder \texttt{klee/} and can be compiled and run
     thanks to the makefile to reproduce the results. Roughtly, what is done is creating a random
     incomming message, put the socket in the desired state and call the desired function to see what
     final states can be obtain.
 
-    Finally, all the result found by klee has been reported in the function \lstinline[language=Ada]{Tcp_Process_One_Segment}.
+    Finally, all the results found by Klee has been reported as a post-condition of the function \lstinline[language=Ada]{Tcp_Process_One_Segment}.
     This function is essential for all the verification of concurrent parts and is reused everywhere
-    the concurrency is involved to compute the results.
-
-    % The functions used to process the segments are written in C and we have not changed
-    % them. We have just extracted some information, like the changes of state that can be
-    % produced by the reception of a message.
-
-    % To ensure the correctness of the extracted information, we have used Klee, a symbolic
-    % virtual machine. It allows to consider all the paths taken in the function and check
-    % if the contracts written in SPARK respects the C implementation.
-    % \textbf{\itshape Show the example where I found an error.}
-    
-    % A goal to achieve would be to rewrite this part in SPARK to have more guaranties.
-    % However, Klee is a tool that helps to find errors.
+    the concurrency is involved to compute possible interferences. It follows that the safety of the code rely on the
+    confidence we have in this function.
 
     \subsubsection{Concurrency: asynchronous changes of state}
+    \label{section:asynchronous}
 
-    Between the user functions calls, segment can be received and these receptions can drive to
-    change of state of the socket. Between two function calls, an infinite number of segments
+    Between the user functions calls, segments can be received and these receptions can drive to
+    changes of the state of the socket. Between two function calls, an infinite number of segments
     can be potentially receive. The reception of one or zero segment is modeled by the function
     \lstinline[language=Ada]{Tcp_Process_One_Segment} in term of change of states. Then we have
     to consider the iteration of \lstinline[language=Ada]{Tcp_Process_One_Segment} in order to
     compute the result of the reception of multiple message.
+
+    Let $\rightarrow$ be the transition function in the TCP automaton restrited to the transitions
+    that can be performed by the reception of a message and its automatic response mechanism.
+    Then we have $\rightarrow = \text{\lstinline[language=Ada]{Tcp_Process_One_Segment}}$ and
+    we need to consider the reflexive transitive closure $\rightarrow^*$ of $\rightarrow$, with
+    \[\rightarrow^* = \bigcup_{n\in\mathbb{N}} \rightarrow^n\]
+    Now, by examining the TCP automaton in figure \ref{fig:TCPAutomaton}, we see that all state is
+    only reachable by a state at a distance less than 3 (the maximum path is between SYN-SENT and
+    CLOSE-WAIT if we pass by state SYN-RECEIVED and ESTABLISHED) without user action. Since
+    we only consider the transitive closure in term of states, we can significantly reduce the number
+    of iteration of $\rightarrow$ to compute $\rightarrow^*$ and finally we get:
+    \[\rightarrow^* = \bigcup_{n=1}^3 \rightarrow^n\]
+    It follows that algorithm \ref{algo:tcpProcessSegment} is enough good to compute the transitive closure of the function
+    \lstinline[language=Ada]{Tcp_Process_One_Segment} by taking advantage of the fact that SPARK can unroll
+    small loops to obtain more precise results.
 
     \begin{algorithm}[t]
         \SetKwFunction{ProcessSegm}{\lstinline[language=Ada]{Tcp\_Process\_Segment}}
@@ -608,26 +644,12 @@ procedure Socket_Send
         \label{algo:tcpProcessSegment}
     \end{algorithm}
 
-    Let $\rightarrow$ be the transition function in the TCP automaton restrited to the transitions
-    that can be performed by the reception of a message and its automatic response mechanism.
-    Then we have $\rightarrow = \text{\lstinline[language=Ada]{Tcp_Process_One_Segment}}$ and
-    we need to consider the reflexive transitive closure $\rightarrow^*$ of $\rightarrow$, with
-    \[\rightarrow^* = \bigcup_{n\in\mathbb{N}} \rightarrow^n\]
-    Now, by examining the TCP automaton in figure \ref{fig:TCPAutomaton}, we see that all state is
-    only reachable by a state at a distance less than 3 (the maximum path is between SYN-SENT and
-    CLOSE-WAIT if we pass by state SYN-RECEIVED and ESTABLISHED) without action by the user. Since
-    we only consider the transitive closure in term of states, we can significantly reduce the number
-    of iteration of $\rightarrow$ to compute $\rightarrow^*$ and finally we get:
-    \[\rightarrow^* = \bigcup_{n=1}^3 \rightarrow^n\]
-    It follows that algorithm \ref{algo:tcpProcessSegment} is enough good to compute the transitive closure of the function
-    \lstinline[language=Ada]{Tcp_Process_One_Segment} by taking advantage of the fact that SPARK can unroll
-    small loops to obtain more precise results.
-
     In the user functions, we have added a call to \lstinline[language=Ada]{Tcp_Process_Segment} everywhere
     there is a call to \lstinline{Os_Acquire_Mutex (Net_Mutex)}. Doing that helps to ensure that all the
     possible that all the possible input states are have been considered.
 
     \subsubsection{Concurrency: Synchronous exchange}
+    \label{section:synchronous}
 
     The other mechanism to deal with concurrency is probably more difficult to apprehend and the
     use of the function \lstinline[language=Ada]{Tcp_Process_One_Segment} is even more noticeable.
@@ -635,7 +657,7 @@ procedure Socket_Send
     The C code contains a function \lstinline[language=C]{tcpWaitForEvents} in the file \texttt{tcp\_misc.c}
     that checks if the event is true when the function is called, by calling the function
     \lstinline[language=C]{tcpUpdateEvents}. If the wait is not completed at the time the function is
-    called, then the mutex that was previously locked is released until the event become waited happen.
+    called, then the mutex that was previously locked is released until the waited event happens.
     Then, everything can happen meanwhile.
     
     In the code, the function \lstinline[language=C]{tcpUpdateEvents} is called at different locations
@@ -644,7 +666,8 @@ procedure Socket_Send
     changes.
 
     When a segment is received, the function \lstinline[language=C]{tcpUpdateEvents} is called if a
-    change of state happens. Then, we can consider the algorithm \ref{algo:waitForEvents} to compute the set of possible
+    change of state happens. Then, we can consider the algorithm \ref{algo:waitForEvents} that reuse
+    \lstinline[language=Ada]{Tcp_Process_One_Segment} to compute the most precise set of possible
     final states after the wait. \textit{(This is done in the function \lstinline[language=Ada]{Tcp_Wait_For_Events_Proof},
     the function dedicated to proof in file \texttt{tcp\_misc\_binding.adb}.)}
 
@@ -672,13 +695,25 @@ procedure Socket_Send
         \label{algo:waitForEvents}
     \end{algorithm}
 
-    We can compute precisely the state reach for each event waited thanks to the fact that SPARK
-    unroll loops.
+    We can compute precisely the states reach for each event waited thanks to the fact that SPARK
+    unrolls loops.
 
-    \textcolor{red}{\paragraph{Weakness} If two threads want to lock the same mutex at the same time, which one win?}
+    \textcolor{red}{\paragraph{Weakness} If two threads want to lock the same mutex at the same time, which one win?
+    This is probably something to discuss with Clément, because the function \texttt{tcpWaitForEvents} could have a
+    different semantic than what we imagine at first.}
 
 
     \section{Future work}
 
+    Other improvements that could be done in the future:
+    \begin{itemize}
+        \item Fully translate the file \texttt{tcp\_misc.c} in Ada to have more guarantees.
+        \item Same for the file \texttt{tcp\_fsm.c} that has been investigate with klee. But
+        it is not enough and we need more guarantees for this file, in order to prove the
+        interactions between threads first, and also to prove the correctness of this part
+        of code w.r.t. the TCP norm.
+    \end{itemize}
+
+    \printbibliography
     
 \end{document}
