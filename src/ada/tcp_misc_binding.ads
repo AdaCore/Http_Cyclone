@@ -255,8 +255,8 @@ is
          (if (Event_Mask and SOCKET_EVENT_RX_SHUTDOWN) /= 0 then
             (if Event = SOCKET_EVENT_RX_SHUTDOWN then
                (if Model_Before.S_State in TCP_STATE_SYN_RECEIVED
-                                    | TCP_STATE_SYN_SENT
-                                    | TCP_STATE_ESTABLISHED
+                                         | TCP_STATE_SYN_SENT
+                                         | TCP_STATE_ESTABLISHED
                then
                   Model_After = (Model_Before with delta
                      S_State => TCP_STATE_ESTABLISHED) or else
@@ -360,8 +360,6 @@ is
             (Sock  =>+ (Flags, Seq_Num, Ack_Num, Length, Add_To_Queue),
              Error =>  (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue)),
         Post =>
-            (if Sock.State'Old = TCP_STATE_CLOSED then
-               Error /= NO_ERROR) and then
             (if Error = NO_ERROR then
                Model (Sock) = Model(Sock)'Old
              else

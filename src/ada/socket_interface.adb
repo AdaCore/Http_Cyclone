@@ -9,6 +9,10 @@ package body Socket_Interface
    with SPARK_Mode
 is
 
+   ----------------------
+   -- Get_Host_By_Name --
+   ----------------------
+
    procedure Get_Host_By_Name
      (Server_Name    :     char_array;
       Server_Ip_Addr : out IpAddr;
@@ -17,6 +21,10 @@ is
    is begin
       Get_Host_By_Name_H (Server_Name, Server_Ip_Addr, unsigned (Flags), Error);
    end Get_Host_By_Name;
+
+   -----------------
+   -- Socket_Open --
+   -----------------
 
    procedure Socket_Open
      (Sock       : out Socket;
@@ -136,6 +144,10 @@ is
       Os_Release_Mutex (Net_Mutex);
    end Socket_Open;
 
+   ------------------------
+   -- Socket_Set_Timeout --
+   ------------------------
+
    procedure Socket_Set_Timeout
      (Sock    : in out Not_Null_Socket;
       Timeout :        Systime)
@@ -145,6 +157,10 @@ is
       Sock.S_Timeout := Timeout;
       Os_Release_Mutex (Net_Mutex);
    end Socket_Set_Timeout;
+
+   --------------------
+   -- Socket_Set_Ttl --
+   --------------------
 
    procedure Socket_Set_Ttl
      (Sock : in out Not_Null_Socket;
@@ -156,6 +172,10 @@ is
       Os_Release_Mutex (Net_Mutex);
    end Socket_Set_Ttl;
 
+   ------------------------------
+   -- Socket_Set_Multicast_Ttl --
+   ------------------------------
+
    procedure Socket_Set_Multicast_Ttl
      (Sock : in out Not_Null_Socket;
       Ttl  :        Ttl_Type)
@@ -165,6 +185,10 @@ is
       Sock.S_Multicast_TTL := unsigned_char (Ttl);
       Os_Release_Mutex (Net_Mutex);
    end Socket_Set_Multicast_Ttl;
+
+   --------------------
+   -- Socket_Connect --
+   --------------------
 
    procedure Socket_Connect
      (Sock           : in out Not_Null_Socket;
@@ -196,6 +220,10 @@ is
       end if;
    end Socket_Connect;
 
+   --------------------
+   -- Socket_Send_To --
+   --------------------
+
    procedure Socket_Send_To
      (Sock         : in out Not_Null_Socket;
       Dest_Ip_Addr :        IpAddr;
@@ -220,6 +248,10 @@ is
       end if;
       Os_Release_Mutex (Net_Mutex);
    end Socket_Send_To;
+
+   -----------------
+   -- Socket_Send --
+   -----------------
 
    procedure Socket_Send
      (Sock    : in out Not_Null_Socket;
@@ -252,6 +284,10 @@ is
       end if;
       Os_Release_Mutex (Net_Mutex);
    end Socket_Send;
+
+   -----------------------
+   -- Socket_Receive_Ex --
+   -----------------------
 
    procedure Socket_Receive_Ex
      (Sock         : in out Not_Null_Socket;
@@ -297,6 +333,10 @@ is
       Os_Release_Mutex (Net_Mutex);
    end Socket_Receive_Ex;
 
+   --------------------
+   -- Socket_Receive --
+   --------------------
+
    procedure Socket_Receive
      (Sock     : in out Not_Null_Socket;
       Data     :    out Received_Buffer;
@@ -312,6 +352,10 @@ is
          Flags, Error);
    end Socket_Receive;
 
+   ---------------------
+   -- Socket_Shutdown --
+   ---------------------
+
    procedure Socket_Shutdown
      (Sock  : in out Not_Null_Socket;
       How   :        Socket_Shutdown_Flags;
@@ -323,6 +367,10 @@ is
       Tcp_Shutdown (Sock, How, Error);
       Os_Release_Mutex (Net_Mutex);
    end Socket_Shutdown;
+
+   ------------------
+   -- Socket_Close --
+   ------------------
 
    procedure Socket_Close (Sock : in out Socket) is
       Ignore_Error : Error_T;
@@ -372,6 +420,10 @@ is
       Os_Release_Mutex (Net_Mutex);
    end Socket_Close;
 
+   -------------------------------
+   -- Socket_Set_Tx_Buffer_Size --
+   -------------------------------
+
    procedure Socket_Set_Tx_Buffer_Size
      (Sock : in out Not_Null_Socket;
       Size :        Tx_Buffer_Size)
@@ -380,6 +432,10 @@ is
       Sock.txBufferSize := Size;
    end Socket_Set_Tx_Buffer_Size;
 
+   -------------------------------
+   -- Socket_Set_Rx_Buffer_Size --
+   -------------------------------
+
    procedure Socket_Set_Rx_Buffer_Size
      (Sock : in out Not_Null_Socket;
       Size :        Rx_Buffer_Size)
@@ -387,6 +443,10 @@ is
    begin
       Sock.rxBufferSize := Size;
    end Socket_Set_Rx_Buffer_Size;
+
+   -----------------
+   -- Socket_Bind --
+   -----------------
 
    procedure Socket_Bind
      (Sock          : in out Not_Null_Socket;
@@ -398,6 +458,10 @@ is
       Sock.S_Local_Port  := Local_Port;
    end Socket_Bind;
 
+   -------------------
+   -- Socket_Listen --
+   -------------------
+
    procedure Socket_Listen
      (Sock    : in out Not_Null_Socket;
       Backlog :        Natural)
@@ -408,6 +472,10 @@ is
       Tcp_Listen (Sock, unsigned (Backlog));
       Os_Release_Mutex (Net_Mutex);
    end Socket_Listen;
+
+   -------------------
+   -- Socket_Accept --
+   -------------------
 
    procedure Socket_Accept
      (Sock           : in out Not_Null_Socket;

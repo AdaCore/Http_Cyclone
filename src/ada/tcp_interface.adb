@@ -949,6 +949,35 @@ is
 
       -- Disable transmission?
       if How = SOCKET_SD_SEND or How = SOCKET_SD_BOTH then
+
+         -- Flush the send buffer if we are in RECEIVED, ESTABLISHED or CLOSE_WAIT state
+         if Sock.State in TCP_STATE_SYN_RECEIVED
+                        | TCP_STATE_ESTABLISHED
+                        | TCP_STATE_CLOSE_WAIT
+         then
+            -- Flush the send buffer
+            Tcp_Send (Sock, Buf, Ignore_Written, SOCKET_FLAG_NO_DELAY, Error);
+            if Error /= NO_ERROR then
+               return;
+            end if;
+
+            -- Make sure all the data has been sent out
+            Tcp_Wait_For_Events
+               (Sock       => Sock,
+                Event_Mask => SOCKET_EVENT_TX_DONE,
+                Timeout    => Sock.S_Timeout,
+                Event      => Event);
+
+            -- Timeout error?
+            if Event /= SOCKET_EVENT_TX_DONE then
+               Error := ERROR_TIMEOUT;
+               return;
+            end if;
+
+            pragma Assert (Sock.State in TCP_STATE_ESTABLISHED | TCP_STATE_CLOSE_WAIT
+                                          | TCP_STATE_CLOSED);
+         end if;
+
          -- Check current state
          case Sock.State is
             when TCP_STATE_CLOSED
@@ -957,27 +986,7 @@ is
                Error := ERROR_NOT_CONNECTED;
                return;
 
-            when TCP_STATE_SYN_RECEIVED
-               | TCP_STATE_ESTABLISHED =>
-               -- Flush the send buffer
-               Tcp_Send (Sock, Buf, Ignore_Written, SOCKET_FLAG_NO_DELAY, Error);
-               if Error /= NO_ERROR then
-                  return;
-               end if;
-
-               -- Make sure all the data has been sent out
-               Tcp_Wait_For_Events
-                  (Sock       => Sock,
-                   Event_Mask => SOCKET_EVENT_TX_DONE,
-                   Timeout    => Sock.S_Timeout,
-                   Event      => Event);
-
-               -- Timeout error?
-               if Event /= SOCKET_EVENT_TX_DONE then
-                  Error := ERROR_TIMEOUT;
-                  return;
-               end if;
-
+            when TCP_STATE_ESTABLISHED =>
                -- Send a FIN segment
                Tcp_Send_Segment
                   (Sock         => Sock,
@@ -992,10 +1001,6 @@ is
                if Error /= NO_ERROR then
                   return;
                end if;
-
-               -- @BUG THERE IS A BUG HERE
-               pragma Assert (Sock.State = TCP_STATE_ESTABLISHED or else
-                              Sock.State = TCP_STATE_CLOSE_WAIT);
 
                -- Sequence number expected to be received
                Sock.sndNxt := Sock.sndNxt + 1;
@@ -1022,27 +1027,6 @@ is
                 Sock.State = TCP_STATE_CLOSED);
 
             when TCP_STATE_CLOSE_WAIT =>
-               -- Flush the send buffer
-               Tcp_Send (Sock, Buf, Ignore_Written, SOCKET_FLAG_NO_DELAY, Error);
-               if Error /= NO_ERROR then
-                  return;
-               end if;
-
-               pragma Assert (Sock.State = TCP_STATE_CLOSE_WAIT);
-
-               -- Make sure all the data has been sent out
-               Tcp_Wait_For_Events
-                  (Sock       => Sock,
-                   Event_Mask => SOCKET_EVENT_TX_DONE,
-                   Timeout    => Sock.S_Timeout,
-                   Event      => Event);
-
-               -- Timeout error?
-               if Event /= SOCKET_EVENT_TX_DONE then
-                  Error := ERROR_TIMEOUT;
-                  return;
-               end if;
-
                -- Send a FIN segment
                Tcp_Send_Segment
                   (Sock         => Sock,
