@@ -169,7 +169,6 @@ is
          and then
          (if (Event_Mask and SOCKET_EVENT_TX_ACKED) /= 0 then
             (if Event = SOCKET_EVENT_TX_ACKED then
-               -- @TODO : To be continued if needed
                (if Model_Before.S_State = TCP_STATE_ESTABLISHED then
                   Model_After = (Model_Before with delta
                      S_State => TCP_STATE_ESTABLISHED) or else

@@ -31,4 +31,17 @@ is
       Error := Error_T'Enum_Val(netBufferSetLength (Buffer'Address, unsigned_long(Length)));
    end Net_Rx_Buffer_Set_Length;
 
+   procedure Mem_Pool_Free
+      (Queue_Item : in out Tcp_Syn_Queue_Item_Acc)
+   is
+      procedure memPoolFree
+         (Queue_Item : Tcp_Syn_Queue_Item_Acc)
+      with
+         Import => True,
+         Convention => C,
+         External_Name => "memPoolFree";
+   begin
+      memPoolFree (Queue_Item);
+   end Mem_Pool_Free;
+
 end Net_Mem_Interface;

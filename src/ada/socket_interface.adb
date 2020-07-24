@@ -95,6 +95,8 @@ is
             Sock.S_Event_Mask          := 0;
             Sock.S_Event_Flags         := 0;
             Sock.S_User_Event          := null;
+            pragma Annotate (GNATprove, False_Positive,
+                           "memory leak might occur", "Memory should already be free");
             Sock.State                 := TCP_STATE_CLOSED;
             Sock.owned_Flag            := False;
             Sock.closed_Flag           := False;
@@ -132,12 +134,16 @@ is
             Sock.retransmitQueue       := System.Null_Address;
             Sock.retransmitCount       := 0;
             Sock.synQueue              := null;
+            pragma Annotate (GNATprove, False_Positive,
+                           "memory leak might occur", "Memory should already be free");
             Sock.synQueueSize          := 0;
             Sock.wndProbeCount         := 0;
             Sock.wndProbeInterval      := 0;
             Sock.sackPermitted         := False;
             Sock.sackBlockCount        := 0;
             Sock.receiveQueue          := null;
+            pragma Annotate (GNATprove, False_Positive,
+                           "memory leak might occur", "Memory should already be free");
          end if;
       end if;
 
@@ -390,21 +396,19 @@ is
          declare
             -- Point to the first item in the receive queue
             Queue_Item : Socket_Queue_Item_Acc := Sock.receiveQueue;
-            Next_Queue_Item : Socket_Queue_Item_Acc;
          begin
             -- Purge the receive queue
             while Queue_Item /= null loop
-               -- Keep track of the next item in the queue
-               Next_Queue_Item := Queue_Item.Next;
-               Queue_Item.Next := null;
-               -- Free previously allocated memory
-               memPoolFree (Queue_Item.Buffer);
-               -- Point to the next item
-               if Next_Queue_Item = null then
-                  exit;
-               end if;
-               Queue_Item := Next_Queue_Item;
-               Next_Queue_Item := null;
+               declare
+                  -- Keep track of the next item in the queue
+                  Next_Queue_Item : Socket_Queue_Item_Acc := Queue_Item.Next;
+               begin
+                  Queue_Item.Next := null;
+                  -- Free previously allocated memory
+                  memPoolFree (Queue_Item.Buffer);
+                  -- Point to the next item
+                  Queue_Item := Next_Queue_Item;
+               end;
             end loop;
             Sock.receiveQueue := null;
          end;

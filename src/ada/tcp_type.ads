@@ -79,7 +79,8 @@ package Tcp_Type with SPARK_Mode is
    TCP_FLAG_URG : constant Tcp_Flags := 32;
 
       -- TODO: use preprocessing instead of 14 to be coherent with the C code.
-   type Chunk_Desc_Array is array (0 .. 14) of Chunk_Desc;
+   type Chunk_Desc_Array is array (0 .. 14) of Chunk_Desc
+   with Object_Size => 15 * (32 + System.Word_Size);
 
    type Tx_Buffer_Size is range 1 .. TCP_MAX_TX_BUFFER_SIZE;
    type Rx_Buffer_Size is range 1 .. TCP_MAX_RX_BUFFER_SIZE;
@@ -90,7 +91,7 @@ package Tcp_Type with SPARK_Mode is
       chunk         : Chunk_Desc_Array;
    end record
    with
-      Convention => C;
+      Convention => C, Object_Size => 32 + 15 * (32 + System.Word_Size);
 
    type Tcp_Rx_Buffer is record
       chunkCount    : unsigned;

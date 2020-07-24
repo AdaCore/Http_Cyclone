@@ -250,7 +250,7 @@ is
    end record
      with Ghost;
 
-   function Model (Sock : Not_Null_Socket) return Socket_Model is
+   function Model (Sock : not null access constant Socket_Struct) return Socket_Model is
      (Socket_Model'(
          -- S_Descriptor     => Sock.S_Descriptor,
          S_Type           => Sock.S_Type,
@@ -284,7 +284,7 @@ is
       S_Remote_Port    : Port;
    end record with Ghost;
 
-   function Basic_Model(Sock : Not_Null_Socket) return Basic_Socket_Model is
+   function Basic_Model(Sock : not null access constant Socket_Struct) return Basic_Socket_Model is
       (Basic_Socket_Model'(
          S_Type           => Sock.S_Type,
          S_Protocol       => Sock.S_Protocol,

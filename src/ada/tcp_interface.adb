@@ -209,15 +209,6 @@ is
        Client_Port    :    out Port;
        Client_Socket  :    out Socket)
    is
-      procedure Mem_Pool_Free
-         (Queue_Item : Tcp_Syn_Queue_Item_Acc)
-         with
-            Import => True,
-            Convention => C,
-            External_Name => "memPoolFree",
-            Post => Queue_Item = null,
-            Global => null;
-
       Error : Error_T;
       Queue_Item : Tcp_Syn_Queue_Item_Acc;
    begin
@@ -654,8 +645,6 @@ is
       end if;
 
       Error := NO_ERROR;
-
-      -- Tcp_Binding.Tcp_Send (Sock, Data, Written, Flags, Error);
    end Tcp_Send;
 
    -----------------
@@ -897,8 +886,10 @@ is
                if (Time - Aux_Sock.timeWaitTimer.startTime) >
                  (Time - Sock.timeWaitTimer.startTime)
                then
+                  pragma Warnings (Off);
                   Free_Socket (Sock);
                   Get_Socket_From_Table (I, Sock);
+                  pragma Warnings (On);
                end if;
             end if;
          end if;

@@ -22,9 +22,6 @@ is
    -- when a segment is received from the network.
    -- This function model zero, one or more transitions that can happen when
    -- a message is received. (reprent →* = ∪_{n∈ℕ} →^n, n∈ℕ)
-   -- @TODO The timer that close the connection after the TIME-WAIT state
-   -- isn't considered in this function (2MLS timer). It should be added somewhere,
-   -- either in this function or in another function
    procedure Tcp_Process_Segment(Sock : in out Not_Null_Socket)
    with
       Global => null,

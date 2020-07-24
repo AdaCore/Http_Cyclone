@@ -9,5 +9,5 @@ package Net_Mem is
       size    : unsigned_short;
    end record
      with
-      Convention => C;
+      Convention => C, Object_Size => 32 + System.Word_Size;
 end Net_Mem;

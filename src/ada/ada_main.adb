@@ -13,7 +13,7 @@ package body Ada_Main with
 is
 
    procedure HTTP_Client_Test is
-      Sock : Socket;
+      Sock_Ignore : Socket;
       ServerAddr : IpAddr;
       End_Of_Line : constant Send_Buffer(1 .. 2) :=
                (1 => char'Val(13), 2 => char'Val(10));
@@ -25,7 +25,7 @@ is
                "Connection: close" & End_Of_Line & End_Of_Line
                & End_Of_Request;
       Buf : Received_Buffer (1 .. 128);
-      Error : Error_T;
+      Error_Ignore : Error_T;
       Written : Integer with Unreferenced;
       Received : Natural;
 
@@ -39,65 +39,65 @@ is
             Global => null;
 
    begin
-      Get_Host_By_Name("httpbin.org", ServerAddr, HOST_NAME_RESOLVER_ANY, Error);
-      if Error /= NO_ERROR then
+      Get_Host_By_Name("httpbin.org", ServerAddr, HOST_NAME_RESOLVER_ANY, Error_Ignore);
+      if Error_Ignore /= NO_ERROR then
          return;
       end if;
 
-      Socket_Open (Sock, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
-      if Sock = null then
+      Socket_Open (Sock_Ignore, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
+      if Sock_Ignore = null then
          return;
       end if;
 
-      Socket_Set_Timeout (Sock, 10_000);
+      Socket_Set_Timeout (Sock_Ignore, 10_000);
 
-      Socket_Connect (Sock, ServerAddr, 80, Error);
-      if Error /= NO_ERROR then
+      Socket_Connect (Sock_Ignore, ServerAddr, 80, Error_Ignore);
+      if Error_Ignore /= NO_ERROR then
          goto End_Of_Loop;
       end if;
 
-      Socket_Send (Sock, Request, Written, 0, Error);
-      if Error /= NO_ERROR then
+      Socket_Send (Sock_Ignore, Request, Written, 0, Error_Ignore);
+      if Error_Ignore /= NO_ERROR then
          goto End_Of_Loop;
       end if;
 
       loop
             pragma Loop_Invariant
-               (Sock /= null and then
-                TCP_Rel_Iter (Model(Sock)'Loop_Entry, Model(Sock)));
-            Socket_Receive (Sock, Buf, Received, 0, Error);
-            exit when Error = ERROR_END_OF_STREAM;
-            if Error /= NO_ERROR then
+               (Sock_Ignore /= null and then
+                TCP_Rel_Iter (Model(Sock_Ignore)'Loop_Entry, Model(Sock_Ignore)));
+            Socket_Receive (Sock_Ignore, Buf, Received, 0, Error_Ignore);
+            exit when Error_Ignore = ERROR_END_OF_STREAM;
+            if Error_Ignore /= NO_ERROR then
                goto End_Of_Loop;
             end if;
             Print_String (Buf, int(Received)); -- For debug purpose
       end loop;
-      Socket_Shutdown(Sock, SOCKET_SD_BOTH, Error);
+      Socket_Shutdown(Sock_Ignore, SOCKET_SD_BOTH, Error_Ignore);
 
       <<End_Of_Loop>>
-      Socket_Close (Sock);
+      Socket_Close (Sock_Ignore);
    end HTTP_Client_Test;
 
    procedure HTTP_Server_Test is
-      Sock              : Socket;
-      Sock_Client       : Socket;
+      Sock_Ignore       : Socket;
+      Sock_Client_Ignore: Socket;
       IPAddr_Client     : IpAddr with Unreferenced;
       Port_Client       : Port with Unreferenced;
    begin
-      Socket_Open (Sock, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
-      if Sock = null then
+      Socket_Open (Sock_Ignore, SOCKET_TYPE_STREAM, SOCKET_IP_PROTO_TCP);
+      if Sock_Ignore = null then
          return;
       end if;
 
-      Socket_Bind (Sock, IP_ADDR_ANY, 80);
+      Socket_Bind (Sock_Ignore, IP_ADDR_ANY, 80);
 
-      Socket_Listen (Sock, 0);
+      Socket_Listen (Sock_Ignore, 0);
 
-      Socket_Accept (Sock, IPAddr_Client, Port_Client, Sock_Client);
+      Socket_Accept (Sock_Ignore, IPAddr_Client, Port_Client, Sock_Client_Ignore);
 
-      Socket_Close (Sock);
-      if Sock_Client /= null then
-         Socket_Close (Sock_Client);
+      Socket_Close (Sock_Ignore);
+      if Sock_Client_Ignore /= null then
+         Socket_Close (Sock_Client_Ignore);
       end if;
 
    end HTTP_Server_Test;
