@@ -23,4 +23,17 @@ with `minicom -D /dev/ttyACM0`.
 Proof
 -----
 
-To prove the correctness of the SPARK code, use `make prove`.
+To prove the correctness of the SPARK code, use `gnatprove -P prove.gpr --level=3`.
+
+Organization of the repository
+------------------------------
+
+All the sources need for the compilation are under the folder `src/`. In particular
+it contains the C sources of cycloneTCP in the folder `cyclone_tcp/`. The translated
+files are under the subdirectory `ada/`. A main function is under `main.c` and is
+written to launch and test the C.
+
+An experimentation has also been done with Klee, and the folder `klee/` gathers the
+sources needed to run Klee. A makefile is provided to help the compilation. You
+might need to comment the line `#include "dns/dns_client.h"` in the file `net.h`
+to be able to compile.
