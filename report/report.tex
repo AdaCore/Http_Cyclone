@@ -180,7 +180,7 @@ type Socket is access Socket_Struct;
         ($(closedStart.south) + (.5em,0)$);
         
         \draw ($(listen.south) + (-1em,0)$) 
-        edge[stateEdge, bend left=22.5] node[edgeLabel, xshift=-2em, yshift=1em]{SYN/SYN + ACK} 
+        edge[stateEdge, bend left=22.5] node[edgeLabel, xshift=-2em, yshift=1em]{SYN/(SYN \& ACK)} 
         ($(synRcvd.east) + (0,1em)$);
         \draw ($(listen.south) + (1em,0)$) 
         edge[stateEdge, bend right=22.5] node[edgeLabel, xshift=1em, yshift=1em]{\emph{Send}/SYN} 
@@ -208,7 +208,7 @@ type Socket is access Socket_Struct;
         edge[stateEdge, bend left=22.5] node[edgeLabel, xshift=-1em, yshift=-1em]{ACK/-} 
         ($(established.north) + (-1em,0)$);
         \draw ($(synSent.west) + (0,-1em)$) 
-        edge[stateEdge, bend right=22.5] node[edgeLabel, xshift=3em, yshift=-1em]{SYN + ACK/ACK} 
+        edge[stateEdge, bend right=22.5] node[edgeLabel, xshift=3em, yshift=-1em]{(SYN \& ACK)/ACK} 
         ($(established.north) + (1em,0)$);
         
         \draw ($(established.south) + (-1em,0)$) 
@@ -225,7 +225,7 @@ type Socket is access Socket_Struct;
         edge[stateEdge, bend left=22.5] node[edgeLabel, yshift=1em]{FIN/ACK} 
         (closing.north);
         \draw (finWait1.south east) 
-        edge[stateEdge] node[edgeLabel, xshift=1em, yshift=2em, text width=3em]{FIN + ACK/ACK} 
+        edge[stateEdge] node[edgeLabel, xshift=1em, yshift=2em, text width=3em]{(FIN \& ACK)/ACK} 
         (timeWait.north west);
         
         \draw (finWait2.south) 
@@ -335,29 +335,29 @@ type Socket is access Socket_Struct;
     \paragraph{Example of a possible way to establish a connection}
 
     We present a scenario on how a connection can be established between two TCPs,
-    when one TCP (TCP A) is in the state \CLOSED{} and the other (TCP B) is in the state \LISTEN.
+    when one TCP (TCP $\alpha$) is in the state \CLOSED{} and the other (TCP $\beta$) is in the state \LISTEN.
     \begin{enumerate}
-        \item TCP A wants to initiate a connection with TCP B. It sends a SYN segment to
-            TCP B and passes to the state \SYNSENT{}.
+        \item TCP $\alpha$ wants to initiate a connection with TCP $\beta$. It sends a SYN segment to
+            TCP $\beta$ and passes to the state \SYNSENT{}.
 
-        \item TCP B receives a segment SYN. It has to respond to this segment by a segment
+        \item TCP $\beta$ receives a segment SYN. It has to respond to this segment by a segment
             containing the flags SYN and ACK (acknowledgment of the received segment).
             It changes its state for \SYNRECEIVED. 
 
-        \item When TCP A receives the segment sent by TCP B containing the flags SYN and ACK,
+        \item When TCP $\alpha$ receives the segment sent by TCP $\beta$ containing the flags SYN and ACK,
             it only has to send back an ACK of this segment to pass in the state \ESTABLISHED.
 
-        \item TCP B receives the ACK of its segment and pass in state \ESTABLISHED{} too.
+        \item TCP $\beta$ receives the ACK of its segment and pass in state \ESTABLISHED{} too.
     \end{enumerate}
     At the end of this procedure, the two TCPs are in state \ESTABLISHED{} and can start to
-    send data. Figure \ref{fig:handshake} illustrates the procedure described above. This procedure to open a connection is known as the ``three-way
-    handshake'' in the TCP norm.
+    send data. Figure \ref{fig:handshake} illustrates the procedure described above.
+    This procedure to open a connection is known as the ``three-way handshake'' in the TCP norm.
 
     \begin{figure}
         \centering
         \begin{tikzpicture}
-            \node (A) at (0, 5) {\bfseries TCP A};
-            \node (B) at (5, 5) {\bfseries TCP B};
+            \node (A) at (0, 5) {\bfseries TCP $\alpha$};
+            \node (B) at (5, 5) {\bfseries TCP $\beta$};
             \draw[dashed] (-.7,4.8) -- (5.7,4.8);
             \node (TCPA1) at (0, 4.4) {\CLOSED{}};
             \node (TCPB1) at (5, 3.9) {\LISTEN{}};
@@ -375,7 +375,7 @@ type Socket is access Socket_Struct;
             \draw[->, dashed] (0.2, 2.9) -- node [midway, fill=white] {\footnotesize ACK} (TCPB2);
         \end{tikzpicture}
         \par
-        \caption{Three-way hanshake procedure. The solid lines represent the transition between
+        \caption{Three-way hanshake procedure. The solid lines represent the transitions between
         the states and the dashed lines represent the messages sent.}
         \label{fig:handshake}
     \end{figure}
@@ -672,7 +672,8 @@ procedure Socket_Send
     incoming message, put the socket in the desired state and call the desired function to see what
     final states can be obtained.
 
-    Finally, all the results found by KLEE have been reported as a post-condition of the function \lstinline[language=Ada]{Tcp_Process_One_Segment}.
+    Finally, all the results found by KLEE have been reported as a post-condition of the function
+    \lstinline[language=Ada]{Tcp_Process_One_Segment}.
     This function is essential for all the verification of concurrent parts and is reused everywhere
     the concurrency is involved to compute possible interferences. It follows that the safety of the code
     relies on the confidence we have in this function.
@@ -850,7 +851,7 @@ procedure Socket_Send
     transitions that we can see in the automaton in \ref{fig:TCPAutomaton}, and thus the transition
     \CLOSEWAIT{} $\rightarrow$ \FINWAITONE{} is not allowed, nor the transition \CLOSED{} $\rightarrow$ \FINWAITONE{}.
 
-    This incorrect behavior has been detected thanks to the use of Klee and the improvement
+    This incorrect behavior has been detected thanks to the use of KLEE and the improvement
     on how function's closure are computed. The contract for the call
     \begin{lstlisting}[language=Ada, basicstyle=\ttfamily\small]
     Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_READY,
@@ -860,7 +861,7 @@ procedure Socket_Send
     Then, the possible state at the end of the function \lstinline[language=Ada]{Tcp_Change_State}
     was reduce to \ESTABLISHED{} and the same problem existed for the call
     at line \ref{bugProg:tcpWaitForEvents}. At this point no problem was detected with SPARK,
-    because the contracts were true. With Klee, some transitions that were not considered at first,
+    because the contracts were true. With KLEE, some transitions that were not considered at first,
     because hide in subfunctions have been discovered. In particular there exists a transition from
     \SYNRECEIVED{} to \CLOSEWAIT{} if a FIN flags is present in the same segment of the ACK that was not
     spotted before. Putting these information in the function \lstinline[language=Ada]{Tcp_Process_One_Segment},
@@ -877,7 +878,7 @@ procedure Socket_Send
     this list is subject to change):
     \begin{itemize}
         \item Fully translate the file \texttt{tcp\_misc.c} in Ada to have more guarantees.
-        \item Same for the file \texttt{tcp\_fsm.c} that has been investigated with klee. But
+        \item Same for the file \texttt{tcp\_fsm.c} that has been investigated with KLEE. But
         it is not enough and we need more guarantees for this file, in order to prove the
         interactions between tasks first, and also to prove the correctness of this part
         of code w.r.t. the TCP norm.
