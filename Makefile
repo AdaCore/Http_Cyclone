@@ -333,8 +333,8 @@ C_OBJECTS = $(patsubst %.c, %.o, $(C_SOURCES))
 ADA_SOURCES = $(wildcard ./src/ada/*.adb)
 ADA_HEADERS = tcp_type.ads
 
-ADA_OBJECTS = $(patsubst %.adb, %.o, $(ADA_SOURCES))
-ADA_OBJECTS += $(patsubst %.ads, %.o, $(ADA_HEADERS))
+# ADA_OBJECTS += $(patsubst %.ads, %.o, $(ADA_HEADERS))
+ADA_OBJECTS += $(patsubst %.adb, %.o, $(ADA_SOURCES))
 
 OBJ_DIR = obj
 
@@ -351,7 +351,7 @@ ADAFLAGS += --RTS=/opt/GNAT/2019-arm-elf/arm-eabi/lib/gnat/ravenscar-sfp-stm32f4
 ADAFLAGS += -fno-common -Wall -Os -g3 -ggdb
 ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
-ADAFLAGS += -gnat2020 -gnata -gnatyg3C-Itm -gnatwa -gnatef
+ADAFLAGS += -gnat2020 -gnatyg3C-Itm -gnatwa -gnatef -gnatp # -gnata
 
 ADA_COMPILER = arm-eabi-gcc
 
