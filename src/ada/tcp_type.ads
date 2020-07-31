@@ -91,7 +91,7 @@ package Tcp_Type with SPARK_Mode is
       chunk         : Chunk_Desc_Array;
    end record
    with
-      Convention => C, Object_Size => 32 + 15 * (32 + System.Word_Size);
+      Convention => C, Object_Size => 64 + 15 * (32 + System.Word_Size);
 
    type Tcp_Rx_Buffer is record
       chunkCount    : unsigned;
