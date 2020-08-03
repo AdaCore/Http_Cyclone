@@ -211,7 +211,14 @@ is
    SOCKET_FLAG_NO_DELAY   : constant Socket_Flags := 16#4000#;
    SOCKET_FLAG_DELAY      : constant Socket_Flags := 16#8000#;
 
-   SOCKET_MAX_COUNT : constant Positive := 10;
+   -- Number of sockets that can be opened simultaneously
+   
+#if SOCKET_MAX_COUNT'Defined then
+   SOCKET_MAX_COUNT : constant Positive := $SOCKET_MAX_COUNT;
+#else
+   SOCKET_MAX_COUNT : constant Positive := 16;
+#end if;
+
    type Socket_Type_Index is range 0 .. (SOCKET_MAX_COUNT - 1);
    type Socket_Table_T is array (Socket_Type_Index) of aliased Socket_Struct;
 

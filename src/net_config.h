@@ -31,6 +31,8 @@
 #ifndef _NET_CONFIG_H
 #define _NET_CONFIG_H
 
+#include "spark_config.h"
+
 //Trace level for TCP/IP stack debugging
 #define MEM_TRACE_LEVEL          4
 #define NIC_TRACE_LEVEL          4
@@ -141,9 +143,6 @@
 #define RAW_SOCKET_SUPPORT DISABLED
 //Receive queue depth for raw sockets
 #define RAW_SOCKET_RX_QUEUE_SIZE 4
-
-//Number of sockets that can be opened simultaneously
-#define SOCKET_MAX_COUNT 10
 
 //LLMNR responder support
 #define LLMNR_RESPONDER_SUPPORT ENABLED

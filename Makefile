@@ -169,6 +169,7 @@ C_SOURCES = \
 	./src/ada/helper.c
 
 HEADERS = \
+	./src/spark_config.h \
 	./src/os_port_config.h \
 	./src/net_config.h \
 	./src/FreeRTOSConfig.h \
@@ -340,7 +341,7 @@ OBJ_DIR = obj
 
 LINKER_SCRIPT = src/stm32f769_flash.ld
 
-CFLAGS += -fno-common -Wall -Os -g3
+CFLAGS += -fno-common -Wall -Os -g3 -std=c99
 CFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
 CFLAGS += $(DEFINES)
@@ -353,6 +354,7 @@ ADAFLAGS += -fno-common -Wall -Os -g3 -ggdb
 ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
 ADAFLAGS += -gnat2020 -gnatyg3C-Itm -gnatwa -gnatef -gnatp # -gnata
+ADAFLAGS += -I. -gnatep=prep.data
 
 ADA_COMPILER = arm-eabi-gcc
 
@@ -375,7 +377,7 @@ install: build size program
 
 .PHONY: build
 build: $(RESULT).elf $(RESULT).lst $(RESULT).bin $(RESULT).hex
-	
+
 $(RESULT).elf: $(ASM_OBJECTS) $(C_OBJECTS) $(ADA_OBJECTS) $(HEADERS) $(LINKER_SCRIPT) $(THIS_MAKEFILE)
 	$(CC) -Wl,-M=$(RESULT).map -Wl,-T$(LINKER_SCRIPT) $(CFLAGS) $(addprefix $(OBJ_DIR)/, $(notdir $(ASM_OBJECTS))) $(addprefix $(OBJ_DIR)/, $(notdir $(ADA_OBJECTS))) $(addprefix $(OBJ_DIR)/, $(notdir $(C_OBJECTS))) -o $@
 
@@ -385,6 +387,9 @@ $(C_OBJECTS): | $(OBJ_DIR)
 
 $(OBJ_DIR):
 	mkdir -p $@
+
+src/spark_config.h: config.def
+	python3 src/run_config.py $<
 
 %.o: %.c $(HEADERS) $(THIS_MAKEFILE)
 	$(CC) $(CFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))

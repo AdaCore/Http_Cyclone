@@ -1,0 +1,2 @@
+-- Number of sockets that can be opened simultaneously
+SOCKET_MAX_COUNT := 10
