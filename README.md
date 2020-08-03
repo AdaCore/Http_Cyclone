@@ -39,6 +39,10 @@ anod install SPARK2014
 
 To prove the correctness of the SPARK code, use
 ```
+make prove
+```
+or use the following command line
+```
 gnatprove -P prove.gpr --level=4 -u tcp_interface.ads -j0 && gnatprove -P prove.gpr --level=3 -j0
 ```
 
