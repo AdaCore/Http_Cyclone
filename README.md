@@ -14,8 +14,16 @@ needed.
 Compilation
 -----------
 
+To compile the project, you need to have installed the arm compiler for
+ada, that can be found here https://www.adacore.com/download. Install it
+in the recommanded location.
+
 Use `make` to compile the project, and `make flash` to install it
 on the STM32 card.
+
+If the ARM compiler is not installed in the default directory, you can use
+`make RTS=<install_dir>` to help the compiler to find the require files
+for the compilation.
 
 You can see the debug messages by opening a terminal on the card
 with `minicom -D /dev/ttyACM0`.
@@ -23,7 +31,16 @@ with `minicom -D /dev/ttyACM0`.
 Proof
 -----
 
-To prove the correctness of the SPARK code, use `gnatprove -P prove.gpr --level=3`.
+To use SPARK, it's require to have a recent version of SPARK because delta aggregates
+are used in the code.
+```
+anod install SPARK2014
+```
+
+To prove the correctness of the SPARK code, use
+```
+gnatprove -P prove.gpr --level=4 -u tcp_interface.ads -j0 && gnatprove -P prove.gpr --level=3 -j0
+```
 
 Organization of the repository
 ------------------------------
@@ -37,3 +54,8 @@ An experimentation has also been done with Klee, and the folder `klee/` gathers 
 sources needed to run Klee. A makefile is provided to help the compilation. You
 might need to comment the line `#include "dns/dns_client.h"` in the file `net.h`
 to be able to compile.
+
+Contribute
+----------
+
+Don't hesitate to open a PR to improve the code.
