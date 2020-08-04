@@ -6,11 +6,58 @@ with System;       use System;
 
 package Tcp_Type with SPARK_Mode is
 
-   TCP_MAX_SYN_QUEUE_SIZE     : constant unsigned := 16;
-   TCP_DEFAULT_SYN_QUEUE_SIZE : constant unsigned := 4;
+   type Syn_Queue_Size_Max is range 1 .. Natural'Last
+   with Size => unsigned'Size;
 
-   TCP_MAX_RX_BUFFER_SIZE : constant unsigned_long := 22_880;
-   TCP_MAX_TX_BUFFER_SIZE : constant unsigned_long := 22_880;
+   -- Maximum SYN queue size for listening sockets
+#if TCP_MAX_SYN_QUEUE_SIZE'Defined then
+   TCP_MAX_SYN_QUEUE_SIZE : constant Syn_Queue_Size_Max := $TCP_MAX_SYN_QUEUE_SIZE;
+#else
+   TCP_MAX_SYN_QUEUE_SIZE : constant Syn_Queue_Size_Max := 16;
+#end if;
+
+   type Syn_Queue_Size is range 1 .. TCP_MAX_SYN_QUEUE_SIZE
+   with Size => unsigned'Size;
+
+   -- Default SYN queue size for listening sockets
+#if TCP_DEFAULT_SYN_QUEUE_SIZE'Defined then
+   TCP_DEFAULT_SYN_QUEUE_SIZE : constant Syn_Queue_Size := $TCP_DEFAULT_SYN_QUEUE_SIZE;
+#else
+   TCP_DEFAULT_SYN_QUEUE_SIZE : constant Syn_Queue_Size := 4;
+#end if;
+
+   subtype Buffer_Size is Natural range 536 .. Natural'Last;
+
+   -- Maximum acceptable size for the receive buffer
+#if TCP_MAX_RX_BUFFER_SIZE'Defined then
+   TCP_MAX_RX_BUFFER_SIZE : constant Buffer_Size := $TCP_MAX_RX_BUFFER_SIZE;
+#else
+   TCP_MAX_RX_BUFFER_SIZE : constant Buffer_Size := 22_880;
+#end if;
+
+   -- Maximum acceptable size for the send buffer
+#if TCP_MAX_TX_BUFFER_SIZE'Defined then
+   TCP_MAX_TX_BUFFER_SIZE : constant Buffer_Size := $TCP_MAX_TX_BUFFER_SIZE;
+#else
+   TCP_MAX_TX_BUFFER_SIZE : constant Buffer_Size := 22_880;
+#end if;
+
+   type Tx_Buffer_Size is range 1 .. TCP_MAX_TX_BUFFER_SIZE;
+   type Rx_Buffer_Size is range 1 .. TCP_MAX_RX_BUFFER_SIZE;
+
+   -- Default buffer size for reception
+#if TCP_DEFAULT_RX_BUFFER_SIZE'Defined then
+   TCP_DEFAULT_RX_BUFFER_SIZE : constant Rx_Buffer_Size := $TCP_DEFAULT_RX_BUFFER_SIZE;
+#else
+   TCP_DEFAULT_RX_BUFFER_SIZE : constant Rx_Buffer_Size := 2_860;
+#end if;
+
+   -- Default buffer size for transmission
+#if TCP_DEFAULT_TX_BUFFER_SIZE'Defined then
+   TCP_DEFAULT_TX_BUFFER_SIZE : constant Tx_Buffer_Size := $TCP_DEFAULT_TX_BUFFER_SIZE;
+#else
+   TCP_DEFAULT_TX_BUFFER_SIZE : constant Tx_Buffer_Size := 2_860;
+#end if;
 
    TCP_DEFAULT_MSS : constant unsigned_short := 536;
    TCP_MAX_MSS     : constant unsigned_short := 1_430;
@@ -81,9 +128,6 @@ package Tcp_Type with SPARK_Mode is
       -- TODO: use preprocessing instead of 14 to be coherent with the C code.
    type Chunk_Desc_Array is array (0 .. 14) of Chunk_Desc
    with Object_Size => 15 * (32 + System.Word_Size);
-
-   type Tx_Buffer_Size is range 1 .. TCP_MAX_TX_BUFFER_SIZE;
-   type Rx_Buffer_Size is range 1 .. TCP_MAX_RX_BUFFER_SIZE;
 
    type Tcp_Tx_Buffer is record
       chunkCount    : unsigned;

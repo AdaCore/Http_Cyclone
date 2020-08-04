@@ -1,2 +1,11 @@
 -- Number of sockets that can be opened simultaneously
 SOCKET_MAX_COUNT := 10
+
+-- Default buffer size for reception
+TCP_DEFAULT_RX_BUFFER_SIZE := 2860
+
+-- Default buffer size for transmission
+TCP_DEFAULT_TX_BUFFER_SIZE := 2860
+
+-- Default SYN queue size for listening sockets
+TCP_DEFAULT_SYN_QUEUE_SIZE := 4

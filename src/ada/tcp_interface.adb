@@ -186,10 +186,11 @@ is
 
       -- Set the size of the SYN queue Limit the number of pending connections
       if Backlog > 0 then
-         Sock.synQueueSize := unsigned'Min (Backlog, TCP_MAX_SYN_QUEUE_SIZE);
-      else
          Sock.synQueueSize :=
-           unsigned'Min (TCP_DEFAULT_SYN_QUEUE_SIZE, TCP_MAX_SYN_QUEUE_SIZE);
+            Syn_Queue_Size(
+               unsigned'Min (Backlog, unsigned(TCP_MAX_SYN_QUEUE_SIZE)));
+      else
+         Sock.synQueueSize := TCP_DEFAULT_SYN_QUEUE_SIZE;
       end if;
 
       -- Place the socket in the listening state

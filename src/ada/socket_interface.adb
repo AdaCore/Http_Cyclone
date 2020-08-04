@@ -128,15 +128,16 @@ is
             Sock.n                     := 0;
             Sock.recover               := 0;
             Sock.txBuffer.chunkCount   := 0;
-            Sock.txBufferSize          := 2_860;
+            Sock.txBufferSize          := TCP_DEFAULT_TX_BUFFER_SIZE;
             Sock.rxBuffer.chunkCount   := 0;
-            Sock.rxBufferSize          := 2_860;
+            Sock.rxBufferSize          := TCP_DEFAULT_RX_BUFFER_SIZE;
             Sock.retransmitQueue       := System.Null_Address;
             Sock.retransmitCount       := 0;
             Sock.synQueue              := null;
             pragma Annotate (GNATprove, False_Positive,
                            "memory leak might occur", "Memory should already be free");
-            Sock.synQueueSize          := 0;
+            -- Limit the number of pending connections
+            Sock.synQueueSize          := TCP_DEFAULT_SYN_QUEUE_SIZE;
             Sock.wndProbeCount         := 0;
             Sock.wndProbeInterval      := 0;
             Sock.sackPermitted         := False;

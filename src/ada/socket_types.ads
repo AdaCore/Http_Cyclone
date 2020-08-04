@@ -166,7 +166,7 @@ is
       retransmitCount : unsigned;
 
       synQueue     : Tcp_Syn_Queue_Item_Acc;-- Tcp_Syn_Queue_Item_Acc;
-      synQueueSize : unsigned;
+      synQueueSize : Syn_Queue_Size;
 
       wndProbeCount    : unsigned;
       wndProbeInterval : Systime;
