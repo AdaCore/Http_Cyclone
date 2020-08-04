@@ -59,12 +59,62 @@ package Tcp_Type with SPARK_Mode is
    TCP_DEFAULT_TX_BUFFER_SIZE : constant Tx_Buffer_Size := 2_860;
 #end if;
 
-   TCP_DEFAULT_MSS : constant unsigned_short := 536;
-   TCP_MAX_MSS     : constant unsigned_short := 1_430;
+   type Mss_Lower_Bound is range 1 .. unsigned_short'Last;
+   type Mss_Upper_Bound is range 536 .. unsigned_short'Last;
 
-   TCP_INITIAL_RTO : constant Systime := 1_000;
+   -- Mimimum acceptable segment size
+#if TCP_MIN_MSS'Defined then
+   TCP_MIN_MSS : constant Mss_Lower_Bound := $TCP_MIN_MSS;
+#else
+   TCP_MIN_MSS : constant Mss_Lower_Bound := 64;
+#end if;
 
+   -- Maximum segment size
+#if TCP_MAX_MSS'Defined then
+   TCP_MAX_MSS : constant Mss_Upper_Bound := $TCP_MAX_MSS;
+#else
+   TCP_MAX_MSS : constant Mss_Upper_Bound := 1_430;
+#end if;
+
+   type Mss_Size is range 1 .. TCP_MAX_MSS
+   with Size => unsigned_short'Size;
+
+   -- Default maximum segment size
+#if TCP_DEFAULT_MSS'Defined then
+   TCP_DEFAULT_MSS : constant Mss_Size := $TCP_DEFAULT_MSS;
+#else
+   TCP_DEFAULT_MSS : constant Mss_Size := 536;
+#end if;
+
+   subtype Rto_Systime_Max is Systime range 1000 .. Systime'Last;
+   -- Maximum retransmission timeout
+#if TCP_MAX_RTO'Defined then
+   TCP_MAX_RTO : constant Rto_Systime_Max := $TCP_MAX_RTO;
+#else
+   TCP_MAX_RTO : constant Rto_Systime_Max := 60000;
+#end if;
+
+   subtype Rto_Systime is Systime range 100 .. TCP_MAX_RTO;
+   -- Initial retransmission timeout
+#if TCP_INITIAL_RTO'Defined then
+   TCP_INITIAL_RTO : constant Rto_Systime := $TCP_INITIAL_RTO;
+#else
+   TCP_INITIAL_RTO : constant Rto_Systime := 1000;
+#end if;
+
+   -- Minimum retransmission timeout
+#if TCP_MIN_RTO'Defined then
+   TCP_MIN_RTO : constant Rto_Systime := $TCP_MIN_RTO;
+#else
+   TCP_MIN_RTO : constant Rto_Systime := 1000;
+#end if;
+
+   -- Size of the congestion window after the three-way handshake is completed
+#if TCP_INITIAL_WINDOW'Defined then
+   TCP_INITIAL_WINDOW : constant unsigned_short := $TCP_INITIAL_WINDOW;
+#else
    TCP_INITIAL_WINDOW : constant unsigned_short := 3;
+#end if;
 
    -- Override timeout (should be in the range 0.1 to 1 seconds)
    TCP_OVERRIDE_TIMEOUT : constant Systime := 500;
@@ -125,9 +175,11 @@ package Tcp_Type with SPARK_Mode is
    TCP_FLAG_ACK : constant Tcp_Flags := 16;
    TCP_FLAG_URG : constant Tcp_Flags := 32;
 
-      -- TODO: use preprocessing instead of 14 to be coherent with the C code.
-   type Chunk_Desc_Array is array (0 .. 14) of Chunk_Desc
-   with Object_Size => 15 * (32 + System.Word_Size);
+   type Chunk_Desc_Array_Index is range 0 .. ((TCP_MAX_TX_BUFFER_SIZE + NET_MEM_POOL_BUFFER_SIZE - 1) / NET_MEM_POOL_BUFFER_SIZE);
+   type Chunk_Desc_Array is array (Chunk_Desc_Array_Index) of Chunk_Desc
+   with
+      Object_Size =>
+         (((TCP_MAX_TX_BUFFER_SIZE + NET_MEM_POOL_BUFFER_SIZE - 1) / NET_MEM_POOL_BUFFER_SIZE) + 1) * (32 + System.Word_Size);
 
    type Tcp_Tx_Buffer is record
       chunkCount    : unsigned;
@@ -135,7 +187,9 @@ package Tcp_Type with SPARK_Mode is
       chunk         : Chunk_Desc_Array;
    end record
    with
-      Convention => C, Object_Size => 64 + 15 * (32 + System.Word_Size);
+      Convention => C,
+      Object_Size =>
+         64 + (((TCP_MAX_TX_BUFFER_SIZE + NET_MEM_POOL_BUFFER_SIZE - 1) / NET_MEM_POOL_BUFFER_SIZE) + 1) * (32 + System.Word_Size);
 
    type Tcp_Rx_Buffer is record
       chunkCount    : unsigned;
@@ -178,7 +232,7 @@ package Tcp_Type with SPARK_Mode is
       Src_Port      : Port;
       Dest_Addr     : IpAddr;
       Isn           : unsigned;
-      Mss           : unsigned_short;
+      Mss           : Mss_Size;
     end record
       with Convention => C;
 

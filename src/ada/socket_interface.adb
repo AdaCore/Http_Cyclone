@@ -101,8 +101,8 @@ is
             Sock.owned_Flag            := False;
             Sock.closed_Flag           := False;
             Sock.reset_Flag            := False;
-            Sock.smss                  := 0;
-            Sock.rmss                  := 0;
+            Sock.smss                  := TCP_DEFAULT_MSS;
+            Sock.rmss                  := TCP_DEFAULT_MSS;
             Sock.iss                   := 0;
             Sock.irs                   := 0;
             Sock.sndUna                := 0;

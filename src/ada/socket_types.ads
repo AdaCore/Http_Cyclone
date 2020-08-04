@@ -80,7 +80,7 @@ is
       SOCKET_IP_PROTO_TCP    => 6,
       SOCKET_IP_PROTO_UDP    => 17,
       SOCKET_IP_PROTO_ICMPV6 => 58);
-   
+
    ------------------------
    -- Receive queue item --
    ------------------------
@@ -125,8 +125,8 @@ is
       closed_Flag : Bool;
       reset_Flag  : Bool;
 
-      smss : unsigned_short;
-      rmss : unsigned_short;
+      smss : Mss_Size;
+      rmss : Mss_Size;
       iss  : unsigned;
       irs  : unsigned;
 
@@ -183,7 +183,7 @@ is
       -- UDP specific variables
       receiveQueue : Socket_Queue_Item_Acc;
    end record
-     with 
+     with
       Convention => C,
       Predicate =>
          Socket_Struct.S_Event_Mask = SOCKET_EVENT_TIMEOUT or else
@@ -212,7 +212,7 @@ is
    SOCKET_FLAG_DELAY      : constant Socket_Flags := 16#8000#;
 
    -- Number of sockets that can be opened simultaneously
-   
+
 #if SOCKET_MAX_COUNT'Defined then
    SOCKET_MAX_COUNT : constant Positive := $SOCKET_MAX_COUNT;
 #else
@@ -301,7 +301,7 @@ is
          S_Remote_Port    => Sock.S_Remote_Port
       ))
       with Ghost;
-   
+
 
    -- The transition relation function is used to compute all the transitions
    -- that can happen when a message is received.

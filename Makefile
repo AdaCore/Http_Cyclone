@@ -428,6 +428,7 @@ clean:
 	rm -f $(RESULT).hex
 	rm -f $(RESULT).lst
 	rm -f $(OBJ_DIR)/*.o
+	rm -r ./src/spark_config.h
 
 .PHONY: prove
 prove: prove.gpr $(wildcard ./src/ada/*.adb) $(wildcard ./src/ada/*.ads)
