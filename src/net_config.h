@@ -121,15 +121,11 @@
 //Maximum number of packets waiting for address resolution to complete
 #define NDP_MAX_PENDING_PACKETS 2
 
-//TCP support
-#define TCP_SUPPORT ENABLED
 //Maximum number of retransmissions
 #define TCP_MAX_RETRIES 5
 //Selective acknowledgment support
 #define TCP_SACK_SUPPORT DISABLED
 
-//UDP support
-#define UDP_SUPPORT ENABLED
 //Receive queue depth for connectionless sockets
 #define UDP_RX_QUEUE_SIZE 4
 

@@ -116,6 +116,12 @@ package Tcp_Type with SPARK_Mode is
    TCP_INITIAL_WINDOW : constant unsigned_short := 3;
 #end if;
 
+#if TCP_MAX_SACK_BLOCKS'Defined then
+   TCP_MAX_SACK_BLOCKS : constant Positive := $TCP_MAX_SACK_BLOCKS;
+#else
+   TCP_MAX_SACK_BLOCKS : constant Positive := 4;
+#end if;
+
    -- Override timeout (should be in the range 0.1 to 1 seconds)
    TCP_OVERRIDE_TIMEOUT : constant Systime := 500;
 

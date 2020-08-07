@@ -8,6 +8,8 @@ with open(sys.argv[1], 'r') as conf:
                 conf_h.write("//" + line[2:])
             elif ":=" in line:
                 var, val = line.split(":=")
+                val = val.replace("True", "ENABLED");
+                val = val.replace("False", "DISABLED");
                 conf_h.write(f"#define {var} {val}")
             else:
                 conf_h.write("\n")

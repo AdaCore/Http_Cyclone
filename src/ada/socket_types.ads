@@ -10,7 +10,7 @@ package Socket_Types
    with SPARK_Mode
 is
 
-   type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
+   type SackBlockArray is array (0 .. TCP_MAX_SACK_BLOCKS) of Tcp_Sack_Block;
 
    ------------------
    -- Socket_Event --
@@ -180,8 +180,10 @@ is
       sackBlock      : SackBlockArray;
       sackBlockCount : unsigned;
 
+#if (not UDP_SUPPORT'Defined) or UDP_SUPPORT then
       -- UDP specific variables
       receiveQueue : Socket_Queue_Item_Acc;
+#end if;
    end record
      with
       Convention => C,
