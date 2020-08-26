@@ -405,7 +405,8 @@ is
                begin
                   Queue_Item.Next := null;
                   -- Free previously allocated memory
-                  memPoolFree (Queue_Item.Buffer);
+                  -- netBufferFree(queueItem.Buffer); in the c code
+                  Net_Buffer_Free (Queue_Item);
                   -- Point to the next item
                   Queue_Item := Next_Queue_Item;
                end;
