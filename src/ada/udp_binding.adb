@@ -53,7 +53,7 @@ is
           srcIpAddr : System.Address;
           srcPort   : out Port;
           destIpAddr: System.Address;
-          data      : char_array;
+          data      : out char_array;
           size      : unsigned;
           received  : out unsigned;
           flags     : unsigned) return unsigned
@@ -61,11 +61,14 @@ is
          Import        => True,
          Convention    => C,
          External_Name => "udpReceiveDatagram";
+
+      Received_Data : char_array(size_t(Data'First) .. size_t(Data'Last));
    begin
       Received := 0;
       Error := Error_T'Enum_Val(
          udpReceiveDatagram(Sock, Src_Ip_Addr'Address, Src_Port, Dest_Ip_Addr'Address,
-            char_array(Data), Data'Length, unsigned(Received), Flags));
+            Received_Data, Data'Length, unsigned(Received), Flags));
+      Data := Received_Buffer(Received_Data);
 
    end Udp_Receive_Datagram;
 end Udp_Binding;

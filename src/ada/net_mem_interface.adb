@@ -44,4 +44,17 @@ is
       memPoolFree (Queue_Item);
    end Mem_Pool_Free;
 
+   procedure Net_Buffer_Free
+      (Queue_Item : in out Socket_Queue_Item_Acc)
+   is
+      procedure netBufferFree
+         (Buffer : System.Address)
+      with
+         Import => True,
+         Convention => C,
+         External_Name => "netBufferFree";
+   begin
+      netBufferFree (Queue_Item.Buffer);
+   end Net_Buffer_Free;
+
 end Net_Mem_Interface;

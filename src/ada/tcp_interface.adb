@@ -386,7 +386,11 @@ is
             end if;
 
             -- Dispose the socket
-            Tcp_Abort (Client_Socket, Error);
+            declare
+               Ignore_Error : Error_T;
+            begin
+               Tcp_Abort (Client_Socket, Ignore_Error);
+            end;
          end if;
 
          -- Remove the item from the SYN queue
@@ -610,7 +614,11 @@ is
 
          -- The Nagle algorithm should be implemented to coalesce
          -- short segments (refer to RFC 1122 4.2.3.4)
-         Tcp_Nagle_Algo(Sock, Flags, Error);
+         declare
+            Ignore_Error : Error_T;
+         begin
+            Tcp_Nagle_Algo(Sock, Flags, Ignore_Error);
+         end;
 
          -- Exit when all the data have been sent
          exit when Total_Length >= Data_Buffer'Length;
