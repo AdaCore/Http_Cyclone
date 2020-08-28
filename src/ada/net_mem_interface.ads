@@ -1,5 +1,6 @@
 with Error_H;      use Error_H;
 with Tcp_Type;     use Tcp_Type;
+with Socket_Types; use Socket_Types;
 with System;
 
 package Net_Mem_Interface
