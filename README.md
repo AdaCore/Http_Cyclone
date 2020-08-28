@@ -11,6 +11,23 @@ Use project
 Use `git clone --recursive <git_repo>` to collect all the sources
 needed.
 
+Configuration
+-------------
+
+The configuration options has to be set in the file `config.def`,
+in the format
+```
+OPTION := VALUE
+```
+A description of all the available option can be found in the file
+[options.md](options.md).
+
+Before compiling or running `gnatprove`, it is necessary to run
+```
+make config
+```
+to add the correct files to the compilation.
+
 Compilation
 -----------
 

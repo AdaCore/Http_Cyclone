@@ -31,7 +31,7 @@ is
       Convention => C,
       External_Name => "memPoolFree",
       Global => null;
-   
+
    procedure Mem_Pool_Free
       (Queue_Item : in out Tcp_Syn_Queue_Item_Acc)
       with

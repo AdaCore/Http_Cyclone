@@ -1,5 +1,7 @@
 RESULT ?= http_client_demo
 
+CONFIG_FILE = config.def
+
 DEFINES = \
 	-DSTM32F769xx \
 	-DUSE_HAL_DRIVER \
@@ -80,9 +82,6 @@ C_SOURCES = \
 	./src/cyclone_tcp/dhcp/dhcp_client.c \
 	./src/cyclone_tcp/dhcp/dhcp_common.c \
 	./src/cyclone_tcp/dhcp/dhcp_debug.c \
-	./src/cyclone_tcp/ftp/ftp_client.c \
-	./src/cyclone_tcp/ftp/ftp_client_transport.c \
-	./src/cyclone_tcp/ftp/ftp_client_misc.c \
 	./src/third_party/freertos/portable/gcc/arm_cm7/r0p1/port.c \
 	./src/third_party/freertos/croutine.c \
 	./src/third_party/freertos/list.c \
@@ -169,6 +168,7 @@ C_SOURCES = \
 	./src/ada/helper.c
 
 HEADERS = \
+	./src/spark_config.h \
 	./src/os_port_config.h \
 	./src/net_config.h \
 	./src/FreeRTOSConfig.h \
@@ -330,8 +330,27 @@ ASM_OBJECTS = $(patsubst %.S, %.o, $(ASM_SOURCES))
 
 C_OBJECTS = $(patsubst %.c, %.o, $(C_SOURCES))
 
-ADA_SOURCES = $(wildcard ./src/ada/*.adb)
-ADA_HEADERS = tcp_type.ads
+UDP_SUPPORT := $(shell grep -e "UDP_SUPPORT[[:space:]]:=[[:space:]]True" $(CONFIG_FILE))
+
+ADA_SOURCES = \
+	src/ada/ada_main.adb \
+	src/ada/last_chance_handler.adb \
+	src/ada/os.adb \
+	src/ada/tcp_fsm_binding.adb \
+	src/ada/tcp_misc_binding.adb \
+	src/ada/ip_binding.adb \
+	src/ada/net_mem_interface.adb \
+	src/ada/socket_helper.adb \
+	src/ada/tcp_interface.adb \
+	src/ada/tcp_timer_interface.adb \
+	src/ada/socket_interface.adb
+ADA_HEADERS = \
+	src/ada/tcp_type.ads \
+	src/ada/socket_interface.ads
+
+ifneq ($(UDP_SUPPORT), )
+	ADA_SOURCES += src/ada/udp_binding.adb
+endif
 
 # ADA_OBJECTS += $(patsubst %.ads, %.o, $(ADA_HEADERS))
 ADA_OBJECTS += $(patsubst %.adb, %.o, $(ADA_SOURCES))
@@ -340,7 +359,7 @@ OBJ_DIR = obj
 
 LINKER_SCRIPT = src/stm32f769_flash.ld
 
-CFLAGS += -fno-common -Wall -Os -g3
+CFLAGS += -fno-common -Wall -Os -g3 -std=c99
 CFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
 CFLAGS += $(DEFINES)
@@ -352,7 +371,8 @@ ADAFLAGS += --RTS=$(addprefix $(RTS)/, arm-eabi/lib/gnat/ravenscar-sfp-stm32f769
 ADAFLAGS += -fno-common -Wall -Os -g3 -ggdb
 ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
-ADAFLAGS += -gnat2020 -gnatyg3C-Itm -gnatwa -gnatef -gnatp # -gnata
+ADAFLAGS += -gnat2020 -gnatwa -gnatef -gnatp # -gnata
+ADAFLAGS += -I. -gnatep=prep.data
 
 ADA_COMPILER = arm-eabi-gcc
 
@@ -371,12 +391,22 @@ THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 all: build size
 
 .PHONY: install
-install: build size program
+install: select_files build size program
+
+############################
+##  Configuration target  ##
+############################
+
+config: $(ADA_HEADERS) $(ADA_SOURCES)
+
+##########################
+##  Compilation target  ##
+##########################
 
 .PHONY: build
 build: $(RESULT).elf $(RESULT).lst $(RESULT).bin $(RESULT).hex
-	
-$(RESULT).elf: $(ASM_OBJECTS) $(C_OBJECTS) $(ADA_OBJECTS) $(HEADERS) $(LINKER_SCRIPT) $(THIS_MAKEFILE)
+
+$(RESULT).elf: $(ADA_HEADERS) $(ADA_SOURCES) $(ASM_OBJECTS) $(C_OBJECTS) $(ADA_OBJECTS) $(HEADERS) $(LINKER_SCRIPT) $(THIS_MAKEFILE)
 	$(CC) -Wl,-M=$(RESULT).map -Wl,-T$(LINKER_SCRIPT) $(CFLAGS) $(addprefix $(OBJ_DIR)/, $(notdir $(ASM_OBJECTS))) $(addprefix $(OBJ_DIR)/, $(notdir $(ADA_OBJECTS))) $(addprefix $(OBJ_DIR)/, $(notdir $(C_OBJECTS))) -o $@
 
 $(ASM_OBJECTS): | $(OBJ_DIR)
@@ -385,6 +415,23 @@ $(C_OBJECTS): | $(OBJ_DIR)
 
 $(OBJ_DIR):
 	mkdir -p $@
+
+src/spark_config.h: config.def
+	python3 src/run_config.py $<
+
+src/ada/socket_interface.ads: $(CONFIG_FILE) src/ada/socket_interface_tcp.ads src/ada/socket_interface_tcp_udp.ads
+ifneq ($(UDP_SUPPORT), )
+	cp src/ada/socket_interface_tcp_udp.ads $@
+else
+	cp src/ada/socket_interface_tcp.ads $@
+endif
+
+src/ada/socket_interface.adb: $(CONFIG_FILE) src/ada/socket_interface_tcp.adb src/ada/socket_interface_tcp_udp.adb
+ifneq ($(UDP_SUPPORT), )
+	cp src/ada/socket_interface_tcp_udp.adb $@
+else
+	cp src/ada/socket_interface_tcp.adb $@
+endif
 
 %.o: %.c $(HEADERS) $(THIS_MAKEFILE)
 	$(CC) $(CFLAGS) -c $< -o $(addprefix $(OBJ_DIR)/, $(notdir $@))
@@ -423,8 +470,9 @@ clean:
 	rm -f $(RESULT).hex
 	rm -f $(RESULT).lst
 	rm -f $(OBJ_DIR)/*.o
+	rm -f ./src/spark_config.h
+	rm -f ./src/ada/socket_interface.adb ./src/ada/socket_interface.ads
 
 .PHONY: prove
-prove: prove.gpr $(wildcard ./src/ada/*.adb) $(wildcard ./src/ada/*.ads)
-	$(ADA_PROVER) -P $< --level=4 -u tcp_interface.ads -j0 > /dev/null
-	$(ADA_PROVER) -P $< --level=3 -j0
+prove: prove.gpr config $(ADA_SOURCES) $(ADA_HEADERS) $(wildcard ./src/ada/*.adb) $(wildcard ./src/ada/*.ads)
+	$(ADA_PROVER) -P $< --level=4 -j0

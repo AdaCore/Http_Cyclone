@@ -31,6 +31,8 @@
 #ifndef _NET_CONFIG_H
 #define _NET_CONFIG_H
 
+#include "spark_config.h"
+
 //Trace level for TCP/IP stack debugging
 #define MEM_TRACE_LEVEL          4
 #define NIC_TRACE_LEVEL          4
@@ -119,21 +121,11 @@
 //Maximum number of packets waiting for address resolution to complete
 #define NDP_MAX_PENDING_PACKETS 2
 
-//TCP support
-#define TCP_SUPPORT ENABLED
-//Default buffer size for transmission
-#define TCP_DEFAULT_TX_BUFFER_SIZE (1430*2)
-//Default buffer size for reception
-#define TCP_DEFAULT_RX_BUFFER_SIZE (1430*2)
-//Default SYN queue size for listening sockets
-#define TCP_DEFAULT_SYN_QUEUE_SIZE 4
 //Maximum number of retransmissions
 #define TCP_MAX_RETRIES 5
 //Selective acknowledgment support
 #define TCP_SACK_SUPPORT DISABLED
 
-//UDP support
-#define UDP_SUPPORT ENABLED
 //Receive queue depth for connectionless sockets
 #define UDP_RX_QUEUE_SIZE 4
 
@@ -141,9 +133,6 @@
 #define RAW_SOCKET_SUPPORT DISABLED
 //Receive queue depth for raw sockets
 #define RAW_SOCKET_RX_QUEUE_SIZE 4
-
-//Number of sockets that can be opened simultaneously
-#define SOCKET_MAX_COUNT 10
 
 //LLMNR responder support
 #define LLMNR_RESPONDER_SUPPORT ENABLED

@@ -107,9 +107,9 @@ is
          end if;
 
          -- The SMSS is the size of the largest segment that the sender can transmit
-         Sock.smss := unsigned_short'Min (TCP_DEFAULT_MSS, TCP_MAX_MSS);
+         Sock.smss := Mss_Size'Min (TCP_DEFAULT_MSS, Mss_Size(TCP_MAX_MSS));
          -- The RMSS is the size of the largest segment the receiver is willing to accept
-         Sock.rmss := unsigned_short(unsigned_long'Min
+         Sock.rmss := Mss_Size(unsigned_long'Min
                                        (unsigned_long(Sock.rxBufferSize),
                                         unsigned_long(TCP_MAX_MSS)));
 
@@ -186,10 +186,11 @@ is
 
       -- Set the size of the SYN queue Limit the number of pending connections
       if Backlog > 0 then
-         Sock.synQueueSize := unsigned'Min (Backlog, TCP_MAX_SYN_QUEUE_SIZE);
-      else
          Sock.synQueueSize :=
-           unsigned'Min (TCP_DEFAULT_SYN_QUEUE_SIZE, TCP_MAX_SYN_QUEUE_SIZE);
+            Syn_Queue_Size(
+               unsigned'Min (Backlog, unsigned(TCP_MAX_SYN_QUEUE_SIZE)));
+      else
+         Sock.synQueueSize := TCP_DEFAULT_SYN_QUEUE_SIZE;
       end if;
 
       -- Place the socket in the listening state
@@ -327,9 +328,9 @@ is
 
                -- The RMSS is the size of the largest segment the receiver is
                -- willing to accept
-               Client_Socket.rmss := unsigned_short'Min
+               Client_Socket.rmss := Mss_Size(unsigned_short'Min
                      (unsigned_short(Client_Socket.rxBufferSize),
-                      TCP_MAX_MSS);
+                      unsigned_short(TCP_MAX_MSS)));
 
                -- Initialize TCP control block
                Client_Socket.iss     := netGetRand;
@@ -347,7 +348,7 @@ is
                Sock.congestState := TCP_CONGEST_STATE_IDLE;
                -- Initial congestion window
                Client_Socket.cwnd := unsigned_short(unsigned_long'Min
-                        (unsigned_long(TCP_INITIAL_WINDOW * Client_Socket.smss),
+                        (unsigned_long(TCP_INITIAL_WINDOW * unsigned_short(Client_Socket.smss)),
                          unsigned_long(Client_Socket.txBufferSize)));
                -- Slow start threshold should be set arbitrarily high
                Client_Socket.ssthresh := unsigned_short'Last;

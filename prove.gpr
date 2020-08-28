@@ -1,6 +1,14 @@
 project Prove is
-   for Source_Dirs use ("src/**");
+   for Source_Dirs use (".", "src/**");
+   for Excluded_Source_Files use
+      ("socket_interface_tcp_udp.ads",
+       "socket_interface_tcp_udp.adb",
+       "socket_interface_tcp.ads",
+       "socket_interface_tcp.adb");
    Package Compiler is
-      for default_switches ("Ada") use ("-gnat2020");
+      for default_switches ("Ada") use
+         ("-gnat2020",
+          "-I" & Prove'Project_Dir,
+          "-gnatep=" & Prove'Project_Dir & "prep.data");
      end Compiler;
 end Prove;

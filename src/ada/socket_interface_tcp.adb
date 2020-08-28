@@ -3,7 +3,6 @@ with Os;                use Os;
 with Socket_Helper;     use Socket_Helper;
 with System;
 with Tcp_Fsm_Binding;   use Tcp_Fsm_Binding;
-with Udp_Binding;       use Udp_Binding;
 
 package body Socket_Interface
    with SPARK_Mode
@@ -45,12 +44,6 @@ is
             Protocol := SOCKET_IP_PROTO_TCP;
             -- Get an ephemeral port number
             Tcp_Get_Dynamic_Port (P);
-            Error := NO_ERROR;
-         when SOCKET_TYPE_DGRAM =>
-            -- Always use UDP as underlying transport protocol
-            Protocol := SOCKET_IP_PROTO_UDP;
-            -- Get an ephemeral port number
-            P     := Udp_Get_Dynamic_Port;
             Error := NO_ERROR;
          when SOCKET_TYPE_RAW_IP | SOCKET_TYPE_RAW_ETH =>
             P     := 0;
@@ -101,8 +94,8 @@ is
             Sock.owned_Flag            := False;
             Sock.closed_Flag           := False;
             Sock.reset_Flag            := False;
-            Sock.smss                  := 0;
-            Sock.rmss                  := 0;
+            Sock.smss                  := TCP_DEFAULT_MSS;
+            Sock.rmss                  := TCP_DEFAULT_MSS;
             Sock.iss                   := 0;
             Sock.irs                   := 0;
             Sock.sndUna                := 0;
@@ -128,22 +121,20 @@ is
             Sock.n                     := 0;
             Sock.recover               := 0;
             Sock.txBuffer.chunkCount   := 0;
-            Sock.txBufferSize          := 2_860;
+            Sock.txBufferSize          := TCP_DEFAULT_TX_BUFFER_SIZE;
             Sock.rxBuffer.chunkCount   := 0;
-            Sock.rxBufferSize          := 2_860;
+            Sock.rxBufferSize          := TCP_DEFAULT_RX_BUFFER_SIZE;
             Sock.retransmitQueue       := System.Null_Address;
             Sock.retransmitCount       := 0;
             Sock.synQueue              := null;
             pragma Annotate (GNATprove, False_Positive,
                            "memory leak might occur", "Memory should already be free");
-            Sock.synQueueSize          := 0;
+            -- Limit the number of pending connections
+            Sock.synQueueSize          := TCP_DEFAULT_SYN_QUEUE_SIZE;
             Sock.wndProbeCount         := 0;
             Sock.wndProbeInterval      := 0;
             Sock.sackPermitted         := False;
             Sock.sackBlockCount        := 0;
-            Sock.receiveQueue          := null;
-            pragma Annotate (GNATprove, False_Positive,
-                           "memory leak might occur", "Memory should already be free");
          end if;
       end if;
 
@@ -211,12 +202,6 @@ is
          Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
          Os_Release_Mutex (Net_Mutex);
 
-         -- Connectionless socket?
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         Sock.S_Remote_Ip_Addr := Remote_Ip_Addr;
-         Sock.S_Remote_Port  := Remote_Port;
-         Error               := NO_ERROR;
-
          -- Raw Socket?
       elsif Sock.S_Type = SOCKET_TYPE_RAW_IP then
          Sock.S_Remote_Ip_Addr := Remote_Ip_Addr;
@@ -247,8 +232,6 @@ is
          -- INTERFERENCES
          Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         Udp_Send_Datagram (Sock, Dest_Ip_Addr, Dest_Port, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
       end if;
@@ -274,17 +257,6 @@ is
          -- INTERFERENCES
          Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         -- @TODO : See how to improve this part without using .all
-         Udp_Send_Datagram
-            (Sock => Sock,
-             Dest_Ip_Addr => IpAddr'(Length => Sock.S_Remote_Ip_Addr.Length,
-                                     Ip     => Sock.S_Remote_Ip_Addr.Ip),
-             Dest_Port => Sock.S_Remote_Port,
-             Data => Data,
-             Written => Written,
-             Flags => Flags,
-             Error => Error);
       else
          Error := ERROR_INVALID_SOCKET;
       end if;
@@ -318,16 +290,6 @@ is
          Src_Port     := Sock.S_Remote_Port;
          -- Save the destination IP address
          Dest_Ip_Addr := Sock.S_localIpAddr;
-      elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         Udp_Receive_Datagram
-            (Sock         => Sock,
-             Src_Ip_Addr  => Src_Ip_Addr,
-             Src_Port     => Src_Port,
-             Dest_Ip_Addr => Dest_Ip_Addr,
-             Data         => Data,
-             Received     => Received,
-             Flags        => Flags,
-             Error        => Error);
       else
          Src_Ip_Addr  := Sock.S_Remote_Ip_Addr;
          Src_Port     := Sock.S_Remote_Port;
@@ -391,29 +353,6 @@ is
                          | SOCKET_TYPE_RAW_IP
                          | SOCKET_TYPE_RAW_ETH
       then
-         -- @TODO Have a look at this section to see if the code is
-         -- valid, in particular in what is done with pointers.
-         declare
-            -- Point to the first item in the receive queue
-            Queue_Item : Socket_Queue_Item_Acc := Sock.receiveQueue;
-         begin
-            -- Purge the receive queue
-            while Queue_Item /= null loop
-               declare
-                  -- Keep track of the next item in the queue
-                  Next_Queue_Item : Socket_Queue_Item_Acc := Queue_Item.Next;
-               begin
-                  Queue_Item.Next := null;
-                  -- Free previously allocated memory
-                  -- netBufferFree(queueItem.Buffer); in the c code
-                  Net_Buffer_Free (Queue_Item);
-                  -- Point to the next item
-                  Queue_Item := Next_Queue_Item;
-               end;
-            end loop;
-            Sock.receiveQueue := null;
-         end;
-
             -- Mark the socket as closed
             Sock.S_Type := SOCKET_TYPE_UNUSED;
 

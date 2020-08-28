@@ -10,7 +10,7 @@ package Socket_Types
    with SPARK_Mode
 is
 
-   type SackBlockArray is array (0 .. 3) of Tcp_Sack_Block;
+   type SackBlockArray is array (0 .. TCP_MAX_SACK_BLOCKS) of Tcp_Sack_Block;
 
    ------------------
    -- Socket_Event --
@@ -80,7 +80,7 @@ is
       SOCKET_IP_PROTO_TCP    => 6,
       SOCKET_IP_PROTO_UDP    => 17,
       SOCKET_IP_PROTO_ICMPV6 => 58);
-   
+
    ------------------------
    -- Receive queue item --
    ------------------------
@@ -125,8 +125,8 @@ is
       closed_Flag : Bool;
       reset_Flag  : Bool;
 
-      smss : unsigned_short;
-      rmss : unsigned_short;
+      smss : Mss_Size;
+      rmss : Mss_Size;
       iss  : unsigned;
       irs  : unsigned;
 
@@ -166,7 +166,7 @@ is
       retransmitCount : unsigned;
 
       synQueue     : Tcp_Syn_Queue_Item_Acc;-- Tcp_Syn_Queue_Item_Acc;
-      synQueueSize : unsigned;
+      synQueueSize : Syn_Queue_Size;
 
       wndProbeCount    : unsigned;
       wndProbeInterval : Systime;
@@ -180,10 +180,12 @@ is
       sackBlock      : SackBlockArray;
       sackBlockCount : unsigned;
 
+#if (not UDP_SUPPORT'Defined) or UDP_SUPPORT then
       -- UDP specific variables
       receiveQueue : Socket_Queue_Item_Acc;
+#end if;
    end record
-     with 
+     with
       Convention => C,
       Predicate =>
          Socket_Struct.S_Event_Mask = SOCKET_EVENT_TIMEOUT or else
@@ -211,7 +213,14 @@ is
    SOCKET_FLAG_NO_DELAY   : constant Socket_Flags := 16#4000#;
    SOCKET_FLAG_DELAY      : constant Socket_Flags := 16#8000#;
 
-   SOCKET_MAX_COUNT : constant Positive := 10;
+   -- Number of sockets that can be opened simultaneously
+
+#if SOCKET_MAX_COUNT'Defined then
+   SOCKET_MAX_COUNT : constant Positive := $SOCKET_MAX_COUNT;
+#else
+   SOCKET_MAX_COUNT : constant Positive := 16;
+#end if;
+
    type Socket_Type_Index is range 0 .. (SOCKET_MAX_COUNT - 1);
    type Socket_Table_T is array (Socket_Type_Index) of aliased Socket_Struct;
 
@@ -294,7 +303,7 @@ is
          S_Remote_Port    => Sock.S_Remote_Port
       ))
       with Ghost;
-   
+
 
    -- The transition relation function is used to compute all the transitions
    -- that can happen when a message is received.
