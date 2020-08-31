@@ -1,5 +1,4 @@
 with Common_Type;  use Common_Type;
-with Ip;           use Ip;
 with Os_Types;     use Os_Types;
 with Socket_Types; use Socket_Types;
 with Tcp_Type;     use Tcp_Type;
