@@ -1,0 +1,343 @@
+\documentclass[runningheads]{llncs}
+
+\usepackage{listings}
+\usepackage[colorlinks]{hyperref}
+
+\usepackage{xcolor}
+
+\lstset{
+    basicstyle=\fontsize{9}{9}\selectfont\ttfamily,
+    keywordstyle=\color{blue!50}\bfseries
+}
+
+\usepackage{subcaption}
+
+\title{Verification of a TCP/IP stack}
+
+\author{Guillaume Cluzel\inst{1,2} \and
+        Yannick Moy\inst{1} \and
+        Clément Zeller\inst{3}}
+
+        
+        \institute{Adacore \and
+        École Normale Supérieure de Lyon \and
+        Oryx Embedded}
+        
+        
+\begin{document}
+        
+\authorrunning{G. Cluzel et al.} %, Y. Moy and C. Zeller}
+
+\maketitle
+
+\begin{abstract}
+    The abstract should briefly summarize the contents of the paper in
+    150--250 words.
+    
+    \keywords{First keyword  \and Second keyword \and Another keyword.}
+\end{abstract}
+
+\section{Introduction}
+
+    In the development of the Internet, there is a protocol that has a very special place: TCP.
+    It has been described by Vincent Cerf and Bob Kahn who can be considered as the fathers for the Internet
+    for their work, and the protocol has later been standardized in a RFC norm \cite{rfc793}.
+    Since this date, the TCP has been widely used on the Internet as the underlying protocol for application layers such as HTTP,
+    FTP or TLS. TCP uses itself an underlying protocol to work, the Internet layer IP protocol which is itself
+    based on a link layer, such as Ethernet. This stacking of protocols is referred to as the TCP/IP stack.
+
+    The last decade has seen a growing interest for security and privacy in all the fields where computers are
+    involved. The development of safe applications thanks to static analyzers and formal methods, that was first
+    restricted to critical embedded software with the Astrée analyzer~\cite{cousot2005astree} or the B method, are
+    now adopted on a larger scale. New tools have been developed to promote the use of formal methods. Among them we
+    can mention the SMT-solvers Z3~\cite{de2008z3} and Alter-Go~\cite{conchon:hal-01960203},
+    the higher level language F*~\cite{mumon} that can prove assertions
+    using these SMT-solvers or the more automatic static analyzer by abstract interpretation Frama-C~\cite{cuoq2012frama}
+    that can help to identify undefined behaviors in C programs. Theorem provers, such as Coq or Isabelle, are another class
+    of tools, where proofs are done manually.
+
+    In the domain of networking and cryptography, these tools have been used to make secure implementations. 
+    Recently, Reiher and al have proposed a domain-specific language, RecordFlux \cite{Reiher2019RecordFluxFM},
+    to specify the message formats for real world protocols, that is written in SPARK.
+    This is also the goal followed by the Everest project~\cite{bhargavan2017everest}.
+    The authors implemented cryptographic functions such as AES or
+    SHA2 as well as TLS, the cryptographic protocol that provides security
+    to HTTPS and is its heart. The implementation is written
+    in F* and is a combination of several sub-project such as miTLS~\cite{bhargavan2013implementing}
+    or HACL*~\cite{zinzindohoue2017hacl}. The weakness of the Everest project is that it needs to use the untrusted
+    transport layer TCP. If a bug exists in the transport layer, it can jeopardize the higher level layer.
+
+    The importance of the TCP protocol in the network communications has driven some people to work
+    on it and try to ensure the safety of the protocol. Among these works, in~\cite{smith1996formal}
+    the author has tried to formally verify that a TCP implementation verify some specifications.
+    Another work comes from Tom Ridge and al \cite{ridge2008rigorous} who have implemented the TCP
+    protocol in the HOL proof assistant.
+    But only few works has been done. Doing formal verification on a TCP implementation face up to two
+    problems. The first one is the complexity of the TCP protocol that is written to be concurrent.
+    The second problem comes from the norm itself that is written in a natural, informal language: English.
+    Then a lot of part are under specified and extracted strong specifications can be hard.
+    As a result, it does not exists a safe implementation for TCP that can be used in the industry.
+
+    Our approach has been to consider an existing implementation of a TCP/IP stack and replace and integrate
+    some bricks by Ada/SPARK code.
+    We have chosen the Oryx Embedded's library, CycloneTCP\footnote{\url{https://www.oryx-embedded.com/products/CycloneTCP.html}}.
+    The library is written in C, which is suitable to interface with Ada/SPARK, and is developed to run
+    on embedded processors. We focused our work on rewriting in SPARK the TCP protocol because of the importance
+    it has in the network communication as well as the socket API to provide a safe interface to the programmers
+    to use our safe TCP implementation.
+
+    In the first section we explore more in details the TCP protocol and the state machine that governs the behavior of the connection.
+    Then in the next section we explain how we have formalized and implemented in SPARK the TCP user functions and the socket API.
+    Finally in the last section we present some results of our work, like the bugs that have been found and eliminated thanks to our
+    new implementation.
+
+
+\section{TCP protocol and CycloneTCP library}
+\label{sec:TCP}
+
+    In this part we should present:
+    \begin{itemize}
+        \item The TCP protocol
+        \begin{itemize}
+            \item Different states
+            \item Flags that can be received (mainly SYN, ACK, FIN \& RST)
+            \item State machine
+            \item User functions
+            \item Precise that most of transitions are done when a message is received and then, outside of the user functions.
+        \end{itemize}
+        \item The CycloneTCP library. Present the different caracteristics, in particular
+        \begin{itemize}
+            \item The task model adopted to be run on a RT OS. (A task dedicated to user task, another to timers, and the last to incoming messages processing).
+            \item The socket API that is provided to use UDP and TCP protocols.
+        \end{itemize}
+    \end{itemize}
+    
+    Any other suggestion? (2/3 pages max).
+
+
+\section{Verification of the TCP protocol and the Socket API}
+
+    Our work is focused on the key elements of the CycloneTCP library: the sockets and TCP protocol itself.
+    This two parts have been replaced by SPARK code and the absence of run-time errors has been proved for
+    these parts.
+    However, to be integrated with the existing library, it has been necessary to reuse existing C code
+    as an untrested black box, for which we cannot have strong guarantees. Thus, others techniques
+    and tools have helped the verification process. They are presented in this section.
+
+\subsection{The SPARK programming language}
+
+    SPARK \cite{mccormick2015building} is a tool that can be used to formally prove properties on a subset of Ada such that
+    information flow, absence of runtime errors and functional correctness. The subset of Ada that can be analyzed by SPARK
+    grows constantly and rapidely, recently with the addition of pointers \cite{dross2020recursive}.
+    In Ada, contracts can be attached to subprograms as pre- and postconditions which allows functional and modular analysis.
+    The pre- and postconditions are exported to be proved by SMT solvers thanks to the Why3 tool.
+
+\subsection{Hardening the user's socket API}
+
+\begin{figure}[t]
+\begin{subfigure}{\textwidth}
+\begin{lstlisting}[language=C, frame=bottomline]
+Socket *socketOpen(uint_t type, uint_t protocol);
+error_t socketConnect(Socket *socket, IpAddr *remoteIpAddr,
+                      uint16_t remotePort);
+\end{lstlisting}
+\caption{C interface.}
+\label{Fig:socketInterface:C}
+\end{subfigure}
+\begin{subfigure}{\textwidth}
+\begin{lstlisting}[language=Ada, frame=bottomline]
+type Socket_Struct is private;
+type Socket is access Socket_Struct;
+subtype Not_Null_Socket is not null Socket;
+type Socket_Type is (SOCKET_TYPE_STREAM, SOCKET_TYPE_DGRAM);
+type Socket_Proto is (SOCKET_IP_PROTO_TCP, SOCKET_IP_PROTO_UDP);
+
+procedure Socket_Open
+    (Sock       :    out Socket;
+     S_Type     : in     Socket_Type;
+     S_Protocol : in     Socket_Protocol)
+with 
+    Post => (if Sock /= null then
+        Sock.S_Type = S_Type and then
+        not Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
+        not Is_Initialized_Ip(Sock.S_localIpAddr));
+
+procedure Socket_Connect
+    (Sock           : in out Not_Null_Socket;
+     Remote_Ip_Addr : in     IpAddr;
+     Remote_Port    : in     Port;
+     Error          :    out Error_T)
+with
+    Pre => Is_Initialized_Ip (Remote_Ip_Addr) and then
+           Remote_Port > 0,
+    Post => (if Error = NO_ERROR then
+            Is_Initialized_Ip(Sock.S_localIpAddr) and then
+            Sock.S_localIpAddr = Remote_Ip_Addr);
+\end{lstlisting}
+\caption{SPARK interface.}
+\label{Fig:socketInterface:SPARK}
+\end{subfigure}
+\caption{Comparison between the C and the SPARK interface for \texttt{Socket\_Open} et \texttt{Socket\_Connect}.}
+\label{Fig:socketInterface}
+\end{figure}
+
+    The socket API is a set of functions used to communicate with the protocol stack. These are therefore the functions used
+    by programmers in their programs to use network protocols. However, one of the most significant problems pointed to by the
+    primary author of the CycloneTCP library is the incorrect usage of the library's API. More specifically, the library's users
+    tend to call the API functions with wrong arguments and they tend to forget to forget to check the value of the return code of
+    function call before continuing the processing. This can lead to incorrect program behaviors when an error happen in a function
+    and it can be difficult to debug.
+
+    In order to design a better socket API, we have taken advantage of the strong-typing characteristic of Ada,
+    and the features of the SPARK language, in particular the functional specification.
+
+\subsubsection{Using types to carry information}
+
+    Strong-typing is a first mechanism to ensure correctness of program and exclude a range of programing errors. Meaningful names for
+    variables and types give a hint about the subprogram behavior, but also the valid input values accepted.
+    Figure \ref{Fig:socketInterface} is a comparison between the interface of the C functions of the original library
+    \lstinline{socketOpen} and \lstinline{socketConnect} and their SPARK version \lstinline{Socket_Open} and
+    \lstinline{Socket_Connect}. The C function \lstinline{socketOpen} takes two arguments, the type of the socket and the protocol,
+    both as unsigned integer and it returns a new socket in case of success.
+    Its SPARK equivalent takes its two arguments, type and protocol, as enumeration values, which ensures correct calls
+    of this function. Indeed, all the unsigned values that do not correspond to any protocol or any type of socket are eliminated.
+
+    In SPARK, types can be constrained by a valid range of values. Another kind of constraints on types can appear in
+    access types. The example on figure \ref{Fig:socketInterface:SPARK} shows a such mechanism for the type \lstinline{Not_Null_Socket},
+    that is a socket with a constraint that states that the pointer has to be not null. The function \lstinline{socketConnect},
+    used to connect to a remote server, requires a socket not null. While the C function contains defensive code to ensure that
+    the socket passed as first argument is not null, \lstinline{Socket_Connect} directly uses information on the type of the argument
+    \lstinline{Sock} to know that the socket is not null. Moreover, this information can be checked statically with GNATprove.
+    Then removing the defensive code has two interests: first, it reduces the size of the program by removing lines of code,
+    and secondly it reduces the number of instructions to execute, and then the global execution time.
+
+
+\subsubsection{Order of the functions call}
+
+    The TCP connection follows an order of execution as seen in the section \ref{sec:TCP}: the connection is first opened,
+    then the data are sent and received, and finally the connection can be closed. Since the sockets are an interface to use
+    network protocols, they follow the same order of execution. Thus, an order can be enforced thanks to the pre- and postconditions.
+    If a function $f_1$ must be executed before a function $f_2$, the strategy is to add a postconditions on the socket on $f_1$
+    that is also a precondition for $f_2$. Then, for the precondition of $f_2$ to be true, the function $f_1$ must have be called first.
+    Such postcondition is presented on figure \ref{Fig:socketInterface:SPARK} for the function \lstinline{Socket_Connect}. After its
+    execution, the field \lstinline{S_Remote_Ip_Addr} of the socket \lstinline{Sock}. Then, since all the functions to send or receive
+    data and to close the connection require a connection established, these functions have a precondition that contains a condition
+    that states that the condition is established, which can be written as
+    \begin{lstlisting}
+Pre => Is_Ip_Initialized(Sock.S_Remote_Ip_Addr);
+    \end{lstlisting}
+    and because the function \lstinline{Socket_Connect} is the only one that can initialize this value, the order can be respected
+    only with valid code.
+
+    The same mechanism is used with the functions \lstinline{Socket_Open} that create a valid socket when the function
+    succeeds and \lstinline{Socket_Connect} that require a valid not null socket.
+    
+    GNATprove can prove that the order of the calls is respected, and then it can invalidate an incorrect program without requiring any
+    tests. It helps to programmers to write correct programs.
+
+
+\subsubsection{Checking error codes}
+
+    Most of the functions of the socket API can fail. To know if the function has failed or not, and error code is returned.
+    It must be checked by the caller before continuing processing at the risk of leading to an incorrect state.
+    In the previous paragraph we explained that the functions that send or receive data check in their precondition if the connection
+    has been initialized or not, by checking the field \lstinline{S_Remote_Ip_Addr}, and we explained that this value is initialized
+    by \lstinline{Socket_Connect}. The presence in the postcondition of \lstinline{Socket_Connect} or if statement
+    \lstinline{(if Error = NO_ERROR then ...)} makes that \lstinline{S_Remote_Ip_Addr} is initialized only when no error happen during
+    the execution of the function. Thanks to the mechanism exposed in the previous section the next function can only be called
+    if it is known that no error happen previously.
+    
+    Let \lstinline{Socket_Send} be the function to send data. The following example of code is incorrect because if \lstinline{Error} is
+    different to \lstinline{NO_ERROR}, nothing ensures that \lstinline{S_Remote_Ip_Addr} is initialized.
+    \begin{lstlisting}
+Socket_Connect(Sock, Remote_Ip_Addr, Remote_Port, Error);
+-- GNATprove: medium: precondition might fail.
+Socket_Send(Sock, Data, Written, Flags, Error);
+    \end{lstlisting}
+    In comparison this second example of code produces no error because when \lstinline{Socket_Send} is called, GNATprove knows that
+    \lstinline{ERROR} is equal to \lstinline{NO_ERROR} and then \lstinline{S_Remote_Ip_Addr} is initialized.
+    \begin{lstlisting}
+Socket_Connect(Sock, Remote_Ip_Addr, Remote_Port, Error);
+if Error = NO_ERROR then
+    Socket_Send(Sock, Data, Written, Flags, Error);
+end if;
+    \end{lstlisting}
+
+    The same mechanism can be observed on figure \ref{Fig:socketInterface:SPARK}. The user has to test if the socket returned by
+    \lstinline{Socket_Open} is null or not before calling \lstinline{Socket_Connect}, otherwise GNATprove will emit a message.
+
+    Thanks to this use of GNATprove, one can ensure the correct use of the socket API, by ensuring a correct order for the
+    calls of the functions and ensuring that error codes are checked.
+
+
+\subsection{Conformance to the TCP protocol}
+
+    The user functions of the TCP protocol has been rewritten in SPARK. Besides proving the absence of run-time error in these functions,
+    it has been possible to check that some properties of the TCP protocol are not violated in the code.
+
+\subsubsection{Extracting a specification from the TCP norm}
+
+    Extracting a specification is mandatory to provide later functional contracts to the user functions.
+    That can be achieved by reading the norm. However, the norm is underspecified in many cases and only one possible implementation
+    is depicted. Thus, the specifications we have extracted are conformant with the norm but they differ a little to
+    what can be found in the RFC.
+
+    Among the specification we have extracted:
+    \begin{itemize}
+        \item The transitions between the states must respect the order given by the state machine described
+              in figure \ref{Fig:statemachie}.
+              In particular, a transition from a state to another is valid only if there exists a transition in the state machine
+              between these two states.
+        \item User functions contains functional specifications in the norm, that describe what have to be done when the function
+              is called depending on the state of the socket~\cite[p.~52]{rfc793}.
+              In particular, a socket in some state will return an error for certain calls of user functions. Figure \ref{Fig:constraint}
+              lists all the constaint on the state to call a function, and the resulting states.
+    \end{itemize}
+
+\subsubsection{Rewritting TCP user functions}
+
+    The user functions have been translated in SPARK to prove the absence of run-time errors in them. The low level IP functions
+    that are called are assumed to be correct and then are used as an untrested black box. They are supposed to not interact with TCP
+    special fields. However, there exists another kind of subprograms that interact directly and can modify the state of the socket
+    during the execution of the program: the procedure \lstinline{Tcp_Wait_For_Events}. This procedure is called when the code needs
+    to wait for an actions to be executed by another thread. This action can be, for example, the reception of a segment. But when a
+    segment is received, the socket can change of state. Then it is necessary to know what are the exact possible states when the
+    procedure \lstinline{Tcp_Wait_For_Events} returns if we wants to know that there is no violation of the norm in the further transitions.
+
+
+    \begin{itemize}
+        \item En revanche certains autres appels dans le code \lstinline{Tcp_Wait_For_Events} attendent qu'un autre thread qui exécutent des actions sur TCP ait changé l'état de la socket pour retourner.
+        \item Ces évènements sont donc à prendre en compte. Il faut savoir précisément quel est l'état de la socket quand la fonction retourne si on veut calculer de manière précise les états à la sortie de la fonction, et le fait qu'il n'y ait pas de violation de la norme lors des transitions.
+        \item Il faut donc analyser ce que ces autres fonctions font pour leur ajouter des contrats corrects et ainsi prouver que les contrats qu'on avait exatraits sont bien vérifiés.
+        \item Le problème est que SPARK n'a aucun moyen pour prendre en compte la concurrence de manière native. Il faut donc utiliser un moyen détourné, manuel, pour simuler ce qui peut être exécuté par les autres tasks.
+    \end{itemize}
+
+\subsubsection{The use of KLEE to extract contracts}
+
+    Symbolic execution is a means to execute a program using symbolic variables instead of concrete values. It accumulates contraints
+    on those values which are used to generate proof obligations. Symbolic execution has been successfully used with other verification
+    methods. Indeed, in~\cite{vanoverberghe2008using} the authors present how to use symbolic execution to improve deductive verification,
+    and in~\cite{kassios2012comparing} the authors explain that symbolic execution can be good at infering contracts.
+    For our work, KLEE has been used. It is built on top of LLVM as it takes LLVM bytecode in input
+    and works well with C code thanks to a very simple interface.
+
+\section{Results and bugs found}
+
+    \begin{itemize}
+        \item Bug de concurrence -> SPARK
+        \item Memory leak -> SPARK
+        \item Problèmes trouvés.
+        \item Résultats sur la nouvelle implémentation (performance, taille du code).
+        \item Activation des préconditions pour voir si elles sont toutes valides.
+    \end{itemize}
+
+
+
+\section{Conclusion}
+
+
+\bibliographystyle{splncs04}
+\bibliography{biblio}
+
+
+\end{document}
