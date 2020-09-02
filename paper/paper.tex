@@ -5,6 +5,9 @@
 
 \usepackage{xcolor}
 
+\usepackage[ruled]{algorithm2e}
+\usepackage{amsmath,amsfonts}
+
 \lstset{
     basicstyle=\fontsize{9}{9}\selectfont\ttfamily,
     keywordstyle=\color{blue!50}\bfseries
@@ -18,14 +21,14 @@
         Yannick Moy\inst{1} \and
         Clément Zeller\inst{3}}
 
-        
+
         \institute{Adacore \and
         École Normale Supérieure de Lyon \and
         Oryx Embedded}
-        
-        
+
+
 \begin{document}
-        
+
 \authorrunning{G. Cluzel et al.} %, Y. Moy and C. Zeller}
 
 \maketitle
@@ -33,7 +36,7 @@
 \begin{abstract}
     The abstract should briefly summarize the contents of the paper in
     150--250 words.
-    
+
     \keywords{First keyword  \and Second keyword \and Another keyword.}
 \end{abstract}
 
@@ -56,7 +59,7 @@
     that can help to identify undefined behaviors in C programs. Theorem provers, such as Coq or Isabelle, are another class
     of tools, where proofs are done manually.
 
-    In the domain of networking and cryptography, these tools have been used to make secure implementations. 
+    In the domain of networking and cryptography, these tools have been used to make secure implementations.
     Recently, Reiher and al have proposed a domain-specific language, RecordFlux~\cite{Reiher2019RecordFluxFM},
     to specify the message formats for real world protocols, that is written in SPARK.
     This is also the goal followed by the Everest project~\cite{bhargavan2017everest}.
@@ -111,7 +114,7 @@
             \item The socket API that is provided to use UDP and TCP protocols.
         \end{itemize}
     \end{itemize}
-    
+
     Any other suggestion? (2/3 pages max).
 
     Figures à inclures ici:
@@ -166,7 +169,7 @@ procedure Socket_Open
     (Sock       :    out Socket;
      S_Type     : in     Socket_Type;
      S_Protocol : in     Socket_Protocol)
-with 
+with
     Post => (if Sock /= null then
         Sock.S_Type = S_Type and then
         not Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
@@ -241,7 +244,7 @@ Pre => Is_Ip_Initialized(Sock.S_Remote_Ip_Addr);
 
     The same mechanism is used with the functions \lstinline{Socket_Open} that create a valid socket when the function
     succeeds and \lstinline{Socket_Connect} that require a valid not null socket.
-    
+
     GNATprove can prove that the order of the calls is respected, and then it can invalidate an incorrect program without requiring any
     tests. It helps programmers to write correct programs.
 
@@ -256,17 +259,17 @@ Pre => Is_Ip_Initialized(Sock.S_Remote_Ip_Addr);
     \lstinline{(if Error = NO_ERROR then ...)} makes that \lstinline{S_Remote_Ip_Addr} is initialized only when no error occurs during
     the execution of the function. Thanks to the mechanism exposed in the previous section the next function can only be called
     if it is known that no error has occurred previously.
-    
+
     Let \lstinline{Socket_Send} be the function to send data. The following example of code is incorrect because if \lstinline{Error} is
     different to \lstinline{NO_ERROR}, nothing ensures that \lstinline{S_Remote_Ip_Addr} is initialized.
-    \begin{lstlisting}
+    \begin{lstlisting}[language=Ada]
 Socket_Connect(Sock, Remote_Ip_Addr, Remote_Port, Error);
 -- GNATprove: medium: precondition might fail.
 Socket_Send(Sock, Data, Written, Flags, Error);
     \end{lstlisting}
     In comparison this second example of code produces no error because when \lstinline{Socket_Send} is called, GNATprove knows that
     \lstinline{ERROR} is equal to \lstinline{NO_ERROR} and then \lstinline{S_Remote_Ip_Addr} is initialized.
-    \begin{lstlisting}
+    \begin{lstlisting}[language=Ada]
 Socket_Connect(Sock, Remote_Ip_Addr, Remote_Port, Error);
 if Error = NO_ERROR then
     Socket_Send(Sock, Data, Written, Flags, Error);
@@ -282,7 +285,7 @@ end if;
 
 \subsection{Conformance to the TCP protocol}
 
-    The user functions of the TCP protocol has been rewritten in SPARK. Besides proving the absence of run-time error in these functions,
+    The user functions of the TCP protocol have been rewritten in SPARK. Besides proving the absence of run-time error in these functions,
     it has been possible to check that some properties of the TCP protocol are not violated in the code.
 
 \subsubsection{Extracting a specification from the TCP norm}
@@ -292,7 +295,7 @@ end if;
     is depicted. Thus, the specifications we have extracted are conformant with the norm but they differ a little to
     what can be found in the RFC.
 
-    Among the specification we have extracted:
+    Among the specifications we have extracted:
     \begin{itemize}
         \item The transitions between the states must respect the order given by the state machine described
               in figure \ref{Fig:statemachine}.
@@ -301,33 +304,32 @@ end if;
         \item User functions contains functional specifications in the norm, that describe what have to be done when the function
               is called depending on the state of the socket~\cite[p.~52]{rfc793}.
               In particular, a socket in some state will return an error for certain calls of user functions. Figure \ref{Fig:constraint}
-              lists all the constaint on the state to call a function, and the resulting states.
+              lists all the constraints on the state of the socket before and after the call.
     \end{itemize}
 
-\subsubsection{Rewritting TCP user functions}
+\subsubsection{Rewriting TCP user functions}
 
     The user functions have been translated in SPARK to prove the absence of run-time errors in them. The low level IP functions
-    that are called are assumed to be correct and then are used as an untrested black box. They are supposed to not interact with TCP
-    special fields. However, there exists another kind of subprograms that interact directly and can modify the state of the socket
+    that are called are assumed to be correct and then are used as an untrusted black box. They are supposed to not interact with TCP
+    special fields. However, there exists another kind of subprogram that interacts and can modify the state of the socket
     during the execution of the program: the procedure \lstinline{Tcp_Wait_For_Events}. This procedure is called when the code needs
-    to wait for an events to become true. The event waited can become true, for example, when a segment is received. But when a
-    segment is received, the socket can change of state. Then it is necessary to know what are the exact possible states when the
-    procedure \lstinline{Tcp_Wait_For_Events} returns if we wants to be sure that there is no violation of the norm in the further transitions.
+    to wait for an event to become true. The event waited can become true, for example, when a segment is received. But when a
+    segment is received, the state of state can change. Then it is necessary to know what are the exact possible states when the
+    procedure \lstinline{Tcp_Wait_For_Events} returns if we want to be sure that there is no violation of the norm in the further transitions.
 
-    SPARK does not have a very advanced native way to deal with concurrency. It is not possible for the tool to infer precisely the
-    interferences of other tasks. Thus, using SPARK is not the right way to do, and a manual solution has been considered. It consists
-    of analysing what is done in other tasks. Then a contract can be add to \lstinline{Tcp_Wait_For_Events} that describes the possible
+    SPARK does not have a very advanced native way to deal with concurrency. In particular, it is not possible for the tool to infer precisely the
+    interferences that comes from other tasks. Thus, using SPARK is not the right way to do, and a manual solution has been considered. It consists
+    of analysing what is done in other tasks. Then a contract can be added to \lstinline{Tcp_Wait_For_Events} to describe the possible
     interractions of the other tasks during the wait.
 
 
-
-    \begin{itemize}
-        \item En revanche certains autres appels dans le code \lstinline{Tcp_Wait_For_Events} attendent qu'un autre thread qui exécutent des actions sur TCP ait changé l'état de la socket pour retourner.
-        \item Il faut donc analyser ce que ces autres fonctions font pour leur ajouter des contrats corrects et ainsi prouver que les contrats qu'on avait exatraits sont bien vérifiés.
-        \item Le problème est que SPARK n'a aucun moyen pour prendre en compte la concurrence de manière native. Il faut donc utiliser un moyen détourné, manuel, pour simuler ce qui peut être exécuté par les autres tasks.
-    \end{itemize}
-
 \subsubsection{The use of KLEE to extract contracts}
+
+    When a TCP segment is received, that segment is processed through a C function named \lstinline{tcpProcessSegment}.
+    Depending on the flags contains in the segment, and the state of the socket at the moment of the reception of the segment, different
+    transitions can be done. Reading the code might be enough to infer contracts connecting the state before the reception of the segment
+    and after. But from experience it is not enough and a more formal approach is necessary. Translating this function in SPARK to analyze
+    its behavior would have been a correct way to proceed, but because of a lack of time, another method has been chosen: symbolic execution.
 
     Symbolic execution is a means to execute a program using symbolic variables instead of concrete values. It accumulates contraints
     on those values which are used to generate proof obligations. Symbolic execution has been successfully used with other verification
@@ -335,6 +337,53 @@ end if;
     and in~\cite{kassios2012comparing} the authors explain that symbolic execution can be good at infering contracts.
     For our work, KLEE has been used. It is built on top of LLVM as it takes LLVM bytecode in input
     and works well with C code thanks to a very simple interface.
+
+    In order to extract contracts from the C function \lstinline{tcpProcessSegment}, we have started by building a small main function that
+    simulates the reception of a segment. This function is then executed by KLEE. More precisely, first, with the KLEE intrinsic functions, we
+    create a symbolic segment (representing any segment that can be received). Secondly, the socket is changed for a particular state $S_1$. Thirdly, the
+    function is executed by KLEE. After its call, an assertion about the states $S'_1, \dots, S'_k$ of the socket after the execution
+    of the function is added to check what are the resulting states. The states $S'_1, \dots, S'_k$ are extracted from the norm and adapted to the CycloneTCP
+    implementation that can differ on some points.
+    After this work, we then have a postcondition for \lstinline{tcpProcessSegment}, that can be reported in the SPARK code for further proofs, of the form:
+    \begin{lstlisting}[language=Ada,mathescape=true]
+    if Sock.State'Old = $S_1$ then Sock.State in $S'_1$ | $S'_2$ | ... | $S'_k$
+    \end{lstlisting}
+
+
+\subsubsection{Solution to the concurrency challenge}
+
+    The previous part shows how we can compute all the transitions that can be done when a single message is received.
+    It is now necessary to understand how the waiting procedure \lstinline{Tcp_Wait_For_Events} works.
+    When it is called, it checks if the event is already true, thanks to a call to the function \lstinline{Tcp_Update_Events}.
+    If it is not the case, the mutex that enforces the mutual exclusion of access to the socket is unlocked.
+    Messages can be received until the event waited becomes true.
+    Once a reception makes true the event, the function \lstinline{Tcp_Wait_For_Events} locks again the mutex and returns.
+    A possible algorithm to simulate the reception of segment and compute the least set of states that can result of the wait can be done
+    by the algorithm \ref{algo:waitForEvents}.
+
+    \begin{algorithm}
+        \SetKwFunction{ProcessSegm}{\lstinline[language=Ada]{Tcp\_Wait\_For\_Events}}
+        \SetKwProg{Fn}{function}{}{end}
+        \Fn{\ProcessSegm{Socket, Event, Event\_Mask}}{
+            $S_{last} := \text{\textit{Socket}}$\;
+            $S := S_{last}$\;
+            $E :=$ \lstinline[language=Ada]{Tcp_Update_Events}($S_{last}$)\;
+            \If{$(E\ \&\ \text{Event\_Mask}) \neq 0$}{
+                \KwRet{$S$}\;
+            }
+            \For{$i=1$ \KwTo $3$}{
+                $S_{last} :=$ \lstinline[language=Ada]{Tcp_Process_One_Segment}($S_{last}$) \;
+                $S := S \cup S_{last}$\;
+                $E :=$ \lstinline[language=Ada]{Tcp_Update_Events}($S_{last}$)\;
+                \If{$(E\ \&\ \text{Event\_Mask}) \neq 0$}{
+                    \KwRet{$S$}\;
+                }
+            }
+            \KwRet{$\emptyset$}\;
+        }
+        \caption{Function to compute the possible states after a wait for a particular event.}
+        \label{algo:waitForEvents}
+    \end{algorithm}
 
 \section{Results and bugs found}
 
@@ -348,7 +397,7 @@ end if;
 
 
 
-\section{Conclusion}
+\section{Conclusion and future work}
 
 
 \bibliographystyle{splncs04}
