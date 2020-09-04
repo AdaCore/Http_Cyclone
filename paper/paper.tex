@@ -8,6 +8,8 @@
 \usepackage[ruled]{algorithm2e}
 \usepackage{amsmath,amsfonts}
 
+\usepackage[utf8]{inputenc}
+
 \lstset{
     basicstyle=\fontsize{9}{9}\selectfont\ttfamily,
     keywordstyle=\color{blue!50}\bfseries
@@ -22,11 +24,11 @@
 
 \author{Guillaume Cluzel\inst{1,2} \and
         Yannick Moy\inst{1} \and
-        Clément Zeller\inst{3}}
+        Cl\'ement Zeller\inst{3}}
 
 
         \institute{Adacore \and
-        École Normale Supérieure de Lyon \and
+        \'Ecole Normale Sup\'erieure de Lyon \and
         Oryx Embedded}
 
 
@@ -54,7 +56,7 @@
 
     The last decade has seen a growing interest for security and privacy in all the fields where computers are
     involved. The development of safe applications thanks to static analyzers and formal methods, that was first
-    restricted to critical embedded software with the Astrée analyzer~\cite{cousot2005astree} or the B method, are
+    restricted to critical embedded software with the Astr\'ee analyzer~\cite{cousot2005astree} or the B method, are
     now adopted on a larger scale. New tools have been developed to promote the use of formal methods. Among them we
     can mention the SMT-solvers Z3~\cite{de2008z3} and Alt-Ergo~\cite{conchon:hal-01960203},
     the higher level language F*~\cite{mumon} that can prove assertions
@@ -108,11 +110,16 @@
 
     \input{OryxStack.tex}
 
-    The CycloneTCP library is TCP/IP stack that implements network protocols. It is particularly well adapted to embedded
-    platforms and microcontrolers. As a result, the code is written to compile on those platforms and to be used with different
-    real time OS, like for intance FreeRTOS.
+    The CycloneTCP library is TCP/IP stack that implements network protocols. 
+    Figure \ref{Fig:TcpStack} gives an overview of the different protocols supported. TCP and UDP protocols have a central place
+    in the stack. An API is provided to use those network protocols: the Socket API. It is a common way to use transport protocols,
+    and the application protocols in the stack, such as HTTP or FTP use it.
 
-    Figure \ref{Fig:TcpStack} gives an overview of the different protocols supported.
+    The stack is particularly well adapted to embedded platforms and microcontrolers. As a result, the code is written
+    to compile on those platforms and to be used with different real time OS, like for intance FreeRTOS.
+    Hence, a model based on multiple tasks has been adopted to implement the TCP protocol as defined in the norm, with,
+    in addition, complex cooperation mechanisms. A task is dedicated to the user code, another to timers, and the last is
+    assigned to the processing of incoming segments.
 
     In this part we should present:
     \begin{itemize}
@@ -137,10 +144,6 @@
     \begin{itemize}
         \item Une figure qui présente l'automate de transition. Expliquer que certaines transition sont effectuées par une action de l'utilisateur,
               et que d'autres sont effectuées quand un segment est reçu.
-        \item Une seconde figure qui présente l'organisation d'une pile TCP/IP, avec les différentes couches et les différents protocols.
-              Ça permettra de présenter en même temps les parties qui ont été vérifiées formellement, et les parties de la pile existante qui
-              sont réutilisées. Ça permet de montrer la frontière, et les points critiques. Notamment le point critique qui a nécessité l'utilisation
-              de KLEE.
     \end{itemize}
 
 \section{Specification Techniques Used}
