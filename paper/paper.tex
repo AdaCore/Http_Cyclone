@@ -112,7 +112,7 @@
     platforms and microcontrolers. As a result, the code is written to compile on those platforms and to be used with different
     real time OS, like for intance FreeRTOS.
 
-    Figure \ref{Fig:TcpStack} gives an overview of the different protocols supported. 
+    Figure \ref{Fig:TcpStack} gives an overview of the different protocols supported.
 
     In this part we should present:
     \begin{itemize}
@@ -143,6 +143,61 @@
               de KLEE.
     \end{itemize}
 
+\section{Specification Techniques Used}
+
+\subsection{The SPARK Programming Language}
+
+Ada is a general-purpose procedural programming language. The design of the Ada
+language puts great emphasis on the safety and correctness of the program. This
+objective is realized by using a readable syntax that uses keywords instead of
+symbols where reasonable. The type system is strong and strict and many
+potential violations of type constraints can be detected statically by the
+compiler. If not, a run-time check is inserted into the program, to guarantee
+the detection of incorrect situations. Ada 2012 introduced contract based
+programming to Ada. In particular, it is possible to attach pre- and
+postconditions to subprograms\footnote{In Ada, a distinction is made between
+  functions that return a value, and procedures, which do
+  not. \emph{Subprogram} is the term that designates both.}.  These conditions
+can be checked during the execution of the program, just like assertions.
+
+SPARK~\cite{mccormick2015building} is the name of a platform that provides
+formal verification for Ada. It uses the user-provided contracts and attempts
+to prove that the runtime checks cannot fail and that postconditions are
+established by the corresponding subprograms.  As formal verification for the
+whole Ada language would be intractable, SPARK is also the name of the subset
+of the Ada language that is supported by the SPARK tool called
+GNATprove\footnote{\url{http://docs.adacore.com/spark2014-docs/html/ug/}}.
+This subset contains almost all features of Ada, though sometimes in a
+restricted form.  In particular, expressions should be free from side effects,
+and aliasing is forbidden (no two variables should share the same memory
+location or overlap in memory), including when using pointers thanks to the use
+of an ownership policy~\cite{dross2020recursive}.  This restriction greatly
+simplifies the memory model used in the SPARK tool: any program variables can
+be reasoned about independently from other variables.
+
+GNATprove performs two kinds of analysis modularly on individual subprograms:
+information flow to detect reads of uninitialized data and violations of flow
+contracts; deductive verification based on the Why3 platform to generate
+verification conditions for SMT solvers via a weakest-precondition calculus to
+detect possible runtime errors and violations of functional contracts.
+
+\subsection{Interfacing SPARK and C Code}
+
+describe import of C subprograms/export of SPARK subprograms, and how data
+types are mapped, also contracts on imported subprograms
+
+\subsection{Dealing with Pointers}
+
+both at top-level and as fields in structures. explain how it relies on the
+ownership model. maybe a little bit on dynamic allocation/deallocation (which
+will introduce the section later on memory leaks)
+
+\subsection{Specifying the Frame Condition}
+
+describe how models of sockets are defined and used in contracts, based on
+ghost code, delta aggregates and Old attribute
+
+
 \section{Verification of the TCP protocol and the Socket API}
 
     Our work is focused on the key elements of the CycloneTCP library: the sockets and TCP protocol itself.
@@ -154,14 +209,6 @@
     has been translated in SPARK. The parsing and processing of incoming segment is let to the C code.
     Thus, other techniques and tools have helped the verification process, in particular for the TCP part. They are presented in this section.
     The source code of the reworked TCP/IP stack can be found on Github\footnote{\url{https://github.com/AdaCore/Http_Cyclone}}.
-
-\subsection{The SPARK programming language}
-
-    SPARK~\cite{mccormick2015building} is a tool that can be used to formally prove properties on a subset of Ada such that
-    information flow, absence of runtime errors and functional correctness. The subset of Ada that can be analyzed by SPARK
-    grows constantly and rapidly, recently with the addition of pointers~\cite{dross2020recursive}.
-    In Ada, contracts can be attached to subprograms as pre- and postconditions which allows functional and modular analysis.
-    The pre- and postconditions are exported to be proved by SMT solvers thanks to the Why3 tool.
 
 \subsection{Hardening the user's socket API}
 
@@ -434,7 +481,7 @@ end if;
     but some other properties are formulated in the TCP norm, and could be verified in the implementation to make
     it even more robust.
 
-    
+
 
 
 \bibliographystyle{splncs04}
