@@ -13,6 +13,9 @@
     keywordstyle=\color{blue!50}\bfseries
 }
 
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing, patterns}
+
 \usepackage{subcaption}
 
 \title{Verification of a TCP/IP stack}
@@ -98,6 +101,19 @@
 \section{TCP protocol and CycloneTCP library}
 \label{sec:TCP}
 
+\subsection{TCP protocol}
+
+
+\subsection{CycloneTCP library organisation}
+
+    \input{OryxStack.tex}
+
+    The CycloneTCP library is TCP/IP stack that implements network protocols. It is particularly well adapted to embedded
+    platforms and microcontrolers. As a result, the code is written to compile on those platforms and to be used with different
+    real time OS, like for intance FreeRTOS.
+
+    Figure \ref{Fig:TcpStack} gives an overview of the different protocols supported. 
+
     In this part we should present:
     \begin{itemize}
         \item The TCP protocol
@@ -133,9 +149,11 @@
     These two parts have been replaced by SPARK code and the absence of run-time errors has been proved for
     these parts.
     However, to be integrated with the existing library, it has been necessary to reuse existing C code
-    as an untrested black box, for which we cannot have strong guarantees. Thus, other techniques
-    and tools have helped the verification process. They are presented in this section.
-    The source code of the reworked TCP/IP stack can be found on Github\footnote{\url{https://github.com}}.
+    as an untrested black box, for which we cannot have strong guarantees. Figure \ref{Fig:TcpStack} gives an overview of
+    what have been translated and what have been reused. The box for TCP is hatched because only the user level functions
+    has been translated in SPARK. The parsing and processing of incoming segment is let to the C code.
+    Thus, other techniques and tools have helped the verification process, in particular for the TCP part. They are presented in this section.
+    The source code of the reworked TCP/IP stack can be found on Github\footnote{\url{https://github.com/AdaCore/Http_Cyclone}}.
 
 \subsection{The SPARK programming language}
 
@@ -398,6 +416,25 @@ end if;
 
 
 \section{Conclusion and future work}
+
+    The use of SPARK for the verification of the TCP protocol has given good results. It has helped to find bugs
+    in the existing implementation. But more than finding bugs, the interest of this work lie in the face that it is
+    a big step toward a secure implementation. It has been proved by the tool GNATprove that our implementation is free
+    of run-time errors and that all the transitions in the TCP state machine are done with respect to the norm.
+
+    However weeknesses exist our implementation, in particular because all the underlying layers are still written in C.
+    The principal function of those layers is to format packet before they are sent, or parse incoming packets, check
+    their integrity and transmit the resulting payload to the corresponding upper level layer.
+    This processing part can be a source of errors and bugs as explain in~\cite{Reiher2019RecordFluxFM}.
+    Using the RecordFlux DSL to parse the packets of the different protocols is the next step to make the stack safer.
+    Using RecordFlux to parse TCP message would be a big step to finish the translation of the TCP protocol in SPARK.
+    The postconditions extracted by KLEE could be proved by GNATprove for a safer result.
+
+    Our verification of the TCP protocol only focuses on the validity of the transitions in the TCP state machine,
+    but some other properties are formulated in the TCP norm, and could be verified in the implementation to make
+    it even more robust.
+
+    
 
 
 \bibliographystyle{splncs04}
