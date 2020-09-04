@@ -105,6 +105,27 @@
 
 \subsection{TCP protocol}
 
+    %\input{Automaton.tex}
+
+In this part we should present:
+\begin{itemize}
+    \item The TCP protocol
+    \begin{itemize}
+        \item Different states
+        \item Flags that can be received (mainly SYN, ACK, FIN \& RST)
+        \item State machine
+        \item User functions
+        \item Precise that most of transitions are done when a message is received and then, outside of the user functions.
+    \end{itemize}
+\end{itemize}
+
+
+Figures à inclures ici:
+\begin{itemize}
+    \item Une figure qui présente l'automate de transition. Expliquer que certaines transition sont effectuées par une action de l'utilisateur,
+          et que d'autres sont effectuées quand un segment est reçu.
+\end{itemize}
+
 
 \subsection{CycloneTCP library organisation}
 
@@ -119,32 +140,7 @@
     to compile on those platforms and to be used with different real time OS, like for intance FreeRTOS.
     Hence, a model based on multiple tasks has been adopted to implement the TCP protocol as defined in the norm, with,
     in addition, complex cooperation mechanisms. A task is dedicated to the user code, another to timers, and the last is
-    assigned to the processing of incoming segments.
-
-    In this part we should present:
-    \begin{itemize}
-        \item The TCP protocol
-        \begin{itemize}
-            \item Different states
-            \item Flags that can be received (mainly SYN, ACK, FIN \& RST)
-            \item State machine
-            \item User functions
-            \item Precise that most of transitions are done when a message is received and then, outside of the user functions.
-        \end{itemize}
-        \item The CycloneTCP library. Present the different caracteristics, in particular
-        \begin{itemize}
-            \item The task model adopted to be run on a RT OS. (A task dedicated to user task, another to timers, and the last to incoming messages processing).
-            \item The socket API that is provided to use UDP and TCP protocols.
-        \end{itemize}
-    \end{itemize}
-
-    Any other suggestion? (2/3 pages max).
-
-    Figures à inclures ici:
-    \begin{itemize}
-        \item Une figure qui présente l'automate de transition. Expliquer que certaines transition sont effectuées par une action de l'utilisateur,
-              et que d'autres sont effectuées quand un segment est reçu.
-    \end{itemize}
+    assigned to the processing of incoming segments. Then, user tasks can block without interfering the TCP/IP stack.
 
 \section{Specification Techniques Used}
 
