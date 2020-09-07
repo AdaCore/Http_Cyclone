@@ -47,58 +47,31 @@
 
 \section{Introduction}
 
-    In the development of the Internet, there is a protocol that has a very special place: TCP.
-    It has been described by Vincent Cerf and Bob Kahn who can be considered as the fathers for the Internet
-    for their work, and the protocol has later been standardized in a RFC norm~\cite{rfc793}.
-    Since this date, the TCP has been widely used on the Internet as the underlying protocol for application layers such as HTTP,
-    FTP or TLS. TCP uses itself an underlying protocol to work, the Internet layer IP protocol which is itself
-    based on a link layer, such as Ethernet. This stacking of protocols is referred to as the TCP/IP stack.
+    In the development of the Internet, the TCP protocol that has a very special place.
+    Initially described by the ``fathers of the Internet'' Vincent Cerf and Bob Kahn, the TCP protocol was standardized in 1981 by RFC 793~\cite{rfc793}.
+    Since this date, TCP has been widely used on the Internet as the underlying protocol for application layers such as HTTP,
+    FTP or TLS. TCP is based on the underlying IP protocol which is itself
+    based on a link layer such as Ethernet. This stacking of protocols is referred to as the TCP/IP stack.
 
-    The last decade has seen a growing interest for security and privacy in all the fields where computers are
-    involved. The development of safe applications thanks to static analyzers and formal methods, that was first
-    restricted to critical embedded software with the Astr\'ee analyzer~\cite{cousot2005astree} or the B method, are
-    now adopted on a larger scale. New tools have been developed to promote the use of formal methods. Among them we
-    can mention the SMT-solvers Z3~\cite{de2008z3} and Alt-Ergo~\cite{conchon:hal-01960203},
-    the higher level language F*~\cite{mumon} that can prove assertions
-    using these SMT-solvers or the more automatic static analyzer by abstract interpretation Frama-C~\cite{cuoq2012frama}
-    that can help to identify undefined behaviors in C programs. Theorem provers, such as Coq or Isabelle, are another class
-    of tools, where proofs are done manually.
+    Given the importance of the TCP protocol in network communications, some researchers have attempted to formalize the protocol to either prove key properties~\cite{smith1996formal}
+    or even to fully prove the correctness of an implementation against a complete specification~\cite{ridge2008rigorous}.
+    This latter implementation was performed in the HOL proof assistant, and while the authors note that it would be possible in theory to extract an implementation in Haskell from
+    this work, this has not been adopted in practice.
+    The formalization of TCP specification and verification of a TCP implementation face two difficulties:
+    RFC 793 is written in English, leaving many parts underspecified; the TCP protocol is inherently concurrent which makes it complex to specify and verify.
+    As a result, there is currently no formally verified implementation for TCP that is usable in industry.
 
-    In the domain of networking and cryptography, these tools have been used to make secure implementations.
-    Recently, Reiher and al have proposed a domain-specific language, RecordFlux~\cite{Reiher2019RecordFluxFM},
-    to specify the message formats for real world protocols, that is written in SPARK.
-    This is also the goal followed by the Everest project~\cite{bhargavan2017everest}.
-    The authors implemented cryptographic functions such as AES or
-    SHA2 as well as TLS, the cryptographic protocol that provides security
-    to HTTPS and is its heart. The implementation is written
-    in F* and is a combination of several sub-project such as miTLS~\cite{bhargavan2013implementing}
-    or HACL*~\cite{zinzindohoue2017hacl}. The weakness of the Everest project lies in its need to use the untrusted
-    transport layer TCP. If a bug exists in the transport layer, it can also jeopardize the higher level layers.
+    Other communication protocols have been formalized in recent years, leading to a formally verified implementation.
+    The most prominent project in this area is the Everest project~\cite{bhargavan2017everest}, which led to a formally verified implementation in F* of TLS called miTLS~\cite{bhargavan2013implementing}.
+    Note that miTLS still relies on an untrusted implementation of TCP, and thus could benefit from the results of our work.
+    The approach taken in project Everest was to reimplement the formalized protocols completely in F*, a research programming language targeted at formal program verification.
+    This approach is often difficult to adopt in industry, as codebases are evolved incrementally rather than replaced, both for economical and practical reasons.
 
-    The importance of the TCP protocol in the network communications has driven some people to work
-    on it and try to ensure the safety of the protocol. Among these works, in~\cite{smith1996formal}
-    the author has tried to formally verify that a TCP implementation verify some specifications.
-    Another work comes from Tom Ridge and al~\cite{ridge2008rigorous} who have implemented the TCP
-    protocol in the HOL proof assistant.
-    But only few works has been done. Doing formal verification on a TCP implementation face up to two
-    problems. The first one is the complexity of the TCP protocol that is written to be concurrent.
-    The second problem comes from the norm itself that is written in a natural, informal language: English.
-    Then a lot of part are under specified and extracted strong specifications can be hard.
-    As a result, it does not exists a safe implementation for TCP that can be used in the industry.
-
-    Our approach has been to consider an existing implementation of a TCP/IP stack and replace and integrate
-    some bricks by Ada/SPARK code.
-    We have chosen the Oryx Embedded's library, CycloneTCP\footnote{\url{https://www.oryx-embedded.com/products/CycloneTCP.html}}.
-    The library is written in C, which is suitable to interface with Ada/SPARK, and is developed to run
-    on embedded processors. We focused our work on rewriting in SPARK the TCP protocol because of the importance
-    it has in the network communication as well as the socket API to provide a safe interface to the programmers
-    to use our safe TCP implementation.
-
-    In the first section we explore more in details the TCP protocol and the state machine that governs the behavior of the connection.
-    Then in the next section we explain how we have formalized and implemented in SPARK the TCP user functions and the socket API.
-    Finally in the last section we present some results of our work, like the bugs that have been found and eliminated thanks to our
-    new implementation.
-
+    Our approach in this work has been to incrementally evolve an existing TCP/IP stack in C by replacing parts of the code with formally verified code in SPARK.
+    The stack chosen, CycloneTCP\footnote{\url{https://www.oryx-embedded.com/products/CycloneTCP.html}}, is targeted at embedded processors with no Operating System.
+    In Section~\ref{sec:TCP} we describe the TCP protocol, in particular the state machine that governs the behavior of a connection.
+    In Section~\ref{sec:spec} we present specificities of the specification technique that we used, and in Section~\ref{sec:verif} we explain how we formalized and implemented in SPARK the TCP user functions and the underlying socket API.
+    In Section~\ref{sec:results} we present the results of our work, in particular bugs that have been found and eliminated thanks to our approach, before we conclude.
 
 \section{TCP protocol and CycloneTCP library}
 \label{sec:TCP}
@@ -131,7 +104,7 @@ Figures à inclures ici:
 
     \input{OryxStack.tex}
 
-    The CycloneTCP library is TCP/IP stack that implements network protocols. 
+    The CycloneTCP library is TCP/IP stack that implements network protocols.
     Figure \ref{Fig:TcpStack} gives an overview of the different protocols supported. TCP and UDP protocols have a central place
     in the stack. An API is provided to use those network protocols: the Socket API. It is a common way to use transport protocols,
     and the application protocols in the stack, such as HTTP or FTP use it.
@@ -143,6 +116,7 @@ Figures à inclures ici:
     assigned to the processing of incoming segments. Then, user tasks can block without interfering the TCP/IP stack.
 
 \section{Specification Techniques Used}
+\label{sec:spec}
 
 \subsection{The SPARK Programming Language}
 
@@ -198,6 +172,7 @@ ghost code, delta aggregates and Old attribute
 
 
 \section{Verification of the TCP protocol and the Socket API}
+\label{sec:verif}
 
     Our work is focused on the key elements of the CycloneTCP library: the sockets and TCP protocol itself.
     These two parts have been replaced by SPARK code and the absence of run-time errors has been proved for
@@ -450,6 +425,7 @@ end if;
     \end{algorithm}
 
 \section{Results and bugs found}
+\label{sec:results}
 
     \begin{itemize}
         \item Bug de concurrence -> SPARK
