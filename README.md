@@ -33,6 +33,15 @@ Use project
 Use `git clone --recursive <git_repo>` to collect all the sources
 needed.
 
+The following tools are needed to compile the project:
+* GNAT ARM 2020 (download it here https://www.adacore.com/download and install it in the recommanded location).
+* OpenOCD to flash on the card
+* *[Optional]* minicom to see the debug messages.
+
+*[Optional]* For the verification:
+* KLEE + LLVM 6.
+* SPARK.
+
 Configuration
 -------------
 
@@ -95,6 +104,15 @@ An experimentation has also been done with Klee, and the folder `klee/` gathers 
 sources needed to run Klee. A makefile is provided to help the compilation. You
 might need to comment the line `#include "dns/dns_client.h"` in the file `net.h`
 to be able to compile.
+
+Example
+-------
+
+The code example a HTTP page and print it. To see the result, you must install minicom.
+Click on the blue button on the board to launch the download.
+The page is displayed as a HTTP request: the header followed by the content of the
+page in JSON format.
+
 
 Contribute
 ----------
