@@ -33,6 +33,15 @@ Use project
 Use `git clone --recursive <git_repo>` to collect all the sources
 needed.
 
+The following tools are needed to compile the project:
+* GNAT ARM 2020 (download it here https://www.adacore.com/download and install it in the recommanded location).
+* OpenOCD to flash on the card
+* *[Optional]* minicom to see the debug messages.
+
+*[Optional]* For the verification:
+* KLEE + LLVM 6.
+* SPARK.
+
 Configuration
 -------------
 
@@ -57,8 +66,22 @@ To compile the project, you need to have installed the arm compiler for
 ada, that can be found here https://www.adacore.com/download. Install it
 in the recommanded location.
 
-Use `make` to compile the project, and `make flash` to install it
-on the STM32 card.
+First, you have to chose the board:
+```
+$ ./configure
+Chose your material in the list below to configure the Http_Cyclone demo.
+[a] stm32f407
+[b] stm32f769i_discovery
+Select your material:
+```
+Then to compile the project:
+```
+make
+```
+To install it on the STM32 card:
+```
+make flash
+```
 
 If the ARM compiler is not installed in the default directory, you can use
 `make RTS=<install_dir>` to help the compiler to find the require files
@@ -95,6 +118,15 @@ An experimentation has also been done with Klee, and the folder `klee/` gathers 
 sources needed to run Klee. A makefile is provided to help the compilation. You
 might need to comment the line `#include "dns/dns_client.h"` in the file `net.h`
 to be able to compile.
+
+Example
+-------
+
+The code example a HTTP page and print it. To see the result, you must install minicom.
+Click on the blue button on the board to launch the download.
+The page is displayed as a HTTP request: the header followed by the content of the
+page in JSON format.
+
 
 Contribute
 ----------
