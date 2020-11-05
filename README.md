@@ -66,8 +66,22 @@ To compile the project, you need to have installed the arm compiler for
 ada, that can be found here https://www.adacore.com/download. Install it
 in the recommanded location.
 
-Use `make` to compile the project, and `make flash` to install it
-on the STM32 card.
+First, you have to chose the board:
+```
+$ ./configure
+Chose your material in the list below to configure the Http_Cyclone demo.
+[a] stm32f407
+[b] stm32f769i_discovery
+Select your material:
+```
+Then to compile the project:
+```
+make
+```
+To install it on the STM32 card:
+```
+make flash
+```
 
 If the ARM compiler is not installed in the default directory, you can use
 `make RTS=<install_dir>` to help the compiler to find the require files
