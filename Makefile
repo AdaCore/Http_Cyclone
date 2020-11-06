@@ -350,11 +350,11 @@ CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
 CFLAGS += $(DEFINES)
 CFLAGS += $(INCLUDES)
 
-RTS = /opt/GNAT/2019-arm-elf
+RTS = /opt/GNAT/2020-arm-elf
 
 ADAFLAGS += --RTS=$(addprefix $(RTS)/, arm-eabi/lib/gnat/ravenscar-sfp-stm32f4/)
 ADAFLAGS += -fno-common -Wall -Os -g3 -ggdb
-ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
+ADAFLAGS += -mcpu=cortex-m4 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
 ADAFLAGS += -gnat2020 -gnatwa -gnatef -gnatp # -gnata
 ADAFLAGS += -I. -gnatep=prep.data
