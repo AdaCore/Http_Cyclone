@@ -32,11 +32,11 @@ package body Tcp_Timer_Interface is
          Convention => C,
          External_Name => "osGetSystemTime";
    begin
-      -- Start Timer
+      --  Start Timer
       Timer.startTime := Os_Get_System_Time;
       Timer.interval := Timer_Delay;
 
-      -- The timer is now running
+      --  The timer is now running
       Timer.running := True;
    end Tcp_Timer_Start;
 

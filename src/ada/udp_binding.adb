@@ -46,9 +46,10 @@ is
         External_Name => "udpSendDatagram";
    begin
       Written := 0;
-      Error := Error_T'Enum_Val(
-         udpSendDatagram(Sock, Dest_Ip_Addr'Address, Dest_Port, char_array(Data),
-            Data'Length, unsigned(Written), Flags));
+      Error := Error_T'Enum_Val (udpSendDatagram (Sock, Dest_Ip_Addr'Address,
+                                 Dest_Port, char_array (Data),
+                                 Data'Length,
+                                 unsigned (Written), Flags));
    end Udp_Send_Datagram;
 
    --------------------------
@@ -69,7 +70,7 @@ is
          (Sock      : Socket;
           srcIpAddr : System.Address;
           srcPort   : out Port;
-          destIpAddr: System.Address;
+          destIpAddr : System.Address;
           data      : out char_array;
           size      : unsigned;
           received  : out unsigned;
@@ -79,13 +80,15 @@ is
          Convention    => C,
          External_Name => "udpReceiveDatagram";
 
-      Received_Data : char_array(size_t(Data'First) .. size_t(Data'Last));
+      Received_Data : char_array (size_t (Data'First) .. size_t (Data'Last));
    begin
       Received := 0;
-      Error := Error_T'Enum_Val(
-         udpReceiveDatagram(Sock, Src_Ip_Addr'Address, Src_Port, Dest_Ip_Addr'Address,
-            Received_Data, Data'Length, unsigned(Received), Flags));
-      Data := Received_Buffer(Received_Data);
+      Error := Error_T'Enum_Val (udpReceiveDatagram (Sock,
+                                 Src_Ip_Addr'Address, Src_Port,
+                                 Dest_Ip_Addr'Address,
+                                 Received_Data, Data'Length,
+                                 unsigned (Received), Flags));
+      Data := Received_Buffer (Received_Data);
 
    end Udp_Receive_Datagram;
 end Udp_Binding;

@@ -30,23 +30,23 @@ is
        New_State : in     Tcp_State)
    is
    begin
-      -- Enter CLOSED State?
+      --  Enter CLOSED State?
       if New_State = TCP_STATE_CLOSED then
-         -- Check previous state
+         --  Check previous state
          if Sock.State = TCP_STATE_LAST_ACK
            or else Sock.State = TCP_STATE_TIME_WAIT
          then
-            -- The connection has been closed properly
+            --  The connection has been closed properly
             Sock.closed_Flag := True;
          else
-            -- the connection has been reset by the peer
+            --  the connection has been reset by the peer
             Sock.reset_Flag := True;
          end if;
       end if;
 
-      -- Enter the desired state
+      --  Enter the desired state
       Sock.State := New_State;
-      -- Update TCP related events
+      --  Update TCP related events
       Tcp_Update_Events (Sock);
    end Tcp_Change_State;
 
@@ -58,24 +58,24 @@ is
    with SPARK_Mode => Off
    is
    begin
-      -- Only one of the events listed here may complete the wait
+      --  Only one of the events listed here may complete the wait
       Sock.S_Event_Mask := Event_Mask;
-      -- Update TCP related events
-      Tcp_Update_Events(Sock);
+      --  Update TCP related events
+      Tcp_Update_Events (Sock);
 
-      -- No event is signaled?
+      --  No event is signaled?
       if Sock.S_Event_Flags = 0 then
          Os_Reset_Event (Sock.S_Event);
 
-         -- Release exclusive access
+         --  Release exclusive access
          Os_Release_Mutex (Net_Mutex);
-         -- Wait until an event is triggered
+         --  Wait until an event is triggered
          Os_Wait_For_Event (Sock.S_Event, Timeout);
-         -- Get exclusive Access
+         --  Get exclusive Access
          Os_Acquire_Mutex (Net_Mutex);
       end if;
 
-      -- Return the list of TCP events that satisfied the wait
+      --  Return the list of TCP events that satisfied the wait
       Event := Sock.S_Event_Flags;
    end Tcp_Wait_For_Events;
 
@@ -102,7 +102,7 @@ is
             External_Name => "tcpSendSegment";
    begin
       Error :=
-         Error_T'Enum_Val(tcpSendSegment
+         Error_T'Enum_Val (tcpSendSegment
             (Sock, Flags, Seq_Num, Ack_Num, Length, Add_To_Queue));
    end Tcp_Send_Segment;
 
@@ -121,16 +121,16 @@ is
             External_Name => "tcpNagleAlgo";
    begin
       Error :=
-         Error_T'Enum_Val(tcpNagleAlgo (Sock, Flags));
+         Error_T'Enum_Val (tcpNagleAlgo (Sock, Flags));
    end Tcp_Nagle_Algo;
 
    procedure Tcp_Update_Events
       (Sock : Not_Null_Socket)
    is begin
-      -- Clear event flags
+      --  Clear event flags
       Sock.S_Event_Flags := 0;
 
-      -- Check current TCP state
+      --  Check current TCP state
       case Sock.State is
          when TCP_STATE_ESTABLISHED
             | TCP_STATE_FIN_WAIT_1 =>
@@ -154,7 +154,7 @@ is
          when others => null;
       end case;
 
-      -- Handle TX specific events
+      --  Handle TX specific events
       if Sock.State in TCP_STATE_SYN_SENT
                        | TCP_STATE_SYN_RECEIVED
       then
@@ -164,20 +164,23 @@ is
       elsif Sock.State in TCP_STATE_ESTABLISHED
                         | TCP_STATE_CLOSE_WAIT
       then
-         -- Check whether the send buffer is full or not
-         if unsigned(Sock.sndUser) + Sock.sndNxt - Sock.sndUna < unsigned(Sock.txBufferSize) then
+         --  Check whether the send buffer is full or not
+         if unsigned (Sock.sndUser) + Sock.sndNxt -
+           Sock.sndUna < unsigned (Sock.txBufferSize)
+         then
             Sock.S_Event_Flags := Sock.S_Event_Flags or SOCKET_EVENT_TX_READY;
          end if;
 
-         -- Check whether all the data in the send buffer has been transmitted
+         --  Check whether all the data in the send buffer has been transmitted
          if Sock.sndUser = 0 then
-            -- All the pending data has been sent out
+            --  All the pending data has been sent out
             Sock.S_Event_Flags := Sock.S_Event_Flags or SOCKET_EVENT_TX_DONE;
 
-            -- Check whether an acknowledgment has been received
-            -- @TODO check the correcness of this condition
+            --  Check whether an acknowledgment has been received
+            --  @TODO check the correcness of this condition
             if ((Sock.sndUna - Sock.sndNxt) and 16#8000_0000#) = 0 then
-               Sock.S_Event_Flags := Sock.S_Event_Flags or SOCKET_EVENT_TX_ACKED;
+               Sock.S_Event_Flags := Sock.S_Event_Flags or
+                 SOCKET_EVENT_TX_ACKED;
             end if;
          end if;
       elsif Sock.State /= TCP_STATE_LISTEN then
@@ -187,30 +190,30 @@ is
                                or SOCKET_EVENT_TX_ACKED;
       end if;
 
-      -- Handle RX specific events
+      --  Handle RX specific events
       if Sock.State in TCP_STATE_ESTABLISHED
                      | TCP_STATE_FIN_WAIT_1
                      | TCP_STATE_FIN_WAIT_2
       then
-         -- Data is available for reading?
+         --  Data is available for reading?
          if Sock.rcvUser > 0 then
             Sock.S_Event_Flags := Sock.S_Event_Flags or SOCKET_EVENT_RX_READY;
          end if;
       elsif Sock.State = TCP_STATE_LISTEN then
-         -- If the socket is currently in the listen state, it will be marked
-         -- as readable if an incoming connection request has been received
+         --  If the socket is currently in the listen state, it will be marked
+         --  as readable if an incoming connection request has been received
          if Sock.synQueue /= null then
             Sock.S_Event_Flags := Sock.S_Event_Flags or SOCKET_EVENT_RX_READY;
          end if;
       elsif Sock.State /= TCP_STATE_SYN_SENT and then
             Sock.State /= TCP_STATE_SYN_RECEIVED
       then
-         -- Readability can also indicate that a request to close
-         -- the socket has been received from the peer
+         --  Readability can also indicate that a request to close
+         --  the socket has been received from the peer
          Sock.S_Event_Flags := Sock.S_Event_Flags or SOCKET_EVENT_RX_READY;
       end if;
 
-      -- Check whether the socket is bound to a particular network interface
+      --  Check whether the socket is bound to a particular network interface
       pragma Warnings (Off, "statement has no effect",
                        Reason => "This is inherited from the C code."
                        & "A special event can be raised if the Network "
@@ -222,22 +225,22 @@ is
                        & "the SPARK code never needs to check if the network "
                        & "interface is connected or disconnected.");
       if Sock.S_Net_Interface /= System.Null_Address then
-         -- Handle link up and link down events
-         -- @TODO voir comment faire ici même si non nécessaire dans les cas
-         -- que j'ai
+         --  Handle link up and link down events
+         --  @TODO voir comment faire ici même si non nécessaire dans les cas
+         --  que j'ai
          null;
       end if;
       pragma Warnings (On, "statement has no effect");
 
-      -- Mask unused events
+      --  Mask unused events
       Sock.S_Event_Flags := Sock.S_Event_Flags and Sock.S_Event_Mask;
 
-      -- Any event to signal?
+      --  Any event to signal?
       if Sock.S_Event_Flags /= 0 then
-         -- Unblock I/O operations currently in waiting state
+         --  Unblock I/O operations currently in waiting state
          Os_Set_Event (Sock.S_Event);
 
-         -- Set user event to signaled state if necessary
+         --  Set user event to signaled state if necessary
          if Sock.S_User_Event /= null then
             Os_Set_Event (Sock.S_User_Event);
          end if;
@@ -250,23 +253,23 @@ is
        Event      :    out Socket_Event)
    is
    begin
-      -- Only one of the events listed here may complete the wait
+      --  Only one of the events listed here may complete the wait
       Sock.S_Event_Mask := Event_Mask;
 
-      -- Update TCP related events
+      --  Update TCP related events
       Tcp_Update_Events (Sock);
 
-      -- An event signaled?
+      --  An event signaled?
       if Sock.S_Event_Flags /= 0 then
          Event := Sock.S_Event_Flags;
          return;
       else
          for I in 1 .. 3 loop
-            -- Simulate the reception of a message
+            --  Simulate the reception of a message
             Tcp_Process_One_Segment (Sock);
-            -- Update TCP related events
+            --  Update TCP related events
             Tcp_Update_Events (Sock);
-            -- An event signaled?
+            --  An event signaled?
             if Sock.S_Event_Flags /= 0 then
                Event := Sock.S_Event_Flags;
                return;
