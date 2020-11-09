@@ -1,16 +1,13 @@
 TCP/IP Stack
 ============
 
-This project is a partial reuse of the Oryx-Embedded Cyclone TCP library (https://oryx-embedded.com)
-to create a Ada/SPARK verified library. This library implement a new
-interface for sockets as well as a partial reimplementation of the TCP
-user functions in SPARK. The absence of run-time errors has been proved
-for these functions with SPARK. Moreover, some functional specifications
-of the TCP norm have also be proved.
+The project demonstrates how existing software libraries written in C programming language can be hardened in terms of  software assurance and security by the use of the Ada and SPARK technologies. 
 
-The table below gives an overview of the files that are translated in SPARK,
-and then proved and the ones that are only a binding between C and Ada,
-to use the existing C library.
+The [Oryx Embedded CycloneTCP](https://oryx-embedded.com) library is used as a starting point. CycloneTCP is a professional-grade embedded Transmission Control Protocol/Internet Protocol (TCP/IP) library developed by the Oryx Embedded company. The implementation is meant to conform with the Request for Comments (RFC) Internet standards, namely the [RFC 793 TCP](https://tools.ietf.org/html/rfc793) protocol specifications,  provided by the Internet Engineering Task Force ([IETF](https://tools.ietf.org/)). The library is written in ANSI C, and it supports a large number of 32-bit embedded processors and a large number of Real-time Operating systems (RTOS). It can also run in a bare-metal environment. The library offers implementations for a wide range of TCP/IP protocols. A quick overview of the library can be found [here](https://www.oryx-embedded.com/products/CycloneTCP.html). 
+
+A new implementation of the library's socket interface and a partial implementation of the TCP user functions is provided in SPARK. The absence of run-time errors for the translated functions and the conformance to some functional specifications of the TCP norm is proved using the SPARK technologies.
+
+The table below gives an overview of the files that are translated in SPARK and then proved. It also records all the files that offer the necessary bindings between C and Ada to facilitate the interface between the two languages.
 
 | File                    | Description                                                       | Translation or binding                   |
 |-------------------------|-------------------------------------------------------------------|------------------------------------------|
