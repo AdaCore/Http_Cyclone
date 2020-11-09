@@ -211,12 +211,23 @@ is
       end if;
 
       -- Check whether the socket is bound to a particular network interface
+      pragma Warnings (Off, "statement has no effect",
+                       Reason => "This is inherited from the C code."
+                       & "A special event can be raised if the Network "
+                       & "interface is disconnected. It would be necessary "
+                       & "to go deeper into the C to SPARK translation to "
+                       & "handle this part in SPARK. In particular, the "
+                       & "network interface will need further definition. "
+                       & "This is not necessary for the SPARK proof because "
+                       & "the SPARK code never needs to check if the network "
+                       & "interface is connected or disconnected.");
       if Sock.S_Net_Interface /= System.Null_Address then
          -- Handle link up and link down events
          -- @TODO voir comment faire ici même si non nécessaire dans les cas
          -- que j'ai
          null;
       end if;
+      pragma Warnings (On, "statement has no effect");
 
       -- Mask unused events
       Sock.S_Event_Flags := Sock.S_Event_Flags and Sock.S_Event_Mask;
