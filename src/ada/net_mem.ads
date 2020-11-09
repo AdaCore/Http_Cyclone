@@ -20,7 +20,7 @@ with System;
 
 package Net_Mem is
 
-   -- Size of the buffers
+   --  Size of the buffers
 #if NET_MEM_POOL_BUFFER_SIZE'Defined then
    NET_MEM_POOL_BUFFER_SIZE : constant Positive := $NET_MEM_POOL_BUFFER_SIZE;
 #else

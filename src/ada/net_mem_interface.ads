@@ -52,11 +52,11 @@ is
    procedure Mem_Pool_Free
       (Queue_Item : in out Tcp_Syn_Queue_Item_Acc)
       with
-         Depends => (Queue_item => null,
+         Depends => (Queue_Item => null,
                      null => Queue_Item),
          Global => null,
          Post => Queue_Item = null;
-   
+
    procedure Net_Buffer_Free
       (Queue_Item : in out Socket_Queue_Item_Acc)
    with

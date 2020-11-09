@@ -32,10 +32,10 @@ is
    procedure HTTP_Client_Test is
       Sock_Ignore : Socket;
       ServerAddr : IpAddr;
-      End_Of_Line : constant Send_Buffer(1 .. 2) :=
-               (1 => char'Val(13), 2 => char'Val(10));
+      End_Of_Line : constant Send_Buffer (1 .. 2) :=
+               (1 => char'Val (13), 2 => char'Val (10));
       End_Of_Request : constant Send_Buffer (1 .. 1) :=
-               (1 => char'Val(0));
+               (1 => char'Val (0));
       Request : constant Send_Buffer :=
                "GET /anything HTTP/1.1" & End_Of_Line &
                "Host: httpbin.org" & End_Of_Line &
@@ -56,7 +56,8 @@ is
             Global => null;
 
    begin
-      Get_Host_By_Name("httpbin.org", ServerAddr, HOST_NAME_RESOLVER_ANY, Error_Ignore);
+      Get_Host_By_Name ("httpbin.org",
+                        ServerAddr, HOST_NAME_RESOLVER_ANY, Error_Ignore);
       if Error_Ignore /= NO_ERROR then
          return;
       end if;
@@ -81,15 +82,16 @@ is
       loop
             pragma Loop_Invariant
                (Sock_Ignore /= null and then
-                TCP_Rel_Iter (Model(Sock_Ignore)'Loop_Entry, Model(Sock_Ignore)));
+                TCP_Rel_Iter (Model (Sock_Ignore)'Loop_Entry,
+                  Model (Sock_Ignore)));
             Socket_Receive (Sock_Ignore, Buf, Received, 0, Error_Ignore);
             exit when Error_Ignore = ERROR_END_OF_STREAM;
             if Error_Ignore /= NO_ERROR then
                goto End_Of_Loop;
             end if;
-            Print_String (Buf, int(Received)); -- For debug purpose
+            Print_String (Buf, int (Received)); -- For debug purpose
       end loop;
-      Socket_Shutdown(Sock_Ignore, SOCKET_SD_BOTH, Error_Ignore);
+      Socket_Shutdown (Sock_Ignore, SOCKET_SD_BOTH, Error_Ignore);
 
       <<End_Of_Loop>>
       Socket_Close (Sock_Ignore);
@@ -97,7 +99,7 @@ is
 
    procedure HTTP_Server_Test is
       Sock_Ignore       : Socket;
-      Sock_Client_Ignore: Socket;
+      Sock_Client_Ignore : Socket;
       IPAddr_Client     : IpAddr with Unreferenced;
       Port_Client       : Port with Unreferenced;
    begin
@@ -110,7 +112,9 @@ is
 
       Socket_Listen (Sock_Ignore, 0);
 
-      Socket_Accept (Sock_Ignore, IPAddr_Client, Port_Client, Sock_Client_Ignore);
+      Socket_Accept (Sock_Ignore,
+                     IPAddr_Client,
+                     Port_Client, Sock_Client_Ignore);
 
       Socket_Close (Sock_Ignore);
       if Sock_Client_Ignore /= null then

@@ -35,8 +35,8 @@ package body Ip_Binding is
          Convention => C,
          External_Name => "ipSelectSourceAddr";
    begin
-      Error := Error_T'Enum_Val(
-         ipSelectSourceAddr(
+      Error := Error_T'Enum_Val (
+         ipSelectSourceAddr (
             Net_Interface => Net_Interface'Address,
             Dest_Addr     => Dest_Addr'Address,
             Src_Addr      => Src_Addr'Address));

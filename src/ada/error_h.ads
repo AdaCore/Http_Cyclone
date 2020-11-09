@@ -17,8 +17,6 @@
 
 pragma Ada_2020;
 
-with Interfaces.C; use Interfaces.C;
-
 package Error_H is
 
    type Error_T is
