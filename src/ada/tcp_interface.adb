@@ -586,8 +586,8 @@ is
                                  S_State => TCP_STATE_ESTABLISHED));
 
          --  Exit immediately if the transmission buffer is full (sanity check)
-         if unsigned (Sock.sndUser) + Sock.sndNxt - Sock.sndUna >= unsigned (Sock.txBufferSize) then
-            Error := ERROR_FAILURE;
+         if unsigned (Sock.sndUser) + Sock.sndNxt - Sock.sndUna >=
+           unsigned (Sock.txBufferSize) then Error := ERROR_FAILURE;
             return;
          end if;
 
@@ -609,7 +609,8 @@ is
          if N > 0 then
 
             B := Buffer_Index (Natural (Data_Buffer'First) + Total_Length);
-            E := Buffer_Index (Natural (Data_Buffer'First) + Total_Length + N - 1);
+            E := Buffer_Index (Natural
+                               (Data_Buffer'First) + Total_Length + N - 1);
             --  Copy user data to send buffer
             Tcp_Write_Tx_Buffer
                (Sock    => Sock,
@@ -624,9 +625,9 @@ is
             Tcp_Update_Events (Sock);
 
             --  To avoid a deadlock, it is necessary to have a timeout to force
-            --  transmission of data, overriding the SWS avoidance algorithm. In
-            --  practice, this timeout should seldom occur (refer to RFC 1122,
-            --  section 4.2.3.4)
+            --  transmission of data, overriding the SWS avoidance algorithm.
+            --  In practice, this timeout should seldom occur
+            --  (refer to RFC 1122, section 4.2.3.4)
             if Natural (Sock.sndUser) = N then
                Tcp_Timer_Start (Sock.overrideTimer, TCP_OVERRIDE_TIMEOUT);
             end if;
@@ -662,7 +663,8 @@ is
       --  wait for acknowledgment from the remote side
       if (Flags and SOCKET_FLAG_WAIT_ACK) /= 0 then
          --  Wait for the data to be acknowledged
-         Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_ACKED, Sock.S_Timeout, Event);
+         Tcp_Wait_For_Events (Sock, SOCKET_EVENT_TX_ACKED,
+                              Sock.S_Timeout, Event);
 
          --  A Timeout exception occured?
          if Event /= SOCKET_EVENT_TX_ACKED then
@@ -724,7 +726,8 @@ is
          end if;
 
          pragma Assert
-            (if Sock.State /= TCP_STATE_CLOSED and Sock.State /= TCP_STATE_LISTEN then
+           (if Sock.State /= TCP_STATE_CLOSED and Sock.State
+            /= TCP_STATE_LISTEN then
                Sock.reset_Flag = Sock.reset_Flag'Loop_Entry);
 
          pragma Assert (Sock.State /= TCP_STATE_SYN_RECEIVED);
@@ -793,7 +796,7 @@ is
          end if;
 
          pragma Loop_Invariant
-               (Basic_Model (Sock) = Basic_Model(Sock)'Loop_Entry and then
+               (Basic_Model (Sock) = Basic_Model (Sock)'Loop_Entry and then
                   Sock.State /= TCP_STATE_LISTEN and then
                (if Sock.State /= TCP_STATE_CLOSED then
                   Sock.reset_Flag = Sock.reset_Flag'Loop_Entry) and then
@@ -830,7 +833,8 @@ is
             Sock.rcvUser /= 0 and then
             Received < Data'Length and then
             (if Received > 0 then
-               Data (Data'First .. Buffer_Index (Natural(Data'First) + Received - 1))'Initialized));
+                        Data (Data'First .. Buffer_Index (Natural (Data'First)
+                     + Received - 1))'Initialized));
 
          --  Calculate the number of bytes to read at a time
          N := Natural'Min (
@@ -875,8 +879,9 @@ is
          --  Update RX event state
          Tcp_Update_Events (Sock);
 
-         --  The SOCKET_FLAG_BREAK_CHAR flag causes the function to stop reading
-         --  data as soon as the specified break character is encountered
+         --  The SOCKET_FLAG_BREAK_CHAR flag causes the function to stop
+         --  reading data as soon as the specified break character is
+         --  encountered
          if (Flags and SOCKET_FLAG_BREAK_CHAR) /= 0 then
             --  Check wether a break character has been found
             M := Buffer_Index (Natural (Data'First) + Received - 1);
@@ -971,13 +976,14 @@ is
    is
       Ignore_Written : Integer;
       Event : Socket_Event;
-      Buf : constant Send_Buffer (1 ..0) := (others => nul);
+      Buf : constant Send_Buffer (1 .. 0) := (others => nul);
    begin
 
       --  Disable transmission?
       if How = SOCKET_SD_SEND or How = SOCKET_SD_BOTH then
 
-         --  Flush the send buffer if we are in RECEIVED, ESTABLISHED or CLOSE_WAIT state
+         --  Flush the send buffer if we are in RECEIVED, ESTABLISHED
+         --  or CLOSE_WAIT state
          if Sock.State in TCP_STATE_SYN_RECEIVED
                         | TCP_STATE_ESTABLISHED
                         | TCP_STATE_CLOSE_WAIT
@@ -1001,8 +1007,9 @@ is
                return;
             end if;
 
-            pragma Assert (Sock.State in TCP_STATE_ESTABLISHED | TCP_STATE_CLOSE_WAIT
-                                          | TCP_STATE_CLOSED);
+            pragma Assert (Sock.State in TCP_STATE_ESTABLISHED
+                             | TCP_STATE_CLOSE_WAIT
+                             | TCP_STATE_CLOSED);
          end if;
 
          --  Check current state
@@ -1117,7 +1124,7 @@ is
             when others =>
                --  Nothing to do
                --  Continue processing
-               --  @Clément dans le cas de SYN-SENT, pourquoi ne fait-on rien ?
+               --  @Clément dans le cas de SYN-SENT, pourquoi ne fait-on rien?
                null;
          end case;
       end if;
