@@ -351,12 +351,12 @@ is
               Sock.S_Type = SOCKET_TYPE_UNUSED);
 
    procedure Tcp_Get_State
-      (Sock  : in out Not_Null_Socket;
-       State :    out Tcp_State)
+     (Sock : not null access constant Socket_Struct;
+      State : out Tcp_State)
       with
         Global  => (Input => Net_Mutex),
         Depends =>
-          ((State, Sock) => Sock,
+          ((State) => Sock,
            null  => Net_Mutex),
         Pre => Sock.S_Type = SOCKET_TYPE_STREAM,
         Post =>

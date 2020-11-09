@@ -88,6 +88,9 @@ is
    with
       Global => null,
       Pre => Sock.S_Type = SOCKET_TYPE_DGRAM,
-      Post => Basic_Model(Sock) = Basic_Model(Sock)'Old;
+      Post => Basic_Model(Sock) = Basic_Model(Sock)'Old and then
+         Src_Port > 0 and then
+         Is_Initialized_Ip(Src_Ip_Addr) and then
+         Is_Initialized_Ip(Dest_Ip_Addr);
 
 end Udp_Binding;

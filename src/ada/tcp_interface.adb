@@ -941,8 +941,8 @@ is
    -------------------
 
    procedure Tcp_Get_State
-      (Sock  : in out Not_Null_Socket;
-       State :    out Tcp_State)
+     (Sock : not null access constant Socket_Struct;
+      State : out Tcp_State)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);
