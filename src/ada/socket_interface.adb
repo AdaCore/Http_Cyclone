@@ -36,7 +36,8 @@ is
       Flags          :     Host_Resolver;
       Error          : out Error_T)
    is begin
-      Get_Host_By_Name_H (Server_Name, Server_Ip_Addr, unsigned (Flags), Error);
+      Get_Host_By_Name_H
+        (Server_Name, Server_Ip_Addr, unsigned (Flags), Error);
    end Get_Host_By_Name;
 
    -----------------
@@ -52,21 +53,21 @@ is
       P        : Port;
       Protocol : Socket_Protocol := S_Protocol;
    begin
-      -- Initialize socket handle
+      --  Initialize socket handle
       Sock := null;
       Os_Acquire_Mutex (Net_Mutex);
 
       case S_Type is
          when SOCKET_TYPE_STREAM =>
-            -- Always use TCP as underlying transport protocol
+            --  Always use TCP as underlying transport protocol
             Protocol := SOCKET_IP_PROTO_TCP;
-            -- Get an ephemeral port number
+            --  Get an ephemeral port number
             Tcp_Get_Dynamic_Port (P);
             Error := NO_ERROR;
          when SOCKET_TYPE_DGRAM =>
-            -- Always use UDP as underlying transport protocol
+            --  Always use UDP as underlying transport protocol
             Protocol := SOCKET_IP_PROTO_UDP;
-            -- Get an ephemeral port number
+            --  Get an ephemeral port number
             P     := Udp_Get_Dynamic_Port;
             Error := NO_ERROR;
          when SOCKET_TYPE_RAW_IP | SOCKET_TYPE_RAW_ETH =>
@@ -81,23 +82,23 @@ is
          for I in Socket_Table'Range loop
             if Socket_Table (I).S_Type = SOCKET_TYPE_UNUSED
             then
-               -- Save socket handle
+               --  Save socket handle
                Get_Socket_From_Table (I, Sock);
-               -- We are done
+               --  We are done
                exit;
             end if;
          end loop;
 
          if Sock = null then
-            -- Kill the oldest connection in the TIME-WAIT state whenever the
-            -- socket table runs out of space
+            --  Kill the oldest connection in the TIME-WAIT state whenever the
+            --  socket table runs out of space
             Tcp_Kill_Oldest_Connection (Sock);
          end if;
 
-         -- Check whether the current entry is free
+         --  Check whether the current entry is free
          if Sock /= null then
-            -- Reset Socket
-            -- Maybe there is a simplest way to perform that in Ada
+            --  Reset Socket
+            --  Maybe there is a simplest way to perform that in Ada
             Sock.S_Type                := S_Type;
             Sock.S_Protocol            := Protocol;
             Sock.S_Local_Port          := P;
@@ -113,7 +114,8 @@ is
             Sock.S_Event_Flags         := 0;
             Sock.S_User_Event          := null;
             pragma Annotate (GNATprove, False_Positive,
-                           "memory leak might occur", "Memory should already be free");
+                             "memory leak might occur",
+                             "Memory should already be free");
             Sock.State                 := TCP_STATE_CLOSED;
             Sock.owned_Flag            := False;
             Sock.closed_Flag           := False;
@@ -152,8 +154,9 @@ is
             Sock.retransmitCount       := 0;
             Sock.synQueue              := null;
             pragma Annotate (GNATprove, False_Positive,
-                           "memory leak might occur", "Memory should already be free");
-            -- Limit the number of pending connections
+                             "memory leak might occur",
+                             "Memory should already be free");
+            --  Limit the number of pending connections
             Sock.synQueueSize          := TCP_DEFAULT_SYN_QUEUE_SIZE;
             Sock.wndProbeCount         := 0;
             Sock.wndProbeInterval      := 0;
@@ -161,7 +164,8 @@ is
             Sock.sackBlockCount        := 0;
             Sock.receiveQueue          := null;
             pragma Annotate (GNATprove, False_Positive,
-                           "memory leak might occur", "Memory should already be free");
+                             "memory leak might occur",
+                             "Memory should already be free");
          end if;
       end if;
 
@@ -221,21 +225,21 @@ is
       Error          :    out Error_T)
    is
    begin
-      -- Connection oriented socket?
+      --  Connection oriented socket?
       if Sock.S_Type = SOCKET_TYPE_STREAM then
          Os_Acquire_Mutex (Net_Mutex);
          Tcp_Process_Segment (Sock);
-         -- Establish TCP connection
+         --  Establish TCP connection
          Tcp_Connect (Sock, Remote_Ip_Addr, Remote_Port, Error);
          Os_Release_Mutex (Net_Mutex);
 
-         -- Connectionless socket?
+         --  Connectionless socket?
       elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
          Sock.S_Remote_Ip_Addr := Remote_Ip_Addr;
          Sock.S_Remote_Port  := Remote_Port;
          Error               := NO_ERROR;
 
-         -- Raw Socket?
+         --  Raw Socket?
       elsif Sock.S_Type = SOCKET_TYPE_RAW_IP then
          Sock.S_Remote_Ip_Addr := Remote_Ip_Addr;
          Error               := NO_ERROR;
@@ -262,11 +266,12 @@ is
 
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = SOCKET_TYPE_STREAM then
-         -- INTERFERENCES
+         --  INTERFERENCES
          Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
       elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         Udp_Send_Datagram (Sock, Dest_Ip_Addr, Dest_Port, Data, Written, Flags, Error);
+         Udp_Send_Datagram
+           (Sock, Dest_Ip_Addr, Dest_Port, Data, Written, Flags, Error);
       else
          Error := ERROR_INVALID_SOCKET;
       end if;
@@ -289,11 +294,11 @@ is
 
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = SOCKET_TYPE_STREAM then
-         -- INTERFERENCES
+         --  INTERFERENCES
          Tcp_Process_Segment (Sock);
          Tcp_Send (Sock, Data, Written, Flags, Error);
       elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-         -- @TODO : See how to improve this part without using .all
+         --  @TODO : See how to improve this part without using .all
          Udp_Send_Datagram
             (Sock => Sock,
              Dest_Ip_Addr => IpAddr'(Length => Sock.S_Remote_Ip_Addr.Length,
@@ -327,14 +332,14 @@ is
 
       Os_Acquire_Mutex (Net_Mutex);
       if Sock.S_Type = SOCKET_TYPE_STREAM then
-         -- INTERFERENCES
+         --  INTERFERENCES
          Tcp_Process_Segment (Sock);
          Tcp_Receive (Sock, Data, Received, Flags, Error);
-         -- Save the source IP address
+         --  Save the source IP address
          Src_Ip_Addr  := Sock.S_Remote_Ip_Addr;
-         -- Save the source port number
+         --  Save the source port number
          Src_Port     := Sock.S_Remote_Port;
-         -- Save the destination IP address
+         --  Save the destination IP address
          Dest_Ip_Addr := Sock.S_localIpAddr;
       elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
          Udp_Receive_Datagram
@@ -399,7 +404,7 @@ is
    procedure Socket_Close (Sock : in out Socket) is
       Ignore_Error : Error_T;
    begin
-      -- Get exclusive access
+      --  Get exclusive access
       Os_Acquire_Mutex (Net_Mutex);
 
       if Sock.S_Type = SOCKET_TYPE_STREAM then
@@ -409,37 +414,38 @@ is
                          | SOCKET_TYPE_RAW_IP
                          | SOCKET_TYPE_RAW_ETH
       then
-         -- @TODO Have a look at this section to see if the code is
-         -- valid, in particular in what is done with pointers.
+         --  @TODO Have a look at this section to see if the code is
+         --  valid, in particular in what is done with pointers.
          declare
-            -- Point to the first item in the receive queue
+            --  Point to the first item in the receive queue
             Queue_Item : Socket_Queue_Item_Acc := Sock.receiveQueue;
          begin
-            -- Purge the receive queue
+            --  Purge the receive queue
             while Queue_Item /= null loop
                declare
-                  -- Keep track of the next item in the queue
-                  Next_Queue_Item : Socket_Queue_Item_Acc := Queue_Item.Next;
+                  --  Keep track of the next item in the queue
+                  Next_Queue_Item : constant Socket_Queue_Item_Acc
+                    := Queue_Item.Next;
                begin
                   Queue_Item.Next := null;
-                  -- Free previously allocated memory
-                  -- netBufferFree(queueItem.Buffer); in the c code
+                  --  Free previously allocated memory
+                  --  netBufferFree(queueItem.Buffer); in the c code
                   Net_Buffer_Free (Queue_Item);
-                  -- Point to the next item
+                  --  Point to the next item
                   Queue_Item := Next_Queue_Item;
                end;
             end loop;
             Sock.receiveQueue := null;
          end;
 
-            -- Mark the socket as closed
+            --  Mark the socket as closed
             Sock.S_Type := SOCKET_TYPE_UNUSED;
 
-            -- Fake free the socket
+            --  Fake free the socket
             Free_Socket (Sock);
       end if;
 
-      -- Release exclusive access
+      --  Release exclusive access
       Os_Release_Mutex (Net_Mutex);
    end Socket_Close;
 
@@ -488,7 +494,7 @@ is
    procedure Socket_Listen
      (Sock    : in out Not_Null_Socket;
       Backlog :        Natural)
-      -- Error   :    out Error_T)
+      --  Error   :    out Error_T)
    is
    begin
       Os_Acquire_Mutex (Net_Mutex);

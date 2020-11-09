@@ -36,7 +36,7 @@ is
    --  This function is used to model the transitions that can happen
    --  when a segment is received from the network.
    --  This function model zero, one or more transitions that can happen when
-   --  a message is received. (reprent →* = ∪_{n∈ℕ} →^n, n∈ℕ)
+   --  a message is received.
    procedure Tcp_Process_Segment (Sock : in out Not_Null_Socket)
    with
       Global => null,

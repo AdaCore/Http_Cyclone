@@ -35,7 +35,7 @@ is
 
    type Socket_Event is mod 2 ** 10
       with Size => int'Size;
-   -- for Socket_Event'Size use unsigned'Size;
+   --  for Socket_Event'Size use unsigned'Size;
 
    SOCKET_EVENT_TIMEOUT     : constant Socket_Event := 000;
    SOCKET_EVENT_CONNECTED   : constant Socket_Event := 001;
@@ -136,7 +136,7 @@ is
       S_Event_Flags   : Socket_Event;
       S_User_Event    : Os_Event_Acc;
 
-      -- TCP specific variables
+      --  TCP specific variables
       State       : Tcp_State;
       owned_Flag  : Bool;
       closed_Flag : Bool;
@@ -182,7 +182,7 @@ is
       retransmitTimer : Tcp_Timer;
       retransmitCount : unsigned;
 
-      synQueue     : Tcp_Syn_Queue_Item_Acc;-- Tcp_Syn_Queue_Item_Acc;
+      synQueue     : Tcp_Syn_Queue_Item_Acc; -- Tcp_Syn_Queue_Item_Acc;
       synQueueSize : Syn_Queue_Size;
 
       wndProbeCount    : unsigned;
@@ -198,7 +198,7 @@ is
       sackBlockCount : unsigned;
 
 #if (not UDP_SUPPORT'Defined) or UDP_SUPPORT then
-      -- UDP specific variables
+      --  UDP specific variables
       receiveQueue : Socket_Queue_Item_Acc;
 #end if;
    end record
@@ -214,9 +214,10 @@ is
          Socket_Struct.S_Event_Mask = SOCKET_EVENT_TX_SHUTDOWN or else
          Socket_Struct.S_Event_Mask = SOCKET_EVENT_RX_READY or else
          Socket_Struct.S_Event_Mask = SOCKET_EVENT_RX_SHUTDOWN or else
-         Socket_Struct.S_Event_Mask = (SOCKET_EVENT_CONNECTED or SOCKET_EVENT_CLOSED);
+         Socket_Struct.S_Event_Mask = (SOCKET_EVENT_CONNECTED or
+                                      SOCKET_EVENT_CLOSED);
 
-   -- @brief Flags used by I/O functions
+   --  @brief Flags used by I/O functions
 
    subtype Socket_Flags is unsigned;
 
@@ -230,7 +231,7 @@ is
    SOCKET_FLAG_NO_DELAY   : constant Socket_Flags := 16#4000#;
    SOCKET_FLAG_DELAY      : constant Socket_Flags := 16#8000#;
 
-   -- Number of sockets that can be opened simultaneously
+   --  Number of sockets that can be opened simultaneously
 
 #if SOCKET_MAX_COUNT'Defined then
    SOCKET_MAX_COUNT : constant Positive := $SOCKET_MAX_COUNT;
@@ -258,48 +259,49 @@ is
    ------------------------------
 
    type Socket_Model is record
-      -- S_Descriptor    : Sock_Descriptor;
+      --  S_Descriptor    : Sock_Descriptor;
       S_Type          : Socket_Type;
       S_Protocol      : Socket_Protocol;
       S_localIpAddr   : IpAddr;
       S_Local_Port    : Port;
       S_Remote_Ip_Addr  : IpAddr;
       S_Remote_Port   : Port;
-      -- S_Timeout       : Systime;
-      -- S_TTL           : unsigned_char;
-      -- S_Multicast_TTL : unsigned_char;
+      --  S_Timeout       : Systime;
+      --  S_TTL           : unsigned_char;
+      --  S_Multicast_TTL : unsigned_char;
       S_State         : Tcp_State;
-      -- S_Tx_Buffer_Size: Tx_Buffer_Size;
-      -- S_Rx_Buffer_Size: Rx_Buffer_Size;
+      --  S_Tx_Buffer_Size: Tx_Buffer_Size;
+      --  S_Rx_Buffer_Size: Rx_Buffer_Size;
       S_Reset_Flag    : Bool;
       S_Owned_Flag    : Bool;
    end record
      with Ghost;
 
-   function Model (Sock : not null access constant Socket_Struct) return Socket_Model is
+   function Model (Sock : not null access constant Socket_Struct) return
+     Socket_Model is
      (Socket_Model'(
-         -- S_Descriptor     => Sock.S_Descriptor,
+         --  S_Descriptor     => Sock.S_Descriptor,
          S_Type           => Sock.S_Type,
          S_Protocol       => Sock.S_Protocol,
          S_localIpAddr    => Sock.S_localIpAddr,
          S_Local_Port     => Sock.S_Local_Port,
          S_Remote_Ip_Addr => Sock.S_Remote_Ip_Addr,
          S_Remote_Port    => Sock.S_Remote_Port,
-         -- S_Timeout        => Sock.S_Timeout,
-         -- S_TTL            => Sock.S_TTL,
-         -- S_Multicast_TTL  => Sock.S_Multicast_TTL,
+         --  S_Timeout        => Sock.S_Timeout,
+         --  S_TTL            => Sock.S_TTL,
+         --  S_Multicast_TTL  => Sock.S_Multicast_TTL,
          S_State          => Sock.State,
-         -- S_Rx_Buffer_Size => Sock.rxBufferSize,
-         -- S_Tx_Buffer_Size => Sock.txBufferSize
+         --  S_Rx_Buffer_Size => Sock.rxBufferSize,
+         --  S_Tx_Buffer_Size => Sock.txBufferSize
          S_Reset_Flag     => Sock.reset_Flag,
          S_Owned_Flag     => Sock.owned_Flag
      ))
      with Ghost;
 
-   -- Basic Socket Model is here to model a socket after a procedure
-   -- call that fail et return an error.
-   -- It allows to model that we don't know everything about the TCP
-   -- state, but we still know what kind of protocol the socket is using
+   --  Basic Socket Model is here to model a socket after a procedure
+   --  call that fail et return an error.
+   --  It allows to model that we don't know everything about the TCP
+   --  state, but we still know what kind of protocol the socket is using
 
    type Basic_Socket_Model is record
       S_Type           : Socket_Type;
@@ -310,7 +312,8 @@ is
       S_Remote_Port    : Port;
    end record with Ghost;
 
-   function Basic_Model(Sock : not null access constant Socket_Struct) return Basic_Socket_Model is
+   function Basic_Model (Sock : not null access constant Socket_Struct) return
+     Basic_Socket_Model is
       (Basic_Socket_Model'(
          S_Type           => Sock.S_Type,
          S_Protocol       => Sock.S_Protocol,
@@ -322,28 +325,29 @@ is
       with Ghost;
 
 
-   -- The transition relation function is used to compute all the transitions
-   -- that can happen when a message is received.
-   -- This function can be used (for example) in loop invariant to compute
-   -- all the transition that can happen while receiving data
-   -- or in a loop that sends data.
+   --  The transition relation function is used to compute all the transitions
+   --  that can happen when a message is received.
+   --  This function can be used (for example) in loop invariant to compute
+   --  all the transition that can happen while receiving data
+   --  or in a loop that sends data.
 
-   -- This function represents only the direct transitions and the
-   -- transition to closed when a RST segment is received isn't
-   -- considered because this case must always be filtered by checking the returned
-   -- code of the function, and thus, may not appear in a loop invariant
+   --  This function represents only the direct transitions and the
+   --  transition to closed when a RST segment is received isn't
+   --  considered because this case must always be filtered by checking the
+   --  returned code of the function, and thus, may not appear in a loop
+   --  invariant
    function TCP_Rel
       (Model_Before : Socket_Model;
        Model_After  : Socket_Model)
    return Boolean is
-      (-- Basic attributes of the socket are kept
+      ( -- Basic attributes of the socket are kept
       Model_Before.S_Type = Model_After.S_Type and then
       Model_Before.S_Protocol = Model_After.S_Protocol and then
       Model_Before.S_localIpAddr = Model_After.S_localIpAddr and then
       Model_Before.S_Local_Port = Model_After.S_Local_Port and then
       Model_Before.S_Remote_Ip_Addr = Model_After.S_Remote_Ip_Addr and then
       Model_Before.S_Remote_Port = Model_After.S_Remote_Port and then
-      -- Only the TCP State is changed
+      --  Only the TCP State is changed
       (Model_Before.S_State = Model_After.S_State or else
       (if Model_Before.S_State = TCP_STATE_SYN_SENT then
          Model_After.S_State = TCP_STATE_SYN_RECEIVED or else
@@ -367,19 +371,19 @@ is
       ))
    with Ghost;
 
-   -- Transitive closure of the function TCP_Rel
+   --  Transitive closure of the function TCP_Rel
    function TCP_Rel_Iter
       (Model_Before : Socket_Model;
        Model_After  : Socket_Model)
    return Boolean is
-      (-- Basic attributes of the socket are kept
+      ( -- Basic attributes of the socket are kept
       Model_After.S_Type = Model_Before.S_Type and then
       Model_After.S_Protocol = Model_Before.S_Protocol and then
       Model_After.S_localIpAddr = Model_Before.S_localIpAddr and then
       Model_After.S_Local_Port = Model_Before.S_Local_Port and then
       Model_After.S_Remote_Ip_Addr = Model_Before.S_Remote_Ip_Addr and then
       Model_After.S_Remote_Port = Model_Before.S_Remote_Port and then
-      -- Only the TCP State is changed
+      --  Only the TCP State is changed
       (
          Model_After.S_State = Model_Before.S_State or else
          (if Model_Before.S_State = TCP_STATE_SYN_SENT then

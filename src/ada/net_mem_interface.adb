@@ -46,8 +46,8 @@ is
        Error  :    out Error_T)
    is
    begin
-      Error := Error_T'Enum_Val(netBufferSetLength
-                                (Buffer'Address, unsigned_long(Length)));
+      Error := Error_T'Enum_Val (netBufferSetLength
+                                (Buffer'Address, unsigned_long (Length)));
    end Net_Rx_Buffer_Set_Length;
 
    procedure Mem_Pool_Free
