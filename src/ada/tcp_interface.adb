@@ -25,7 +25,6 @@ with Net_Mem_Interface;   use Net_Mem_Interface;
 with Os;                  use Os;
 with Socket_Helper;       use Socket_Helper;
 with Socket_Interface;    use Socket_Interface;
-with System;              use System;
 with Tcp_Fsm_Binding;     use Tcp_Fsm_Binding;
 with Tcp_Misc_Binding;    use Tcp_Misc_Binding;
 with Tcp_Timer_Interface; use Tcp_Timer_Interface;
@@ -50,7 +49,13 @@ is
       --  Retrieve current port number
       P := Tcp_Dynamic_Port;
       --  Invalid port number?
+      pragma Warnings (Off, "upper bound check only fails for invalid values",
+                       Reason => "the port type has all possible min - max "
+                       & "range but code instantiation might use smaller range"
+                       & " for ephemerial port");
       if not (P in SOCKET_EPHEMERAL_PORT_MIN .. SOCKET_EPHEMERAL_PORT_MAX) then
+         pragma Warnings (Off,
+                          "upper bound check only fails for invalid values");
          P :=
            SOCKET_EPHEMERAL_PORT_MIN +
            Port (netGetRand mod unsigned
@@ -587,7 +592,9 @@ is
 
          --  Exit immediately if the transmission buffer is full (sanity check)
          if unsigned (Sock.sndUser) + Sock.sndNxt - Sock.sndUna >=
-           unsigned (Sock.txBufferSize) then Error := ERROR_FAILURE;
+           unsigned (Sock.txBufferSize)
+         then
+            Error := ERROR_FAILURE;
             return;
          end if;
 
@@ -794,7 +801,10 @@ is
             Error := ERROR_FAILURE;
             return;
          end if;
-
+         pragma Warnings (Off,
+                          """Data"" may be referenced before it has a value",
+                          Reason =>
+                            """Data"" is proved to be initialized by SPARK");
          pragma Loop_Invariant
                (Basic_Model (Sock) = Basic_Model (Sock)'Loop_Entry and then
                   Sock.State /= TCP_STATE_LISTEN and then
@@ -832,9 +842,11 @@ is
                Sock.reset_Flag = False) and then
             Sock.rcvUser /= 0 and then
             Received < Data'Length and then
-            (if Received > 0 then
+                  (if Received > 0 then
                         Data (Data'First .. Buffer_Index (Natural (Data'First)
                      + Received - 1))'Initialized));
+         pragma Warnings (on,
+                          """Data"" may be referenced before it has a value");
 
          --  Calculate the number of bytes to read at a time
          N := Natural'Min (
