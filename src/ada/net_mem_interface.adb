@@ -61,6 +61,7 @@ is
          External_Name => "memPoolFree";
    begin
       memPoolFree (Queue_Item);
+      Queue_Item := null;
    end Mem_Pool_Free;
 
    procedure Net_Buffer_Free
@@ -74,6 +75,7 @@ is
          External_Name => "netBufferFree";
    begin
       netBufferFree (Queue_Item.Buffer);
+      Queue_Item.Buffer :=  System.Null_Address;
    end Net_Buffer_Free;
 
 end Net_Mem_Interface;
