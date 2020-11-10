@@ -43,8 +43,8 @@ Dependencies
 
 The following tools are needed to compile the project:
 * GNAT ARM 2020 (download it here https://www.adacore.com/download and install it in the recommended location).
-* OpenOCD to flash on the card (tested with version 2.7.1)
-* *[Optional]* minicom to see the debug messages. (tested with version 0.10.0)
+* OpenOCD to flash on the card (tested with version 2.7.1).
+* *[Optional]* minicom to see the debug messages (tested with version 0.10.0).
 
 *[Optional]* For the verification:
 * KLEE + LLVM 6
@@ -80,7 +80,7 @@ The current implementation supports two development boards, namely, the stm32f40
 ```
 $ ./configure.sh
 Chose the development board to be used for compiling the Http_Cyclone demo.
-[a] stm32f407
+[a] stm32f407_discovery
 [b] stm32f769i_discovery
 Please, select an option:
 ```
