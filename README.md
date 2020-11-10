@@ -7,6 +7,13 @@ The [Oryx Embedded CycloneTCP](https://oryx-embedded.com) library is used as a s
 
 A new implementation of the library's socket interface and a partial implementation of the TCP user functions is provided in SPARK. The absence of run-time errors for the translated functions and the conformance to some functional specifications of the TCP norm is proved using the SPARK technologies.
 
+Repository Organization
+----------------------------
+
+All the source files need for the compilation are located under the folder `src/`. In particular, this folder contains the C source files of the CycloneTCP library under the folder `cyclone_tcp/`. The translated to Ada/SPARK files are located under the subdirectory `ada/`. The demo's main function is located in the `main.c` file. The example can compile for the two currently supported development boards: the STM32F769I-Discovery and the stm32f407-Discovery platforms.
+
+The KLEE symbolic execution engine was used to gain confidence that the C code conforms with the protocol's functional specifications. The folder named  `klee/` includes all the source files needed to run Klee. A makefile is provided to help with the compilation. The line `#include "dns/dns_client.h"` in the file `net.h` might needed to be commented-out to be able to compile. By using the SPARK technologies, the code configured by the `config.def` file will be proved. 
+
 The table below gives an overview of the files that are translated in SPARK and then proved. It also records all the files that offer the necessary bindings between C and Ada to facilitate the interface between the two languages.
 
 | File                    | Description                                                       | Translation or binding                   |
@@ -24,30 +31,34 @@ The table below gives an overview of the files that are translated in SPARK and 
 | net_mem_interface.adb   | Memory management.                                                | Binding to C code.                       |
 | ip_binding.adb          | Underlaying IP layer functions.                                   | Binding to C code.                       |
 
-Use project
+
+Get the project
 -----------
 
-Use `git clone --recursive <git_repo>` to collect all the sources
+Use `git clone --recursive <git_repo>` to collect all the source files
 needed.
 
+Dependencies
+-----------
+
 The following tools are needed to compile the project:
-* GNAT ARM 2020 (download it here https://www.adacore.com/download and install it in the recommanded location).
-* OpenOCD to flash on the card
-* *[Optional]* minicom to see the debug messages.
+* GNAT ARM 2020 (download it here https://www.adacore.com/download and install it in the recommended location).
+* OpenOCD to flash on the card (tested with version 2.7.1)
+* *[Optional]* minicom to see the debug messages. (tested with version 0.10.0)
 
 *[Optional]* For the verification:
-* KLEE + LLVM 6.
-* SPARK.
+* KLEE + LLVM 6
+* SPARK Pro 21.0w
 
 Configuration
 -------------
 
-The configuration options has to be set in the file `config.def`,
-in the format
+The TCP-related  configuration options can be set in the file `config.def`,
+in the format:
 ```
 OPTION := VALUE
 ```
-A description of all the available option can be found in the file
+A description of all the available options can be found in the file
 [options.md](options.md).
 
 Before compiling or running `gnatprove`, it is necessary to run
@@ -59,73 +70,49 @@ to add the correct files to the compilation.
 Compilation
 -----------
 
-To compile the project, you need to have installed the arm compiler for
-ada, that can be found here https://www.adacore.com/download. Install it
-in the recommanded location.
-
-First, you have to chose the board:
-```
-$ ./configure
-Chose your material in the list below to configure the Http_Cyclone demo.
-[a] stm32f407
-[b] stm32f769i_discovery
-Select your material:
-```
-Then to compile the project:
-```
-make
-```
-To install it on the STM32 card:
-```
-make flash
-```
+The arm Ada compiler needs to be installed for compiling the project. This can be found [here](https://www.adacore.com/download). Please install it at the recommended location.
 
 If the ARM compiler is not installed in the default directory, you can use
 `make RTS=<install_dir>` to help the compiler to find the require files
 for the compilation.
 
-You can see the debug messages by opening a terminal on the card
-with `minicom -D /dev/ttyACM0`.
+The current implementation supports two development boards, namely, the stm32f407 and the stm32f769i_discovery. To select which board to compile for, please run:
+```
+$ ./configure.sh
+Chose the development board to be used for compiling the Http_Cyclone demo.
+[a] stm32f407
+[b] stm32f769i_discovery
+Please, select an option:
+```
+Then to compile the project execute:
+```
+make
+```
+To flash the program onto the STM32 board:
+```
+make flash
+```
+To view debug messages on the host PC, use:
+```
+minicom -D /dev/ttyACM0
+```
 
 Proof
 -----
-
-To use SPARK, it's require to have a recent version of SPARK because delta aggregates
-are used in the code.
-
-To prove the correctness of the SPARK code, use
+To prove the SPARK code, use:
 ```
 make prove
 ```
-or use the following command line
+or use the following command line:
 ```
 gnatprove -P prove.gpr --level=4 -j0
 ```
-The code corresponding to the configuration defined in the file `config.def` will be proved.
+The code configured by the `config.def` will be proved.
 
-Organization of the repository
-------------------------------
 
-All the sources need for the compilation are under the folder `src/`. In particular
-it contains the C sources of cycloneTCP in the folder `cyclone_tcp/`. The translated
-files are under the subdirectory `ada/`. A main function is under `main.c` and is
-written to launch and test the C. The example is made to compile on STM32F769I-dicovery plateform.
-
-An experimentation has also been done with Klee, and the folder `klee/` gathers the
-sources needed to run Klee. A makefile is provided to help the compilation. You
-might need to comment the line `#include "dns/dns_client.h"` in the file `net.h`
-to be able to compile.
-
-Example
+Demo
 -------
 
-The code example a HTTP page and print it. To see the result, you must install minicom.
-Click on the blue button on the board to launch the download.
-The page is displayed as a HTTP request: the header followed by the content of the
-page in JSON format.
+The demo downloads an HTTP page and prints it. To view the printing, you must install and use the `minicom` tool. To launch the demo, press the blue button on the development board. The page will be displayed as an HTTP request: the header followed by the content of the
+page in JSON format will be printed.
 
-
-Contribute
-----------
-
-Don't hesitate to open a PR to improve the code.
