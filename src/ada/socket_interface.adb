@@ -18,7 +18,7 @@
 with Net_Mem_Interface; use Net_Mem_Interface;
 with Os;                use Os;
 with Socket_Helper;     use Socket_Helper;
-with System;
+with System; use System;
 with Tcp_Fsm_Binding;   use Tcp_Fsm_Binding;
 with Udp_Binding;       use Udp_Binding;
 
