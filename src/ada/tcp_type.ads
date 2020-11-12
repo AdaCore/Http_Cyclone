@@ -277,10 +277,6 @@ package Tcp_Type with SPARK_Mode is
          Ghost,
          Annotate => (GNATprove, Terminating);
    pragma Annotate
-     (GNATprove, False_Positive,
-      "call to ""Is_Initialized_Ip"" might be nonterminating",
-      "Recursive calls occur on strictly smaller structure");
-   pragma Annotate
       (GNATprove, False_Positive,
        """Tcp_Syn_Queue_Item_Model"" is recursive, "
      & "terminating annotation could be incorrect",
