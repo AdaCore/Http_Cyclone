@@ -48,7 +48,7 @@ The following tools are needed to compile the project:
 
 *[Optional]* For the verification:
 * KLEE + LLVM 6
-* SPARK Pro 21.0w
+* SPARK Pro 22.0w (20201110)
 
 Configuration
 -------------
