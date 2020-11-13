@@ -6,11 +6,13 @@ project Prove is
 				  "socket_interface_tcp.ads", 
 				  "socket_interface_tcp.adb");
 
-   package Compiler is
-      for Default_Switches ("ada") use ("-gnat2020", 
-      "-I/home/georgiou/work/projects/Http_Cyclone_new_repo/",
-      "-gnatep=/home/georgiou/work/projects/Http_Cyclone_new_repo/prep.data");
-   end Compiler;
+   Package Compiler is
+      for default_switches ("Ada") use
+         ("-gnat2020","-gnatwae", "-gnaty",
+          "-I" & Prove'Project_Dir,
+          "-gnatep=" & Prove'Project_Dir & "prep.data");
+     end Compiler;
+
 
 end Prove;
 
