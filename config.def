@@ -1,3 +1,7 @@
+--  Note: if you would like to build and prove the same configurations, 
+--  you have to use the same options used in the prove.gpr file  
+--  in the form of "-gnateDOPTION=VALUE" compiler switches
+
 --  Number of sockets that can be opened simultaneously
 SOCKET_MAX_COUNT := 10
 

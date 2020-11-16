@@ -6,6 +6,10 @@ project Prove is
 				  "socket_interface_tcp.ads", 
 				  "socket_interface_tcp.adb");
 
+--  Note: if you would like to build and prove the same configurations, 
+--  you have to use the same options in the config.def  
+--  using the "-gnateDOPTION=VALUE" to the compiler switches
+
    Package Compiler is
       for default_switches ("Ada") use
          ("-gnat2020",
