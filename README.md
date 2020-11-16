@@ -10,9 +10,9 @@ A new implementation of the library's socket interface and a partial implementat
 Repository Organization
 ----------------------------
 
-All the source files need for the compilation are located under the folder `src/`. In particular, this folder contains the C source files of the CycloneTCP library under the folder `cyclone_tcp/`. The translated to Ada/SPARK files are located under the subdirectory `ada/`. The demo's main function is located in the `main.c` file. The example can compile for the two currently supported development boards: the STM32F769I-Discovery and the stm32f407-Discovery platforms.
+All the source files need for the compilation are located under the folder `src/`. In particular, this folder contains the C source files of the CycloneTCP library under the folder `cyclone_tcp/`. The translated to Ada/SPARK files are located under the subdirectory `ada/`. The demo's main function is located in the `main.c` file. The example can compile for the STM32F769I-Discovery, currently supported, development board.
 
-The KLEE symbolic execution engine was used to gain confidence that the C code conforms with the protocol's functional specifications. The folder named  `klee/` includes all the source files needed to run Klee. A makefile is provided to help with the compilation. The line `#include "dns/dns_client.h"` in the file `net.h` might needed to be commented-out to be able to compile. By using the SPARK technologies, the code configured by the `config.def` file will be proved. 
+The KLEE symbolic execution engine was used to gain confidence that the C code conforms with the protocol's functional specifications. The folder named  `klee/` includes all the source files needed to run Klee. A makefile is provided to help with the compilation. The line `#include "dns/dns_client.h"` in the file `net.h` might needed to be commented-out to be able to compile. By using the SPARK technologies, the code configured by the `prove.gpr` file will be proved. 
 
 The table below gives an overview of the files that are translated in SPARK and then proved. It also records all the files that offer the necessary bindings between C and Ada to facilitate the interface between the two languages.
 
@@ -53,7 +53,7 @@ The following tools are needed to compile the project:
 Configuration
 -------------
 
-The TCP build  configuration options can be set in the file `config.def`,
+The TCP-built  configuration options can be set in the file `config.def`,
 in the format:
 ```
 OPTION := VALUE
@@ -61,32 +61,29 @@ OPTION := VALUE
 A description of all the available options can be found in the file
 [options.md](options.md).
 
-The TCP prove  configuration options can be set in the file `prove.gpr`,
+The TCP-prove  configuration options can be set in the file `prove.gpr`,
 in the format:
-
 ```
 "-gnateDOPTION=VALUE"
 ```
-If you would like to build and prove the same configurations, you have to keep the specified options in the `config.def` and `prove.gpr` files the same.
+If you would like to build and prove for the same configurations, you have to keep the specified options in the `config.def` and `prove.gpr` files the same.
+
+Before compiling or running `gnatprove`, it is necessary to run:
+```
+make config
+```
+to add the correct files to the compilation.
 
 Compilation
 -----------
 
 The arm Ada compiler needs to be installed for compiling the project. This can be found [here](https://www.adacore.com/download). Please install it at the recommended location.
 
-If the ARM compiler is not installed in the default directory, you can use
-`make RTS=<install_dir>` to help the compiler to find the require files
-for the compilation.
+If the ARM compiler is not installed in the default directory, you can use `make RTS=<install_dir>` to help the compiler to find the require files for the compilation.
 
-The current implementation supports two development boards, namely, the stm32f407 and the stm32f769i_discovery. To select which board to compile for, please run:
-```
-$ ./configure.sh
-Chose the development board to be used for compiling the Http_Cyclone demo.
-[a] stm32f407_discovery
-[b] stm32f769i_discovery
-Please, select an option:
-```
-Then to compile the project execute:
+The current implementation supports one development board, namely, the STM32F769I-Discovery. 
+
+To compile the project execute:
 ```
 make
 ```

@@ -3,32 +3,32 @@ RESULT ?= http_client_demo
 CONFIG_FILE = config.def
 
 DEFINES = \
-	-DSTM32F407xx \
+	-DSTM32F769xx \
 	-DUSE_HAL_DRIVER \
-	-DUSE_STM32F4_DISCO \
+	-DUSE_STM32F769I_DISCO \
 	-D_WINSOCK_H \
 	-D__error_t_defined
 
 INCLUDES = \
 	-I./src \
 	-I./src/third_party/cmsis/include \
-	-I./src/third_party/st/devices/stm32f4xx \
-	-I./src/third_party/st/drivers/stm32f4xx_hal_driver/inc \
-	-I./src/third_party/st/boards/stm32f4_discovery \
+	-I./src/third_party/st/devices/stm32f7xx \
+	-I./src/third_party/st/drivers/stm32f7xx_hal_driver/inc \
+	-I./src/third_party/st/boards/stm32f769i_discovery \
 	-I./src/third_party/freertos/include \
-	-I./src/third_party/freertos/portable/gcc/arm_cm4f \
+	-I./src/third_party/freertos/portable/gcc/arm_cm7/r0p1 \
 	-I./src/common \
 	-I./src/cyclone_tcp
 
 ASM_SOURCES = \
-	./src/startup_stm32f407xx.S
+	./src/startup_stm32f769xx.S
 
 C_SOURCES = \
-	./src/system_stm32f4xx.c \
-	./src/stm32f4xx_it.c \
+	./src/system_stm32f7xx.c \
+	./src/stm32f7xx_it.c \
 	./src/syscalls.c \
-	./src/main_stm32f4xx.c \
-	./src/debug_stm32f4xx.c \
+	./src/main_stm32f7xx.c \
+	./src/debug_stm32f7xx.c \
 	./src/common/cpu_endian.c \
 	./src/common/os_port_freertos.c \
 	./src/common/date_time.c \
@@ -36,8 +36,8 @@ C_SOURCES = \
 	./src/cyclone_tcp/core/net.c \
 	./src/cyclone_tcp/core/net_mem.c \
 	./src/cyclone_tcp/core/net_misc.c \
-	./src/cyclone_tcp/drivers/mac/stm32f4xx_eth_driver.c \
-	./src/cyclone_tcp/drivers/phy/lan8720_driver.c \
+	./src/cyclone_tcp/drivers/mac/stm32f7xx_eth_driver.c \
+	./src/cyclone_tcp/drivers/phy/lan8742_driver.c \
 	./src/cyclone_tcp/core/nic.c \
 	./src/cyclone_tcp/core/ethernet.c \
 	./src/cyclone_tcp/core/ethernet_misc.c \
@@ -82,84 +82,89 @@ C_SOURCES = \
 	./src/cyclone_tcp/dhcp/dhcp_client.c \
 	./src/cyclone_tcp/dhcp/dhcp_common.c \
 	./src/cyclone_tcp/dhcp/dhcp_debug.c \
-	./src/third_party/freertos/portable/gcc/arm_cm4f/port.c \
+	./src/third_party/freertos/portable/gcc/arm_cm7/r0p1/port.c \
 	./src/third_party/freertos/croutine.c \
 	./src/third_party/freertos/list.c \
 	./src/third_party/freertos/queue.c \
 	./src/third_party/freertos/tasks.c \
 	./src/third_party/freertos/timers.c \
 	./src/third_party/freertos/portable/memmang/heap_3.c \
-	./src/third_party/st/boards/stm32f4_discovery/stm32f4_discovery.c \
-	./src/third_party/st/boards/stm32f4_discovery/stm32f4_discovery_accelerometer.c \
-	./src/third_party/st/boards/components/lis302dl/lis302dl.c \
-	./src/third_party/st/boards/components/lis3dsh/lis3dsh.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_adc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_adc_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_can.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_cec.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_cortex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_crc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_cryp.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_cryp_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dac.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dac_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dcmi.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dcmi_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dfsdm.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dma.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dma_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dma2d.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_dsi.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_eth.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_flash.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_flash_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_flash_ramfunc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_fmpi2c.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_fmpi2c_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_gpio.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_hash.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_hash_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_hcd.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_i2c.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_i2c_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_i2s.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_i2s_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_irda.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_iwdg.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_lptim.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_ltdc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_ltdc_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_nand.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_nor.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_pccard.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_pcd.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_pcd_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_pwr.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_pwr_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_qspi.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_rcc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_rcc_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_rng.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_rtc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_rtc_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_sai.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_sai_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_sd.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_sdram.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_smartcard.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_spdifrx.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_spi.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_sram.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_tim.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_tim_ex.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_uart.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_usart.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_hal_wwdg.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_ll_fmc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_ll_fsmc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_ll_sdmmc.c \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/src/stm32f4xx_ll_usb.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_audio.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_eeprom.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_lcd.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_qspi.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_sd.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_sdram.c \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_ts.c \
+	./src/third_party/st/boards/components/ft6x06/ft6x06.c \
+	./src/third_party/st/boards/components/otm8009a/otm8009a.c \
+	./src/third_party/st/boards/components/wm8994/wm8994.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_adc.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_adc_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_can.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_cec.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_cortex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_crc.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_crc_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_cryp.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_cryp_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dac.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dac_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dcmi.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dcmi_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dfsdm.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dma.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dma_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dma2d.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_dsi.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_eth.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_flash.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_flash_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_gpio.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_hash.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_hash_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_hcd.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_i2c.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_i2c_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_i2s.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_irda.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_iwdg.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_jpeg.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_lptim.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_ltdc.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_ltdc_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_mdios.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_nand.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_nor.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_pcd.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_pcd_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_pwr.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_pwr_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_qspi.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_rcc.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_rcc_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_rng.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_rtc.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_rtc_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_sai.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_sai_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_sd.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_sdram.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_smartcard.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_smartcard_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_spdifrx.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_spi.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_sram.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_tim.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_tim_ex.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_uart.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_usart.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_hal_wwdg.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_ll_fmc.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_ll_sdmmc.c \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/src/stm32f7xx_ll_usb.c \
 	./src/ada/helper.c
 
 HEADERS = \
@@ -167,8 +172,8 @@ HEADERS = \
 	./src/os_port_config.h \
 	./src/net_config.h \
 	./src/FreeRTOSConfig.h \
-	./src/stm32f4xx_hal_conf.h \
-	./src/stm32f4xx_it.h \
+	./src/stm32f7xx_hal_conf.h \
+	./src/stm32f7xx_it.h \
 	./src/common/cpu_endian.h \
 	./src/common/os_port.h \
 	./src/common/os_port_freertos.h \
@@ -237,79 +242,89 @@ HEADERS = \
 	./src/third_party/freertos/include/stack_macros.h \
 	./src/third_party/freertos/include/task.h \
 	./src/third_party/freertos/include/timers.h \
-	./src/third_party/st/boards/stm32f4_discovery/stm32f4_discovery.h \
-	./src/third_party/st/boards/stm32f4_discovery/stm32f4_discovery_accelerometer.h \
-	./src/third_party/st/boards/components/lis302dl/lis302dl.h \
-	./src/third_party/st/boards/components/lis3dsh/lis3dsh.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_adc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_adc_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_can.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_cec.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_cortex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_crc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_cryp.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_cryp_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dac.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dac_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dcmi.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dcmi_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_def.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dfsdm.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dma.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dma_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dma2d.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_dsi.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_eth.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_flash.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_flash_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_flash_ramfunc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_fmpi2c.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_fmpi2c_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_gpio.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_gpio_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_hash.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_hash_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_hcd.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_i2c.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_i2c_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_i2s.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_i2s_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_irda.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_iwdg.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_lptim.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_ltdc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_ltdc_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_nand.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_nor.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_pccard.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_pcd.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_pcd_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_pwr.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_pwr_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_qspi.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_rcc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_rcc_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_rng.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_rtc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_rtc_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_sai.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_sai_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_sd.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_sdram.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_smartcard.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_spdifrx.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_spi.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_sram.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_tim.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_tim_ex.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_uart.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_usart.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_hal_wwdg.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_ll_fmc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_ll_fsmc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_ll_sdmmc.h \
-	./src/third_party/st/drivers/stm32f4xx_hal_driver/inc/stm32f4xx_ll_usb.h
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery.h \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_audio.h \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_eeprom.h \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_lcd.h \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_qspi.h \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_sd.h \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_sdram.h \
+	./src/third_party/st/boards/stm32f769i_discovery/stm32f769i_discovery_ts.h \
+	./src/third_party/st/boards/components/adv7533/adv7533.h \
+	./src/third_party/st/boards/components/ft6x06/ft6x06.h \
+	./src/third_party/st/boards/components/mx25l512/mx25l512.h \
+	./src/third_party/st/boards/components/otm8009a/otm8009a.h \
+	./src/third_party/st/boards/components/wm8994/wm8994.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_adc.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_adc_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_can.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_cec.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_cortex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_crc.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_crc_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_cryp.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_cryp_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dac.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dac_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dcmi.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dcmi_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_def.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dfsdm.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dma.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dma_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dma2d.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_dsi.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_eth.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_flash.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_flash_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_gpio.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_gpio_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_hash.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_hash_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_hcd.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_i2c.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_i2c_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_i2s.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_irda.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_irda_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_iwdg.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_jpeg.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_lptim.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_ltdc.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_ltdc_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_mdios.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_nand.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_nor.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_pcd.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_pcd_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_pwr.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_pwr_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_qspi.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_rcc.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_rcc_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_rng.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_rtc.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_rtc_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_sai.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_sai_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_sd.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_sdram.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_smartcard.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_smartcard_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_spdifrx.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_spi.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_sram.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_tim.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_tim_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_uart.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_uart_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_usart.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_usart_ex.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_hal_wwdg.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_ll_fmc.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_ll_sdmmc.h \
+	./src/third_party/st/drivers/stm32f7xx_hal_driver/inc/stm32f7xx_ll_usb.h
 
 ASM_OBJECTS = $(patsubst %.S, %.o, $(ASM_SOURCES))
 
@@ -342,17 +357,17 @@ ADA_OBJECTS += $(patsubst %.adb, %.o, $(ADA_SOURCES))
 
 OBJ_DIR = obj
 
-LINKER_SCRIPT = src/stm32f407_flash.ld
+LINKER_SCRIPT = src/stm32f769_flash.ld
 
 CFLAGS += -fno-common -Wall -Os -g3 -std=c99
-CFLAGS += -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+CFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
 CFLAGS += $(DEFINES)
 CFLAGS += $(INCLUDES)
 
 RTS = /opt/GNAT/2020-arm-elf
 
-ADAFLAGS += --RTS=$(addprefix $(RTS)/, arm-eabi/lib/gnat/ravenscar-sfp-stm32f4/)
+ADAFLAGS += --RTS=$(addprefix $(RTS)/, arm-eabi/lib/gnat/ravenscar-sfp-stm32f769disco/)
 ADAFLAGS += -fno-common -Wall -Os -g3 -ggdb
 ADAFLAGS += -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
 ADAFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
@@ -445,7 +460,7 @@ size: $(RESULT).elf
 
 .PHONY: flash
 flash:
-	openocd -f board/stm32f4discovery.cfg -c "init; reset halt; flash write_image erase $(RESULT).bin 0x08000000; reset run; shutdown"
+	openocd -f board/stm32f7discovery.cfg -c "init; reset halt; flash write_image erase $(RESULT).bin 0x08000000; reset run; shutdown"
 
 .PHONY: clean
 clean:
