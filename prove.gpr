@@ -8,9 +8,20 @@ project Prove is
 
    Package Compiler is
       for default_switches ("Ada") use
-         ("-gnat2020","-gnatwae", "-gnaty",
-          "-I" & Prove'Project_Dir,
-          "-gnatep=" & Prove'Project_Dir & "prep.data");
+         ("-gnat2020",
+	    --  Number of sockets that can be opened simultaneously
+	    "-gnateDSOCKET_MAX_COUNT=10",
+	    --  Default buffer size for reception
+	    "-gnateDTCP_DEFAULT_RX_BUFFER_SIZE=2860",
+	    --  Default buffer size for transmission
+            "-gnateDTCP_DEFAULT_TX_BUFFER_SIZE=2860",
+            --  Default SYN queue size for listening sockets
+            "-gnateDTCP_DEFAULT_SYN_QUEUE_SIZE=4",
+            --  UDP support
+	    "-gnateDUDP_SUPPORT=True",
+	    --  TCP support
+	    "-gnateDTCP_SUPPORT=True"
+	    );
      end Compiler;
 
 

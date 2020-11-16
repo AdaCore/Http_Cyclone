@@ -53,7 +53,7 @@ The following tools are needed to compile the project:
 Configuration
 -------------
 
-The TCP-related  configuration options can be set in the file `config.def`,
+The TCP build  configuration options can be set in the file `config.def`,
 in the format:
 ```
 OPTION := VALUE
@@ -61,11 +61,13 @@ OPTION := VALUE
 A description of all the available options can be found in the file
 [options.md](options.md).
 
-Before compiling or running `gnatprove`, it is necessary to run
+The TCP prove  configuration options can be set in the file `prove.gpr`,
+in the format:
+
 ```
-make config
+"-gnateDOPTION=VALUE"
 ```
-to add the correct files to the compilation.
+If you would like to build and prove the same configurations, you have to keep the specified options in the `config.def` and `prove.gpr` files the same.
 
 Compilation
 -----------
