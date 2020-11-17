@@ -22,7 +22,7 @@ project Prove is
             --  Default SYN queue size for listening sockets
             "-gnateDTCP_DEFAULT_SYN_QUEUE_SIZE=4",
             --  UDP support
-	    "-gnateDUDP_SUPPORT=True",
+	    "-gnateDUDP_SUPPORT=False",
 	    --  TCP support
 	    "-gnateDTCP_SUPPORT=True"
 	    );
