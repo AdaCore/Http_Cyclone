@@ -601,7 +601,7 @@ is
          --  Determine the actual number of bytes in the send buffer
          N := Natural (unsigned (Sock.sndUser) + Sock.sndNxt - Sock.sndUna);
 
-         pragma Assert (N in 0 .. Natural (Sock.txBufferSize) - 1);
+         pragma Assert (N in 0 .. Natural (unsigned (Sock.txBufferSize)) - 1);
 
          --  Number of bytes available for writing
          N := Natural (Sock.txBufferSize) - N;
