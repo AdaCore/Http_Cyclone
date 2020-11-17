@@ -12,7 +12,7 @@ project Prove is
 
    Package Compiler is
       for default_switches ("Ada") use
-         ("-gnat2020",
+         ("-gnat2020", "-gnaty", "-gnatwa", "-gnatwaKU",
 	    --  Number of sockets that can be opened simultaneously
 	    "-gnateDSOCKET_MAX_COUNT=10",
 	    --  Default buffer size for reception
