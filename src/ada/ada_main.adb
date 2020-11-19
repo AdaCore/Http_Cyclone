@@ -26,38 +26,39 @@ with Socket_Types;     use Socket_Types;
 with Socket_Interface; use Socket_Interface;
 
 package body Ada_Main with
-   SPARK_Mode
+SPARK_Mode
 is
 
    procedure HTTP_Client_Test is
       Sock_Ignore : Socket;
       ServerAddr : IpAddr;
       End_Of_Line : constant Send_Buffer (1 .. 2) :=
-               (1 => char'Val (13), 2 => char'Val (10));
+        (1 => char'Val (13), 2 => char'Val (10));
       End_Of_Request : constant Send_Buffer (1 .. 1) :=
-               (1 => char'Val (0));
+        (1 => char'Val (0));
       Request : constant Send_Buffer :=
-               "GET /anything HTTP/1.1" & End_Of_Line &
-               "Host: httpbin.org" & End_Of_Line &
-               "Connection: close" & End_Of_Line & End_Of_Line
-               & End_Of_Request;
+        "GET /anything HTTP/1.1" & End_Of_Line &
+        "Host: httpbin.org" & End_Of_Line &
+        "Connection: close" & End_Of_Line & End_Of_Line
+        & End_Of_Request;
       Buf : Received_Buffer (1 .. 128);
       Error_Ignore : Error_T;
       Written : Integer with Unreferenced;
       Received : Natural;
 
       procedure Print_String
-         (str : Received_Buffer;
-          length : int)
-         with
-            Import => True,
-            Convention => C,
-            External_Name => "debugString",
-            Global => null;
+        (str : Received_Buffer;
+         length : int)
+        with
+          Import => True,
+          Convention => C,
+          External_Name => "debugString",
+          Global => null;
 
    begin
       Get_Host_By_Name ("httpbin.org",
                         ServerAddr, HOST_NAME_RESOLVER_ANY, Error_Ignore);
+
       if Error_Ignore /= NO_ERROR then
          return;
       end if;
@@ -80,16 +81,16 @@ is
       end if;
 
       loop
-            pragma Loop_Invariant
-               (Sock_Ignore /= null and then
-                TCP_Rel_Iter (Model (Sock_Ignore)'Loop_Entry,
-                  Model (Sock_Ignore)));
-            Socket_Receive (Sock_Ignore, Buf, Received, 0, Error_Ignore);
-            exit when Error_Ignore = ERROR_END_OF_STREAM;
-            if Error_Ignore /= NO_ERROR then
-               goto End_Of_Loop;
-            end if;
-            Print_String (Buf, int (Received)); -- For debug purpose
+         pragma Loop_Invariant
+           (Sock_Ignore /= null and then
+            TCP_Rel_Iter (Model (Sock_Ignore)'Loop_Entry,
+              Model (Sock_Ignore)));
+         Socket_Receive (Sock_Ignore, Buf, Received, 0, Error_Ignore);
+         exit when Error_Ignore = ERROR_END_OF_STREAM;
+         if Error_Ignore /= NO_ERROR then
+            goto End_Of_Loop;
+         end if;
+         Print_String (Buf, int (Received)); -- For debug purpose
       end loop;
       Socket_Shutdown (Sock_Ignore, SOCKET_SD_BOTH, Error_Ignore);
 
