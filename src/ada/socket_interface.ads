@@ -70,6 +70,9 @@ is
                   Sock.S_Protocol = SOCKET_IP_PROTO_TCP and then
                   Sock.S_Local_Port > 0 and then
                   Sock.State = TCP_STATE_CLOSED),
+             S_Type = SOCKET_TYPE_DGRAM =>
+               (if Sock /= null then
+                  Sock.S_Protocol = SOCKET_IP_PROTO_UDP),
              others =>
                (if Sock /= null then
                   Sock.S_Protocol = S_Protocol));
@@ -159,6 +162,12 @@ is
                   Sock.S_Type = Sock.S_Type'Old and then
                   Sock.S_Protocol = Sock.S_Protocol'Old),
 
+          Sock.S_Type = SOCKET_TYPE_DGRAM =>
+               Error = NO_ERROR and then
+               Model(Sock) = (Model(Sock)'Old with delta
+                  S_Remote_Ip_Addr => Remote_Ip_Addr,
+                  S_Remote_Port  => Remote_Port),
+
           Sock.S_Type = SOCKET_TYPE_RAW_IP =>
                Error = NO_ERROR and then
                Model(Sock) = (Model(Sock)'Old with delta
@@ -183,15 +192,19 @@ is
         Global =>
           (Input => Net_Mutex),
         Depends =>
-          (Error   => (Sock, Data, Flags),
-           Sock    => (Sock, Data, Flags),
-           Written => (Sock, Data, Flags),
-           null    => (Net_Mutex, Dest_Ip_Addr, Dest_Port)),
+          (Error   => (Sock, Data, Flags, Dest_Ip_Addr, Dest_Port),
+           Sock    => (Sock, Data, Flags, Dest_Ip_Addr, Dest_Port),
+           Written => (Sock, Data, Flags, Dest_Ip_Addr, Dest_Port),
+           null    => Net_Mutex),
         Pre  =>
-          Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
-          (if Sock.S_Type = SOCKET_TYPE_STREAM then
-            Sock.State = TCP_STATE_ESTABLISHED or else
-            Sock.State = TCP_STATE_CLOSE_WAIT),
+            (if Sock.S_Type = SOCKET_TYPE_STREAM then
+               Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
+               Sock.S_Remote_Port > 0 and then
+               (Sock.State = TCP_STATE_ESTABLISHED or else
+                Sock.State = TCP_STATE_CLOSE_WAIT)
+             elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
+               Is_Initialized_Ip(Dest_Ip_Addr) and then
+               Dest_Port > 0),
         Post =>
             Basic_Model(Sock) = Basic_Model(Sock)'Old and then
             (if Error = NO_ERROR then
@@ -282,10 +295,15 @@ is
            Error        =>  (Sock, Data, Flags),
            null         =>  Net_Mutex),
         Pre =>
-          Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
           Data'Last >= Data'First and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM then
-            Sock.State /= TCP_STATE_LISTEN),
+            Sock.State /= TCP_STATE_LISTEN and then
+            Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
+          --   Sock.S_Remote_Port > 0
+          -- elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
+          --   Is_Initialized_Ip(Src_Ip_Addr) and then
+          --   Src_Port > 0),
+            Sock.S_Remote_Port > 0),
         Post =>
             Basic_Model(Sock) = Basic_Model(Sock)'Old,
         Contract_Cases =>
@@ -366,6 +384,7 @@ is
                   ) and then
                   Received = 0
                ),
+           Sock.S_Type = SOCKET_TYPE_DGRAM => True,
            others =>
                Error = ERROR_INVALID_SOCKET and then
                Received = 0);
@@ -390,10 +409,13 @@ is
            Received =>  (Sock, Data, Flags),
            null     =>  Net_Mutex),
         Pre =>
-          Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
+          -- Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
           Data'Last >= Data'First and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM then
-            Sock.State /= TCP_STATE_LISTEN),
+            -- Sock.State /= TCP_STATE_LISTEN),
+            Sock.State /= TCP_STATE_LISTEN and then
+            Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
+            Sock.S_Remote_Port > 0),
         Post =>
             Basic_Model (Sock) = Basic_Model (Sock)'Old,
         Contract_Cases =>
@@ -474,6 +496,7 @@ is
                   ) and then
                   Received = 0
                ),
+           Sock.S_Type = SOCKET_TYPE_DGRAM => True,
            others =>
                Error = ERROR_INVALID_SOCKET and then
                Received = 0);

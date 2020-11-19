@@ -12,7 +12,7 @@ project Prove is
 
    Package Compiler is
       for default_switches ("Ada") use
-         ("-gnat2020", "-gnaty", "-gnatwa", "-gnatwaKU",
+         ("-gnat2020", "-gnaty", "-gnatwa", "-gnatwaUK",
 	    --  Number of sockets that can be opened simultaneously
 	    "-gnateDSOCKET_MAX_COUNT=10",
 	    --  Default buffer size for reception
@@ -22,7 +22,7 @@ project Prove is
             --  Default SYN queue size for listening sockets
             "-gnateDTCP_DEFAULT_SYN_QUEUE_SIZE=4",
             --  UDP support
-	    "-gnateDUDP_SUPPORT=False",
+	    "-gnateDUDP_SUPPORT=True",
 	    --  TCP support
 	    "-gnateDTCP_SUPPORT=True"
 	    );

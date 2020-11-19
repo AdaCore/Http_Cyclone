@@ -299,10 +299,7 @@ is
           (if Sock.S_Type = SOCKET_TYPE_STREAM then
             Sock.State /= TCP_STATE_LISTEN and then
             Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
-            Sock.S_Remote_Port > 0
-          elsif Sock.S_Type = SOCKET_TYPE_DGRAM then
-            Is_Initialized_Ip(Src_Ip_Addr) and then
-            Src_Port > 0),
+            Sock.S_Remote_Port > 0),
         Post =>
             Basic_Model(Sock) = Basic_Model(Sock)'Old,
         Contract_Cases =>
@@ -408,10 +405,12 @@ is
            Received =>  (Sock, Data, Flags),
            null     =>  Net_Mutex),
         Pre =>
-          Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
+          -- Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
           Data'Last >= Data'First and then
           (if Sock.S_Type = SOCKET_TYPE_STREAM then
-            Sock.State /= TCP_STATE_LISTEN),
+            Sock.State /= TCP_STATE_LISTEN and then
+            Is_Initialized_Ip(Sock.S_Remote_Ip_Addr) and then
+            Sock.S_Remote_Port > 0),
         Post =>
             Basic_Model (Sock) = Basic_Model (Sock)'Old,
         Contract_Cases =>
