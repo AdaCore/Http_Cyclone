@@ -204,23 +204,23 @@ package Tcp_Type with SPARK_Mode is
 
    type Chunk_Desc_Array_Index is range 0 ..
      ((TCP_MAX_TX_BUFFER_SIZE + NET_MEM_POOL_BUFFER_SIZE - 1) /
-          NET_MEM_POOL_BUFFER_SIZE);
+          NET_MEM_POOL_BUFFER_SIZE - 1);
    type Chunk_Desc_Array is array (Chunk_Desc_Array_Index) of Chunk_Desc
-   with
-      Object_Size =>
-         (((TCP_MAX_TX_BUFFER_SIZE + NET_MEM_POOL_BUFFER_SIZE - 1) /
-            NET_MEM_POOL_BUFFER_SIZE) + 1) * (32 + System.Word_Size);
+     with
+       Object_Size =>
+         ((TCP_MAX_TX_BUFFER_SIZE + NET_MEM_POOL_BUFFER_SIZE - 1) /
+                  NET_MEM_POOL_BUFFER_SIZE) * (32 + System.Word_Size);
 
    type Tcp_Tx_Buffer is record
       chunkCount    : unsigned;
       maxChunkCound : unsigned;
       chunk         : Chunk_Desc_Array;
    end record
-   with
-      Convention => C,
-      Object_Size =>
+     with
+       Convention => C,
+       Object_Size =>
          64 + (((TCP_MAX_TX_BUFFER_SIZE + NET_MEM_POOL_BUFFER_SIZE - 1) /
-                 NET_MEM_POOL_BUFFER_SIZE) + 1) * (32 + System.Word_Size);
+                 NET_MEM_POOL_BUFFER_SIZE)) * (32 + System.Word_Size);
 
    type Tcp_Rx_Buffer is record
       chunkCount    : unsigned;
